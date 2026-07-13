@@ -4,3 +4,6 @@
 *.key
 secrets
 secrets/
+__pycache__/
+*.pyc
+.venv/
