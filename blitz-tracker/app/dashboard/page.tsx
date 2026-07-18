@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Deal } from "@/lib/types";
 
@@ -72,7 +73,25 @@ export default function DashboardPage() {
     const doorsLeaderboard = Array.from(byRep.entries()).sort((a, b) => b[1] - a[1]);
     const dayBreakdown = Array.from(byDay.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
 
-    return { totalDoors, totalSales, conversion, repLeaderboard, doorsLeaderboard, dayBreakdown };
+    const signedCount = filtered.filter((d) => d.stage === "signed").length;
+    const installedCount = filtered.filter((d) => d.stage === "installed").length;
+    const paidCount = filtered.filter((d) => d.stage === "paid").length;
+    const totalPayout = filtered
+      .filter((d) => d.stage === "paid" && d.payout_amount != null)
+      .reduce((sum, d) => sum + Number(d.payout_amount), 0);
+
+    return {
+      totalDoors,
+      totalSales,
+      conversion,
+      repLeaderboard,
+      doorsLeaderboard,
+      dayBreakdown,
+      signedCount,
+      installedCount,
+      paidCount,
+      totalPayout,
+    };
   }, [filtered]);
 
   return (
@@ -113,6 +132,29 @@ export default function DashboardPage() {
               <div className="value">{stats.repLeaderboard.length}</div>
               <div className="label">Reps Active</div>
             </div>
+          </div>
+
+          <div className="card">
+            <h2>Sales Pipeline</h2>
+            <div className="pipeline-row">
+              <Link href="/deals?stage=signed" className="pipeline-tile stage-signed">
+                <div className="value">{stats.signedCount}</div>
+                <div className="label">Signed, not installed</div>
+              </Link>
+              <Link href="/deals?stage=installed" className="pipeline-tile stage-installed">
+                <div className="value">{stats.installedCount}</div>
+                <div className="label">Installed, not paid</div>
+              </Link>
+              <Link href="/deals?stage=paid" className="pipeline-tile stage-paid">
+                <div className="value">{stats.paidCount}</div>
+                <div className="label">Paid</div>
+              </Link>
+            </div>
+            {stats.paidCount > 0 && (
+              <p className="meta" style={{ marginTop: 10 }}>
+                Total paid out: ${stats.totalPayout.toFixed(2)}
+              </p>
+            )}
           </div>
 
           <div className="card">

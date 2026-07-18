@@ -1,4 +1,5 @@
 export type Outcome = "sale" | "not_home" | "not_interested" | "callback" | "other";
+export type Stage = "signed" | "installed" | "paid";
 
 export interface Deal {
   id: number;
@@ -12,6 +13,10 @@ export interface Deal {
   plan_sold: string | null;
   install_date: string | null;
   notes: string | null;
+  stage: Stage | null;
+  install_completed_date: string | null;
+  paid_date: string | null;
+  payout_amount: number | null;
 }
 
 export const OUTCOME_LABELS: Record<Outcome, string> = {
@@ -20,4 +25,12 @@ export const OUTCOME_LABELS: Record<Outcome, string> = {
   not_interested: "Not Interested",
   callback: "Callback",
   other: "Other",
+};
+
+export const STAGES: Stage[] = ["signed", "installed", "paid"];
+
+export const STAGE_LABELS: Record<Stage, string> = {
+  signed: "Signed",
+  installed: "Installed",
+  paid: "Paid",
 };

@@ -79,6 +79,7 @@ export default function LogDealPage() {
       install_date: outcome === "sale" && installDate ? installDate : null,
       deal_time: new Date(dealTime).toISOString(),
       notes: notes.trim() || null,
+      stage: outcome === "sale" ? "signed" : null,
     });
 
     setSubmitting(false);
