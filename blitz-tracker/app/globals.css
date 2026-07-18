@@ -75,9 +75,8 @@ label:first-child {
 input[type="text"],
 input[type="tel"],
 input[type="date"],
-input[type="datetime-local"],
-textarea,
-select {
+input[type="file"],
+textarea {
   width: 100%;
   font-size: 16px;
   padding: 12px 14px;
@@ -89,8 +88,7 @@ select {
 }
 
 input:focus,
-textarea:focus,
-select:focus {
+textarea:focus {
   outline: none;
   border-color: var(--blue);
 }
@@ -100,47 +98,20 @@ textarea {
   resize: vertical;
 }
 
-.outcome-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+.screenshot-preview {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: 10px;
 }
 
-.outcome-btn {
-  padding: 14px 10px;
-  border-radius: 12px;
-  border: 2px solid var(--gray-light);
-  background: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-  text-align: center;
-}
-
-.outcome-btn.selected.sale {
-  border-color: var(--green);
-  background: #ecfdf3;
-  color: var(--green);
-}
-
-.outcome-btn.selected.not_home,
-.outcome-btn.selected.other {
-  border-color: var(--gray);
-  background: #f3f4f6;
-  color: var(--text);
-}
-
-.outcome-btn.selected.not_interested {
-  border-color: var(--danger);
-  background: #fef2f2;
-  color: var(--danger);
-}
-
-.outcome-btn.selected.callback {
-  border-color: var(--amber);
-  background: #fffbeb;
-  color: var(--amber);
+.screenshot-full {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
 }
 
 .submit-btn {
@@ -220,7 +191,7 @@ textarea {
   color: var(--blue);
 }
 
-/* Dashboard */
+/* Totals */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -249,28 +220,6 @@ textarea {
   letter-spacing: 0.03em;
 }
 
-.leaderboard-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--gray-light);
-  font-size: 14px;
-}
-
-.leaderboard-row:last-child {
-  border-bottom: none;
-}
-
-.leaderboard-row .name {
-  font-weight: 600;
-}
-
-.leaderboard-row .count {
-  font-weight: 700;
-  color: var(--blue);
-}
-
 .filter-row {
   display: flex;
   gap: 8px;
@@ -297,13 +246,32 @@ textarea {
   color: #fff;
 }
 
-/* Deal list */
+/* Install list */
 .deal-card {
   background: var(--card-bg);
   border-radius: 12px;
   padding: 14px;
   margin-bottom: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.install-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.install-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+
+.install-card-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .deal-card-top {
@@ -323,38 +291,12 @@ textarea {
   letter-spacing: 0.03em;
 }
 
-.badge.sale {
-  background: #ecfdf3;
-  color: var(--green);
-}
-
-.badge.not_home,
-.badge.other {
-  background: #f3f4f6;
-  color: var(--gray);
-}
-
-.badge.not_interested {
-  background: #fef2f2;
-  color: var(--danger);
-}
-
-.badge.callback {
-  background: #fffbeb;
-  color: var(--amber);
-}
-
-.badge.stage-signed {
+.badge.status-submitted {
   background: #eff6ff;
   color: var(--blue);
 }
 
-.badge.stage-installed {
-  background: #fffbeb;
-  color: var(--amber);
-}
-
-.badge.stage-paid {
+.badge.status-paid {
   background: #ecfdf3;
   color: var(--green);
 }
@@ -377,6 +319,12 @@ textarea {
   margin: 2px 0;
 }
 
+.deal-card .pay-amount {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 14px;
+}
+
 .deal-card .time {
   font-size: 12px;
   color: var(--text-muted);
@@ -389,62 +337,7 @@ textarea {
   font-size: 14px;
 }
 
-.select-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.select-row > * {
-  flex: 1;
-}
-
-.select-row select {
-  margin-top: 0;
-}
-
-/* Pipeline */
-.pipeline-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.pipeline-tile {
-  display: block;
-  text-decoration: none;
-  text-align: center;
-  padding: 14px 8px;
-  border-radius: 12px;
-  border: 2px solid var(--gray-light);
-}
-
-.pipeline-tile .value {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--navy);
-}
-
-.pipeline-tile .label {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 600;
-  margin-top: 2px;
-}
-
-.pipeline-tile.stage-signed {
-  border-color: var(--blue);
-}
-
-.pipeline-tile.stage-installed {
-  border-color: var(--amber);
-}
-
-.pipeline-tile.stage-paid {
-  border-color: var(--green);
-}
-
-/* Deal detail */
+/* Install detail */
 .back-link {
   display: inline-block;
   color: var(--blue);

@@ -1,36 +1,20 @@
-export type Outcome = "sale" | "not_home" | "not_interested" | "callback" | "other";
-export type Stage = "signed" | "installed" | "paid";
+export type Status = "submitted" | "paid";
 
-export interface Deal {
+export interface PaySubmission {
   id: number;
   created_at: string;
-  deal_time: string;
-  outcome: Outcome;
-  rep_name: string;
-  address: string;
   customer_name: string | null;
-  customer_phone: string | null;
+  address: string | null;
   plan_sold: string | null;
   install_date: string | null;
-  notes: string | null;
-  stage: Stage | null;
-  install_completed_date: string | null;
+  pay_amount: number;
+  status: Status;
   paid_date: string | null;
-  payout_amount: number | null;
+  screenshot_url: string | null;
+  notes: string | null;
 }
 
-export const OUTCOME_LABELS: Record<Outcome, string> = {
-  sale: "Sale",
-  not_home: "Not Home",
-  not_interested: "Not Interested",
-  callback: "Callback",
-  other: "Other",
-};
-
-export const STAGES: Stage[] = ["signed", "installed", "paid"];
-
-export const STAGE_LABELS: Record<Stage, string> = {
-  signed: "Signed",
-  installed: "Installed",
+export const STATUS_LABELS: Record<Status, string> = {
+  submitted: "Submitted",
   paid: "Paid",
 };

@@ -1,85 +1,77 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Outcome, OUTCOME_LABELS } from "@/lib/types";
 
-const OUTCOMES: Outcome[] = ["sale", "not_home", "not_interested", "callback", "other"];
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
 
-function nowForInput() {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
-}
-
-export default function LogDealPage() {
-  const [repName, setRepName] = useState("");
-  const [knownReps, setKnownReps] = useState<string[]>([]);
-  const [outcome, setOutcome] = useState<Outcome | null>(null);
-  const [address, setAddress] = useState("");
+export default function SubmitPage() {
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [planSold, setPlanSold] = useState("");
   const [installDate, setInstallDate] = useState("");
-  const [dealTime, setDealTime] = useState(nowForInput());
+  const [payAmount, setPayAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const savedRep = localStorage.getItem("blitz_rep_name");
-    if (savedRep) setRepName(savedRep);
-
-    supabase
-      .from("blitz_deals")
-      .select("rep_name")
-      .then(({ data }) => {
-        if (data) {
-          const unique = Array.from(new Set(data.map((d) => d.rep_name))).sort();
-          setKnownReps(unique);
-        }
-      });
-  }, []);
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
-
-  function resetFormKeepingRep() {
-    setOutcome(null);
-    setAddress("");
+  function resetForm() {
     setCustomerName("");
-    setCustomerPhone("");
+    setAddress("");
     setPlanSold("");
     setInstallDate("");
-    setDealTime(nowForInput());
+    setPayAmount("");
     setNotes("");
+    setFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > MAX_FILE_BYTES) {
+      setToast({ text: "That image is too large (max 10MB).", error: true });
+      return;
+    }
+    setFile(f);
+    setPreviewUrl(URL.createObjectURL(f));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!repName.trim() || !outcome || !address.trim()) {
-      setToast({ text: "Rep name, outcome, and address are required.", error: true });
+    if (!payAmount.trim()) {
+      setToast({ text: "Pay amount is required.", error: true });
       return;
     }
 
     setSubmitting(true);
-    localStorage.setItem("blitz_rep_name", repName.trim());
 
-    const { error } = await supabase.from("blitz_deals").insert({
-      rep_name: repName.trim(),
-      outcome,
-      address: address.trim(),
-      customer_name: outcome === "sale" ? customerName.trim() || null : null,
-      customer_phone: outcome === "sale" ? customerPhone.trim() || null : null,
-      plan_sold: outcome === "sale" ? planSold.trim() || null : null,
-      install_date: outcome === "sale" && installDate ? installDate : null,
-      deal_time: new Date(dealTime).toISOString(),
+    let screenshotUrl: string | null = null;
+    if (file) {
+      const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: uploadError } = await supabase.storage
+        .from("install-screenshots")
+        .upload(path, file);
+      if (uploadError) {
+        setSubmitting(false);
+        setToast({ text: `Couldn't upload screenshot: ${uploadError.message}`, error: true });
+        return;
+      }
+      screenshotUrl = supabase.storage.from("install-screenshots").getPublicUrl(path).data.publicUrl;
+    }
+
+    const { error } = await supabase.from("pay_submissions").insert({
+      customer_name: customerName.trim() || null,
+      address: address.trim() || null,
+      plan_sold: planSold.trim() || null,
+      install_date: installDate || null,
+      pay_amount: Number(payAmount),
       notes: notes.trim() || null,
-      stage: outcome === "sale" ? "signed" : null,
+      screenshot_url: screenshotUrl,
     });
 
     setSubmitting(false);
@@ -89,48 +81,40 @@ export default function LogDealPage() {
       return;
     }
 
-    setToast({ text: outcome === "sale" ? "Sale logged! 🎉" : "Outcome logged." });
-    resetFormKeepingRep();
+    setToast({ text: "Submitted! 🎉" });
+    resetForm();
   }
 
   return (
     <>
       {toast && <div className={`toast ${toast.error ? "error" : ""}`}>{toast.text}</div>}
 
-      <h1>Log a Deal</h1>
-      <p className="subtitle">Track every door — sales and non-sales both count.</p>
+      <h1>Submit an Install</h1>
+      <p className="subtitle">Screenshot, install info, and what you're getting paid.</p>
 
       <form onSubmit={handleSubmit}>
         <div className="card">
-          <label htmlFor="rep">Rep name</label>
+          <label htmlFor="screenshot">Confirmation screenshot</label>
           <input
-            id="rep"
-            type="text"
-            list="rep-list"
-            value={repName}
-            onChange={(e) => setRepName(e.target.value)}
-            placeholder="Your name"
-            autoComplete="off"
+            id="screenshot"
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
           />
-          <datalist id="rep-list">
-            {knownReps.map((r) => (
-              <option key={r} value={r} />
-            ))}
-          </datalist>
+          {previewUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={previewUrl} alt="Screenshot preview" className="screenshot-preview" />
+          )}
 
-          <label>Outcome</label>
-          <div className="outcome-grid">
-            {OUTCOMES.map((o) => (
-              <button
-                key={o}
-                type="button"
-                className={`outcome-btn ${o} ${outcome === o ? "selected " + o : ""}`}
-                onClick={() => setOutcome(o)}
-              >
-                {OUTCOME_LABELS[o]}
-              </button>
-            ))}
-          </div>
+          <label htmlFor="customerName">Customer name</label>
+          <input
+            id="customerName"
+            type="text"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Jane Doe"
+          />
 
           <label htmlFor="address">Address</label>
           <input
@@ -141,51 +125,31 @@ export default function LogDealPage() {
             placeholder="123 Main St"
           />
 
-          {outcome === "sale" && (
-            <>
-              <label htmlFor="customerName">Customer name</label>
-              <input
-                id="customerName"
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Jane Doe"
-              />
-
-              <label htmlFor="customerPhone">Customer phone</label>
-              <input
-                id="customerPhone"
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="(555) 555-5555"
-              />
-
-              <label htmlFor="planSold">Plan sold</label>
-              <input
-                id="planSold"
-                type="text"
-                value={planSold}
-                onChange={(e) => setPlanSold(e.target.value)}
-                placeholder="e.g. Gigabit Fiber"
-              />
-
-              <label htmlFor="installDate">Install date</label>
-              <input
-                id="installDate"
-                type="date"
-                value={installDate}
-                onChange={(e) => setInstallDate(e.target.value)}
-              />
-            </>
-          )}
-
-          <label htmlFor="dealTime">Date/time of deal</label>
+          <label htmlFor="planSold">Package / plan</label>
           <input
-            id="dealTime"
-            type="datetime-local"
-            value={dealTime}
-            onChange={(e) => setDealTime(e.target.value)}
+            id="planSold"
+            type="text"
+            value={planSold}
+            onChange={(e) => setPlanSold(e.target.value)}
+            placeholder="e.g. Gigabit Fiber"
+          />
+
+          <label htmlFor="installDate">Install date</label>
+          <input
+            id="installDate"
+            type="date"
+            value={installDate}
+            onChange={(e) => setInstallDate(e.target.value)}
+          />
+
+          <label htmlFor="payAmount">Pay amount ($)</label>
+          <input
+            id="payAmount"
+            type="text"
+            inputMode="decimal"
+            value={payAmount}
+            onChange={(e) => setPayAmount(e.target.value)}
+            placeholder="e.g. 75"
           />
 
           <label htmlFor="notes">Notes</label>
@@ -197,7 +161,7 @@ export default function LogDealPage() {
           />
 
           <button className="submit-btn" type="submit" disabled={submitting}>
-            {submitting ? "Saving…" : "Save"}
+            {submitting ? "Saving…" : "Submit"}
           </button>
         </div>
       </form>

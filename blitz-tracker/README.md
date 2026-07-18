@@ -1,84 +1,69 @@
-# Blitz Tracker
+# Install Pay Tracker
 
-Mobile-friendly deal tracker for fiber sales blitzes. Reps log every door —
-sale or not — from their phone, standing at the doorstep.
+Mobile-friendly personal tool for tracking install commissions/pay. Submit
+a confirmation screenshot + install details + what you're getting paid,
+then mark it paid once the money actually comes in.
 
 **Live app:** https://blitz-tracker-jet.vercel.app
 
-## ⚠️ One-time setup step before your team can use it
-
-The app is deployed and working, but Vercel puts new projects behind
-**Vercel Authentication** by default — that's why the link currently shows a
-login wall to anyone who isn't logged into this Vercel account. Reps won't
-have Vercel accounts, so you need to turn that off once:
-
-1. Go to https://vercel.com/rjjtrap-svgs-projects/blitz-tracker/settings/deployment-protection
-2. Turn **Vercel Authentication** off (or scope it to Preview only, leaving
-   Production public).
-3. Save. The link above will then be open to anyone with the URL — no
-   login, no account.
+(Note: the Vercel project is still named `blitz-tracker` from an earlier
+version of this tool — same link, changing it would break the URL your
+team/you already has bookmarked.)
 
 ## What's here
 
-- Next.js 14 (App Router) + TypeScript, plain CSS (no build-heavy CSS
-  framework, kept the build simple and fast).
-- Supabase (`blitz_deals` table) for persistent storage — data survives
-  refreshes/redeploys, it's a real Postgres table, not in-memory.
-- No login: reps type their name (autocompletes from previous entries via
-  a `<datalist>`) and start logging. Their name is remembered in the
-  browser (`localStorage`) so they don't retype it every door.
-- Deployed on Vercel, straight from source with no GitHub repo required
-  for the deploy itself (though the code also lives in this git repo).
+- Next.js 14 (App Router) + TypeScript, plain CSS.
+- Supabase (`pay_submissions` table + `install-screenshots` storage
+  bucket) for persistent storage, including the actual screenshot images.
+- No login — solo tool, no rep/team concept.
+- Deployed on Vercel straight from source (see "Redeploying" below).
 
 ## Pages
 
-- **Log Deal** (`/`) — the doorstep flow. Pick an outcome (Sale / Not Home
-  / Not Interested / Callback / Other), fill in address + rep name always;
-  sale-only fields (customer name/phone, plan, install date) appear only
-  when "Sale" is selected. One tap to save, form resets and stays ready
-  for the next door.
-- **Dashboard** (`/dashboard`) — doors worked, sales, conversion %, sales
-  leaderboard by rep, doors-worked leaderboard by rep, deals by day, plus
-  a **Sales Pipeline** card (Signed-not-installed / Installed-not-paid /
-  Paid counts, tap one to jump to the filtered list). Filterable by Today
-  / Last 7 Days / All Time.
-- **All Deals** (`/deals`) — every logged deal/outcome, filterable by rep,
-  by stage, and by a specific date. Tap any card to open its detail page.
-- **Deal Detail** (`/deals/[id]`) — full deal info plus the stage
-  progression control for sales:
-  - **Signed** (default when a sale is logged) → enter an install
-    completion date and tap **Mark Installed**.
-  - **Installed** → enter date paid + payout/commission amount and tap
-    **Mark Paid** (or step back to Signed if that was a mistake).
-  - **Paid** → final state, shows install date, paid date, and payout.
+- **Submit** (`/`) — upload a confirmation screenshot, enter customer
+  name, address, package/plan, install date, and pay amount, plus
+  optional notes. One tap to save.
+- **My Installs** (`/installs`) — every submission as a card (screenshot
+  thumbnail, package, pay amount, status), with running totals at the top
+  ($ pending vs $ paid) and a status filter (All / Submitted / Paid).
+- **Install Detail** (`/installs/[id]`) — full screenshot + details, plus
+  a **Mark Paid** button (enter the date you got paid) once you've
+  actually received the money. Paid entries can be reverted back to
+  Submitted if that was a mistake.
 
 ## Data & security model
 
-- Table: `public.blitz_deals` in the Supabase project already wired to
-  this repo (`ybrairokaqjoyvhqbvai`). Sale rows carry a `stage` column
-  (`signed` / `installed` / `paid`) plus `install_completed_date`,
-  `paid_date`, and `payout_amount`, all null until you progress the deal.
-- RLS is enabled with three policies: `anon` can `INSERT`, `SELECT`, and
-  `UPDATE` — no delete. This is intentionally open compared to this
-  repo's other Supabase tables (which lock everything down to the service
-  role) — there's no login, so the app talks to Supabase directly from
-  the browser using the public anon key. Anyone with the app URL can
-  read/add/edit deals, including payout amounts; there's no per-rep
-  access control. That matches "no auth needed" from the brief, but it's
-  worth re-weighing now that commission/payout data lives here too — say
-  the word if you want this locked down behind real login instead.
+- Table: `public.pay_submissions` in the Supabase project wired to this
+  repo (`ybrairokaqjoyvhqbvai`). Columns: customer_name, address,
+  plan_sold, install_date, pay_amount, status (`submitted`/`paid`),
+  paid_date, screenshot_url, notes.
+- Storage: `install-screenshots` bucket, public (screenshots are served
+  via a public URL — no signed-URL expiry to manage).
+- RLS: `anon` can `INSERT`/`SELECT`/`UPDATE` on `pay_submissions`, and
+  `INSERT`/`SELECT` on the screenshot bucket. No delete anywhere. No
+  login — the app talks to Supabase directly from the browser with the
+  public anon key, same tradeoff as before: anyone with the link can
+  read/add/edit entries, including pay amounts. Fine for a personal tool
+  only you know the URL to; revisit if that stops being true.
+
+## What changed from the original version
+
+This replaced an earlier "Blitz Tracker" concept (door-to-door outcome
+logging, rep leaderboards, doors-worked dashboard) that turned out to
+duplicate an existing CRM. The actual gap was simpler: a place to drop a
+screenshot + pay info per install and track what's been paid. The old
+`blitz_deals` table and its outcome-tracking columns were dropped (it had
+no real data in it yet).
 
 ## Known gaps
 
-- No delete for a logged deal, and no editing of the original deal info
-  (address, customer, plan) after creation — only the pipeline stage is
-  editable from the app. Fix mistakes directly in Supabase if needed.
-- No offline support — a rep with zero signal at a doorstep needs to wait
-  for bars before saving. Could add local queueing + retry if this becomes
-  a real problem in the field.
+- No edit of a submission's details after creation — only the paid
+  status/date. Fix mistakes directly in Supabase if needed.
+- No delete.
+- 10MB screenshot size limit, checked client-side only.
 - `npm audit` flags some upstream Next.js/PostCSS CVEs that only clear on
-  a major-version bump to Next 16 (not done here to avoid shipping an
-  untested breaking change same-day). Worth revisiting later.
+  a major-version bump to Next 16 (not done here to avoid an untested
+  breaking change). Worth revisiting later.
 
 ## Local development
 
@@ -95,6 +80,5 @@ this key type).
 ## Redeploying after a code change
 
 This was deployed straight from source via the Vercel MCP tool, not a
-connected GitHub repo, so a normal `git push` won't trigger a redeploy.
-Ask Claude to redeploy, or connect the Vercel project to this GitHub repo
-in the Vercel dashboard if you'd rather it auto-deploy on push.
+connected GitHub repo, so a normal `git push` won't trigger a redeploy —
+ask Claude to redeploy after code changes land here.

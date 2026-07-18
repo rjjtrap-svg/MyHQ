@@ -3,8 +3,8 @@ import BottomNav from "@/components/BottomNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Blitz Tracker",
-  description: "Log fiber sales blitz deals and doorstep outcomes",
+  title: "Install Pay Tracker",
+  description: "Submit install confirmation screenshots and track what you're owed",
 };
 
 export const viewport: Viewport = {
