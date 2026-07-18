@@ -38,28 +38,41 @@ have Vercel accounts, so you need to turn that off once:
   when "Sale" is selected. One tap to save, form resets and stays ready
   for the next door.
 - **Dashboard** (`/dashboard`) — doors worked, sales, conversion %, sales
-  leaderboard by rep, doors-worked leaderboard by rep, deals by day.
-  Filterable by Today / Last 7 Days / All Time.
-- **All Deals** (`/deals`) — every logged deal/outcome, filterable by rep
-  and by a specific date.
+  leaderboard by rep, doors-worked leaderboard by rep, deals by day, plus
+  a **Sales Pipeline** card (Signed-not-installed / Installed-not-paid /
+  Paid counts, tap one to jump to the filtered list). Filterable by Today
+  / Last 7 Days / All Time.
+- **All Deals** (`/deals`) — every logged deal/outcome, filterable by rep,
+  by stage, and by a specific date. Tap any card to open its detail page.
+- **Deal Detail** (`/deals/[id]`) — full deal info plus the stage
+  progression control for sales:
+  - **Signed** (default when a sale is logged) → enter an install
+    completion date and tap **Mark Installed**.
+  - **Installed** → enter date paid + payout/commission amount and tap
+    **Mark Paid** (or step back to Signed if that was a mistake).
+  - **Paid** → final state, shows install date, paid date, and payout.
 
 ## Data & security model
 
 - Table: `public.blitz_deals` in the Supabase project already wired to
-  this repo (`ybrairokaqjoyvhqbvai`).
-- RLS is enabled with two policies: `anon` can `INSERT` and `SELECT`, and
-  nothing else (no update/delete from the client). This is intentionally
-  open compared to this repo's other Supabase tables (which lock
-  everything down to the service role) — there's no login, so the app
-  talks to Supabase directly from the browser using the public anon key.
-  Anyone with the app URL can read/add deals; there's no per-rep access
-  control. That matches "no auth needed" from the brief, but means: don't
-  put anything more sensitive than doorstep sales data in this table.
+  this repo (`ybrairokaqjoyvhqbvai`). Sale rows carry a `stage` column
+  (`signed` / `installed` / `paid`) plus `install_completed_date`,
+  `paid_date`, and `payout_amount`, all null until you progress the deal.
+- RLS is enabled with three policies: `anon` can `INSERT`, `SELECT`, and
+  `UPDATE` — no delete. This is intentionally open compared to this
+  repo's other Supabase tables (which lock everything down to the service
+  role) — there's no login, so the app talks to Supabase directly from
+  the browser using the public anon key. Anyone with the app URL can
+  read/add/edit deals, including payout amounts; there's no per-rep
+  access control. That matches "no auth needed" from the brief, but it's
+  worth re-weighing now that commission/payout data lives here too — say
+  the word if you want this locked down behind real login instead.
 
 ## Known gaps
 
-- No edit/delete for a logged deal — a mis-typed entry has to stay or be
-  fixed directly in Supabase.
+- No delete for a logged deal, and no editing of the original deal info
+  (address, customer, plan) after creation — only the pipeline stage is
+  editable from the app. Fix mistakes directly in Supabase if needed.
 - No offline support — a rep with zero signal at a doorstep needs to wait
   for bars before saving. Could add local queueing + retry if this becomes
   a real problem in the field.
