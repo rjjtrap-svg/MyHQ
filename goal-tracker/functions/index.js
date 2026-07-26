@@ -1,6 +1,7 @@
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
@@ -653,3 +654,96 @@ exports.deleteCoachChatMessage = onCall({ region: 'us-east1' }, async (request) 
 
   return { ok: true };
 });
+
+// ---------------------------------------------------------------------------
+// Deal follow-ups
+// ---------------------------------------------------------------------------
+
+/** The Friday on or after `iso` (yyyy-mm-dd). An install on a Friday rolls to the next
+ * one, since that day's work isn't on that day's cheque. Mirrors fridayAfter() in
+ * src/lib/dealFollowUps.ts — keep the two in sync. */
+function fridayAfter(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const daysUntilFriday = (5 - date.getUTCDay() + 7) % 7;
+  date.setUTCDate(date.getUTCDate() + (daysUntilFriday === 0 ? 7 : daysUntilFriday));
+  return date.toISOString().slice(0, 10);
+}
+
+function dealLabel(deal) {
+  return (
+    deal.customerName ||
+    [deal.firstName, deal.lastName].filter(Boolean).join(' ') ||
+    deal.address ||
+    'a deal'
+  );
+}
+
+async function pushToRep(repUid, title, body) {
+  const tokensSnap = await db.collection('pushTokens').where('uid', '==', repUid).get();
+  const tokens = tokensSnap.docs.map((d) => d.data().token).filter(Boolean);
+  if (tokens.length === 0) return;
+
+  const response = await getMessaging().sendEachForMulticast({ notification: { title, body }, tokens });
+  const dead = [];
+  response.responses.forEach((r, i) => {
+    if (!r.success && r.error?.code === 'messaging/registration-token-not-registered') {
+      dead.push(tokens[i]);
+    }
+  });
+  await Promise.all(dead.map((t) => db.collection('pushTokens').doc(t).delete().catch(() => {})));
+}
+
+/**
+ * Once a day, nudge reps about deals that have gone quiet:
+ *
+ *  - the booked install date has passed but the deal is still sitting in "sold", so nobody
+ *    has confirmed whether the tech actually showed up; and
+ *  - the job is installed but unpaid, and the first Friday after the install has come and
+ *    gone — the payday when that commission should have landed.
+ *
+ * Each nudge is stamped on the deal so it goes out once rather than every morning until
+ * the rep gets around to it. The Deals tab shows the same list in-app, so this is a
+ * convenience on top of that rather than the only way a rep finds out.
+ */
+exports.dealFollowUpReminders = onSchedule(
+  { schedule: '0 9 * * *', timeZone: 'America/New_York', region: 'us-east1' },
+  async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const teamsSnap = await db.collection('teams').get();
+
+    for (const teamDoc of teamsSnap.docs) {
+      // Only deals that are still in flight can need a nudge.
+      const dealsSnap = await teamDoc.ref
+        .collection('deals')
+        .where('stage', 'in', ['sold', 'installed'])
+        .get();
+
+      for (const dealDoc of dealsSnap.docs) {
+        const deal = dealDoc.data();
+        if (!deal.scheduledInstallDate || !deal.repUid || deal.deletedAt) continue;
+
+        if (deal.stage === 'sold' && !deal.installPromptSentAt && deal.scheduledInstallDate <= today) {
+          await pushToRep(
+            deal.repUid,
+            'Install check',
+            `Did ${dealLabel(deal)} get installed? Update the deal if it's done.`
+          );
+          await dealDoc.ref.set({ installPromptSentAt: new Date().toISOString() }, { merge: true });
+          continue;
+        }
+
+        if (deal.stage === 'installed' && !deal.payPromptSentAt) {
+          if (fridayAfter(deal.scheduledInstallDate) <= today) {
+            await pushToRep(
+              deal.repUid,
+              'Payday check',
+              `Did the pay come through for ${dealLabel(deal)}?`
+            );
+            await dealDoc.ref.set({ payPromptSentAt: new Date().toISOString() }, { merge: true });
+          }
+        }
+      }
+    }
+  }
+);

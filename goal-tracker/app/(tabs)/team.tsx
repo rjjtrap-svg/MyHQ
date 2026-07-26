@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
 import { useDealsStore } from '@/src/store/dealsStore';
@@ -20,14 +21,37 @@ function formatMoney(amount: number): string {
 
 type BoardRange = 'today' | 'week';
 
-function LeaderboardRow({ entry, index, myUid, metric }: { entry: LeaderboardEntry; index: number; myUid?: string; metric: BoardRange }) {
+function LeaderboardRow({
+  entry,
+  index,
+  myUid,
+  metric,
+  photoUrl,
+}: {
+  entry: LeaderboardEntry;
+  index: number;
+  myUid?: string;
+  metric: BoardRange;
+  photoUrl?: string;
+}) {
+  const router = useRouter();
   const value = metric === 'today' ? entry.todaySales : entry.weekSales;
   const isTop = index === 0 && value > 0;
   return (
-    <View style={[styles.leaderRow, isTop && styles.leaderRowTop]}>
+    <Pressable
+      style={[styles.leaderRow, isTop && styles.leaderRowTop]}
+      onPress={() => router.push(`/member/${entry.uid}`)}
+    >
       <View style={[styles.rankBadge, isTop && styles.rankBadgeTop]}>
         <Text style={[styles.rankBadgeText, isTop && styles.rankBadgeTextTop]}>{index + 1}</Text>
       </View>
+      {photoUrl ? (
+        <Image source={{ uri: photoUrl }} style={styles.leaderAvatar} />
+      ) : (
+        <View style={[styles.leaderAvatar, styles.leaderAvatarEmpty]}>
+          <FontAwesome name="user" size={12} color={colors.textFaint} />
+        </View>
+      )}
       <View style={{ flex: 1 }}>
         <Text style={styles.leaderName}>
           {entry.displayName}
@@ -36,7 +60,8 @@ function LeaderboardRow({ entry, index, myUid, metric }: { entry: LeaderboardEnt
         {entry.role !== 'rep' && <Text style={styles.leaderRole}>{entry.role === 'manager' ? 'Manager' : 'Team Lead'}</Text>}
       </View>
       <Text style={[styles.leaderCount, isTop && styles.leaderCountTop]}>{value}</Text>
-    </View>
+      <FontAwesome name="chevron-right" size={11} color={colors.textFaint} />
+    </Pressable>
   );
 }
 
@@ -202,8 +227,16 @@ export default function TeamScreen() {
             </View>
           }
         >
+          <Text style={styles.rangeLabel}>Tap anyone to see their profile.</Text>
           {rankedLeaderboard.map((entry, i) => (
-            <LeaderboardRow key={entry.uid} entry={entry} index={i} myUid={uid} metric={range} />
+            <LeaderboardRow
+              key={entry.uid}
+              entry={entry}
+              index={i}
+              myUid={uid}
+              metric={range}
+              photoUrl={members.find((m) => m.uid === entry.uid)?.photoUrl}
+            />
           ))}
         </Section>
 
@@ -320,6 +353,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     paddingHorizontal: spacing.sm,
     marginBottom: spacing.xs,
+  },
+  leaderAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  leaderAvatarEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rankBadge: {
     width: 28,

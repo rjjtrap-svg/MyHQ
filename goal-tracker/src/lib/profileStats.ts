@@ -42,8 +42,9 @@ export interface ProfileStats extends PersonalBests, Trends {
   quarterEarnedSoFar: number;
 }
 
+/** Same rule as the goal stats engine: a cancelled deal is not a sale. */
 function activeDeals(deals: Deal[]): Deal[] {
-  return deals.filter((d) => !d.deletedAt);
+  return deals.filter((d) => !d.deletedAt && d.stage !== 'cancelled');
 }
 
 function countBetween(deals: Deal[], startIso: string, endIso: string): number {

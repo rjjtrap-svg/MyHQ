@@ -16,10 +16,25 @@ export interface AddDealInput {
 
 export interface DealDetailsInput {
   customerName?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
   address?: string;
   notes?: string;
   date?: string;
+  scheduledInstallDate?: string;
 }
+
+/** Fields that are plain optional text — cleared by writing null when left blank. */
+const OPTIONAL_TEXT_FIELDS = [
+  'customerName',
+  'firstName',
+  'lastName',
+  'phone',
+  'address',
+  'notes',
+  'scheduledInstallDate',
+] as const;
 
 interface DealsState {
   deals: Deal[];
@@ -29,6 +44,10 @@ interface DealsState {
   addDeal: (repUid: string, repName: string, input: AddDealInput, id?: string) => Promise<Deal>;
   updateDealDetails: (dealId: string, input: DealDetailsInput) => Promise<void>;
   advanceStage: (dealId: string, stage: DealStage) => Promise<void>;
+  cancelDeal: (dealId: string, reason?: string) => Promise<void>;
+  reinstateDeal: (dealId: string) => Promise<void>;
+  /** Marks a follow-up nudge as handled so it stops showing in "Needs attention". */
+  dismissPrompt: (dealId: string, which: 'install' | 'pay') => Promise<void>;
   deleteDeal: (dealId: string) => Promise<void>;
 }
 
@@ -114,15 +133,52 @@ export const useDealsStore = create<DealsState>((set, get) => ({
     await deleteDoc(doc(db, 'teams', teamId, 'deals', dealId));
   },
 
+  cancelDeal: async (dealId, reason) => {
+    const { teamId } = get();
+    if (!teamId || !db) throw new Error('No team loaded.');
+    const now = new Date().toISOString();
+    await updateDoc(doc(db, 'teams', teamId, 'deals', dealId), {
+      stage: 'cancelled',
+      cancelledAt: now,
+      cancelReason: reason?.trim() || null,
+      updatedAt: now,
+    });
+  },
+
+  /** Puts a cancelled deal back where it was — installs happen after a scare more often
+   * than you'd think, and re-typing the whole record would be worse. */
+  reinstateDeal: async (dealId) => {
+    const { teamId, deals } = get();
+    if (!teamId || !db) throw new Error('No team loaded.');
+    const deal = deals.find((d) => d.id === dealId);
+    const restored: DealStage = deal?.paidAt ? 'paid' : deal?.installedAt ? 'installed' : 'sold';
+    await updateDoc(doc(db, 'teams', teamId, 'deals', dealId), {
+      stage: restored,
+      cancelledAt: null,
+      cancelReason: null,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+
+  dismissPrompt: async (dealId, which) => {
+    const { teamId } = get();
+    if (!teamId || !db) throw new Error('No team loaded.');
+    const now = new Date().toISOString();
+    await updateDoc(doc(db, 'teams', teamId, 'deals', dealId), {
+      [which === 'install' ? 'installPromptSentAt' : 'payPromptSentAt']: now,
+      updatedAt: now,
+    });
+  },
+
   updateDealDetails: async (dealId, input) => {
     const { teamId } = get();
     if (!teamId || !db) throw new Error('No team loaded.');
-    await updateDoc(doc(db, 'teams', teamId, 'deals', dealId), {
-      ...(input.customerName !== undefined ? { customerName: input.customerName.trim() || null } : {}),
-      ...(input.address !== undefined ? { address: input.address.trim() || null } : {}),
-      ...(input.notes !== undefined ? { notes: input.notes.trim() || null } : {}),
-      ...(input.date !== undefined ? { date: input.date } : {}),
-      updatedAt: new Date().toISOString(),
-    });
+    const patch: Record<string, string | null> = { updatedAt: new Date().toISOString() };
+    for (const key of OPTIONAL_TEXT_FIELDS) {
+      const value = input[key];
+      if (value !== undefined) patch[key] = value.trim() || null;
+    }
+    if (input.date !== undefined) patch.date = input.date;
+    await updateDoc(doc(db, 'teams', teamId, 'deals', dealId), patch);
   },
 }));

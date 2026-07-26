@@ -23,8 +23,13 @@ import {
   toISODate,
 } from './dates';
 
+/**
+ * Deals that count as sales. Cancelled ones are deliberately excluded everywhere stats are
+ * computed — a cancelled job isn't a sale, and leaving it in would inflate goal progress,
+ * streaks and close rate. They stay visible on the Deals tab with their own cancel-rate KPI.
+ */
 function activeDeals(deals: Deal[]): Deal[] {
-  return deals.filter((d) => !d.deletedAt);
+  return deals.filter((d) => !d.deletedAt && d.stage !== 'cancelled');
 }
 
 function countByExactDate(deals: Deal[], iso: string): number {

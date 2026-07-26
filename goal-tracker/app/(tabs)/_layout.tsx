@@ -44,6 +44,14 @@ export default function TabLayout() {
         tabBarItemStyle: styles.tabItem,
       }}
     >
+      {/* Order matters: three destinations either side of the centre Add button. */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <TabIcon name="user" color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
@@ -83,13 +91,6 @@ export default function TabLayout() {
         options={{
           title: 'Coach',
           tabBarIcon: ({ color }) => <TabIcon name="graduation-cap" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <TabIcon name="user" color={color} />,
         }}
       />
       <Tabs.Screen

@@ -1,8 +1,28 @@
 import { doc, setDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { PersonalBestOverrides } from '@/src/types';
 import { db, storage } from './config';
 
 export const MAX_BIO_LENGTH = 240;
+
+/**
+ * Saves the rep's pre-app career numbers. Blank fields are written as null so clearing one
+ * actually removes it rather than leaving a stale value on the profile.
+ */
+export async function updateMyBests(
+  teamId: string,
+  uid: string,
+  bests: PersonalBestOverrides
+): Promise<void> {
+  if (!db) throw new Error('Firebase is not configured.');
+  const patch: Record<string, number | null> = {};
+  for (const [key, value] of Object.entries(bests)) {
+    patch[key] = typeof value === 'number' && Number.isFinite(value) ? value : null;
+  }
+  // Nested under `bests` rather than dotted keys — setDoc treats a dotted string as a
+  // literal field name, so "bests.bestDay" would create a field with a dot in it.
+  await setDoc(doc(db, 'teams', teamId, 'members', uid), { bests: patch }, { merge: true });
+}
 
 /**
  * Profile card fields live on the rep's *membership* doc rather than their private user

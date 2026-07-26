@@ -1,8 +1,13 @@
 export type OcrStatus = 'none' | 'pending' | 'done' | 'error';
 
-/** Pipeline position, sale through payout. Public — visible to the whole team. */
-export type DealStage = 'sold' | 'installed' | 'paid';
+/**
+ * Pipeline position, sale through payout. Public — visible to the whole team.
+ * 'cancelled' is terminal and sits outside the forward pipeline: a cancelled deal can be
+ * reached from any stage and isn't something you advance *to* in order.
+ */
+export type DealStage = 'sold' | 'installed' | 'paid' | 'cancelled';
 
+/** The forward pipeline only — 'cancelled' is deliberately excluded. */
 export const DEAL_STAGES: DealStage[] = ['sold', 'installed', 'paid'];
 
 export interface Deal {
@@ -31,11 +36,27 @@ export interface Deal {
   ocrGuessedName?: string;
   ocrGuessedAddress?: string;
 
+  /** Optional customer details — nice to have, never required to log a sale. */
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  /** ISO date (yyyy-mm-dd) the install is booked for. Drives the follow-up reminders. */
+  scheduledInstallDate?: string;
+
   /** Sale-to-payout pipeline. Timestamps mark when each stage was reached. */
   stage: DealStage;
   soldAt: string;
   installedAt?: string;
   paidAt?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+
+  /**
+   * Set once each follow-up nudge has gone out, so the daily job doesn't re-send it every
+   * morning for the rest of the deal's life.
+   */
+  installPromptSentAt?: string;
+  payPromptSentAt?: string;
 }
 
 /**
@@ -97,7 +118,41 @@ export interface Membership {
   /** Profile card, visible to the whole team. Both are optional and self-edited. */
   photoUrl?: string;
   bio?: string;
+  /** Career numbers from before this app, typed in by the rep — see PersonalBestOverrides. */
+  bests?: PersonalBestOverrides;
 }
+
+/**
+ * Bests a rep achieved before they started logging here. The Profile tab shows whichever
+ * is larger, the entered number or the one computed from logged deals, so a rep's card
+ * reflects their actual career rather than restarting at zero on install day.
+ */
+export interface PersonalBestOverrides {
+  bestDay?: number;
+  bestWeek?: number;
+  bestMonth?: number;
+  longestStreak?: number;
+  biggestPaycheck?: number;
+  biggestCommissionDay?: number;
+  careerSales?: number;
+  careerKnocks?: number;
+}
+
+export const PERSONAL_BEST_FIELDS: {
+  key: keyof PersonalBestOverrides;
+  label: string;
+  hint: string;
+  money?: boolean;
+}[] = [
+  { key: 'bestDay', label: 'Best day', hint: 'Most sales in one day' },
+  { key: 'bestWeek', label: 'Best week', hint: 'Most sales in one week' },
+  { key: 'bestMonth', label: 'Best month', hint: 'Most sales in one month' },
+  { key: 'longestStreak', label: 'Longest streak', hint: 'Days in a row with a sale' },
+  { key: 'biggestPaycheck', label: 'Biggest paycheck', hint: 'Largest single commission', money: true },
+  { key: 'biggestCommissionDay', label: 'Biggest day', hint: 'Most commission in one day', money: true },
+  { key: 'careerSales', label: 'Career sales', hint: 'Total sales before this app' },
+  { key: 'careerKnocks', label: 'Career doors', hint: 'Total doors before this app' },
+];
 
 export interface LeaderboardEntry {
   uid: string;

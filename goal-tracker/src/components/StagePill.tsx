@@ -7,12 +7,25 @@ const STAGE_LABELS: Record<DealStage, string> = {
   sold: 'Sold',
   installed: 'Installed',
   paid: 'Paid',
+  cancelled: 'Cancelled',
 };
 
 const STAGE_ORDER: DealStage[] = ['sold', 'installed', 'paid'];
 
 export function StagePillRow({ stage, onAdvance }: { stage: DealStage; onAdvance: (stage: DealStage) => void }) {
   const currentIndex = STAGE_ORDER.indexOf(stage);
+
+  // Cancelled sits outside the pipeline — showing the forward pills next to it would imply
+  // the deal is still moving.
+  if (stage === 'cancelled') {
+    return (
+      <View style={styles.row}>
+        <View style={[styles.pill, styles.pillCancelled]}>
+          <Text style={[styles.pillText, styles.pillTextCancelled]}>Cancelled</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.row}>
@@ -53,6 +66,13 @@ const styles = StyleSheet.create({
   pillDone: {
     backgroundColor: colors.primaryMuted,
     borderColor: colors.primary,
+  },
+  pillCancelled: {
+    backgroundColor: '#F3DCD5',
+    borderColor: '#D9A68F',
+  },
+  pillTextCancelled: {
+    color: '#8A3324',
   },
   pillNext: {
     borderColor: colors.accent,

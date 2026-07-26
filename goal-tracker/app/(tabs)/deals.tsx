@@ -10,7 +10,9 @@ import { useCommissionStore } from '@/src/store/commissionStore';
 import { useDoorKnocksStore } from '@/src/store/doorKnocksStore';
 import { dailyPoints, monthlyPoints, weeklyPoints } from '@/src/lib/stats';
 import { parseISODate, shortDateLabel, startOfWeek, todayISO, toISODate, weekdayLabel } from '@/src/lib/dates';
+import { cancellationStats, followUpQuestion, pendingFollowUps } from '@/src/lib/dealFollowUps';
 import { BarChart } from '@/src/components/BarChart';
+import { DealEditor } from '@/src/components/DealEditor';
 import { Section } from '@/src/components/Section';
 import { StatTile } from '@/src/components/StatTile';
 import { StagePillRow } from '@/src/components/StagePill';
@@ -30,12 +32,17 @@ function DealRow({ deal }: { deal: Deal }) {
   const teamId = useTeamStore((s) => s.teamId);
   const advanceStage = useDealsStore((s) => s.advanceStage);
   const deleteDeal = useDealsStore((s) => s.deleteDeal);
+  const cancelDeal = useDealsStore((s) => s.cancelDeal);
+  const reinstateDeal = useDealsStore((s) => s.reinstateDeal);
   const commission = useCommissionStore((s) => s.byDealId[deal.id]);
   const setCommission = useCommissionStore((s) => s.setCommission);
 
   const [amountText, setAmountText] = useState(commission ? String(commission.amount) : '');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   function saveAmount() {
     const parsed = Number(amountText.replace(/[^0-9.]/g, ''));
@@ -65,8 +72,16 @@ function DealRow({ deal }: { deal: Deal }) {
           <Text style={styles.dealName} numberOfLines={1}>
             {deal.customerName || 'Unnamed deal'}
           </Text>
-          <Text style={styles.dealDate}>{shortDateLabel(parseISODate(deal.date))}</Text>
+          <Text style={styles.dealDate}>
+            {shortDateLabel(parseISODate(deal.date))}
+            {deal.scheduledInstallDate
+              ? ` · installs ${shortDateLabel(parseISODate(deal.scheduledInstallDate))}`
+              : ''}
+          </Text>
         </View>
+        <Pressable hitSlop={10} onPress={() => setEditing((v) => !v)} style={styles.rowAction}>
+          <FontAwesome name={editing ? 'chevron-up' : 'pencil'} size={16} color={colors.textFaint} />
+        </Pressable>
         <Pressable hitSlop={10} onPress={() => setConfirmingDelete(true)}>
           <FontAwesome name="trash-o" size={18} color={colors.textFaint} />
         </Pressable>
@@ -92,6 +107,44 @@ function DealRow({ deal }: { deal: Deal }) {
         <>
           <StagePillRow stage={deal.stage} onAdvance={(stage: DealStage) => advanceStage(deal.id, stage)} />
 
+          {deal.stage === 'cancelled' ? (
+            <View style={styles.cancelledBlock}>
+              {!!deal.cancelReason && <Text style={styles.cancelReason}>{deal.cancelReason}</Text>}
+              <Pressable onPress={() => reinstateDeal(deal.id)}>
+                <Text style={styles.linkText}>Reinstate this deal</Text>
+              </Pressable>
+            </View>
+          ) : cancelling ? (
+            <View style={styles.cancelBlock}>
+              <Text style={styles.cancelPrompt}>Why did it cancel? (optional)</Text>
+              <TextInput
+                style={styles.cancelInput}
+                value={cancelReason}
+                onChangeText={setCancelReason}
+                placeholder="Credit, buyer's remorse, no-show…"
+                placeholderTextColor={colors.textFaint}
+              />
+              <View style={styles.cancelButtons}>
+                <Pressable onPress={() => setCancelling(false)} style={styles.confirmCancelButton}>
+                  <Text style={styles.confirmCancelText}>Never mind</Text>
+                </Pressable>
+                <Pressable
+                  onPress={async () => {
+                    await cancelDeal(deal.id, cancelReason);
+                    setCancelling(false);
+                  }}
+                  style={styles.confirmDeleteButton}
+                >
+                  <Text style={styles.confirmDeleteButtonText}>Mark cancelled</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable onPress={() => setCancelling(true)} style={styles.cancelLinkRow}>
+              <Text style={styles.cancelLink}>Mark cancelled</Text>
+            </Pressable>
+          )}
+
           <View style={styles.commissionRow}>
             <Text style={styles.commissionLabel}>Commission</Text>
             <View style={styles.commissionInputWrap}>
@@ -107,9 +160,55 @@ function DealRow({ deal }: { deal: Deal }) {
               />
             </View>
           </View>
+
+          {editing && <DealEditor deal={deal} onDone={() => setEditing(false)} />}
         </>
       )}
     </View>
+  );
+}
+
+/** The deals waiting on the rep to confirm an install happened or a cheque landed. */
+function NeedsAttention({ deals }: { deals: Deal[] }) {
+  const advanceStage = useDealsStore((s) => s.advanceStage);
+  const dismissPrompt = useDealsStore((s) => s.dismissPrompt);
+  const cancelDeal = useDealsStore((s) => s.cancelDeal);
+
+  const followUps = useMemo(() => pendingFollowUps(deals), [deals]);
+  if (followUps.length === 0) return null;
+
+  return (
+    <Section title={`Needs attention (${followUps.length})`}>
+      {followUps.map((f) => (
+        <View key={`${f.deal.id}-${f.kind}`} style={styles.followUpCard}>
+          <Text style={styles.followUpQuestion}>{followUpQuestion(f)}</Text>
+          <Text style={styles.followUpMeta}>
+            {f.kind === 'install'
+              ? `Install was booked for ${shortDateLabel(parseISODate(f.dueDate))}`
+              : `Payday was ${shortDateLabel(parseISODate(f.dueDate))}`}
+          </Text>
+          <View style={styles.followUpButtons}>
+            <Pressable
+              onPress={() => dismissPrompt(f.deal.id, f.kind)}
+              style={styles.confirmCancelButton}
+            >
+              <Text style={styles.confirmCancelText}>Not yet</Text>
+            </Pressable>
+            {f.kind === 'install' && (
+              <Pressable onPress={() => cancelDeal(f.deal.id)} style={styles.confirmCancelButton}>
+                <Text style={styles.confirmCancelText}>It cancelled</Text>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() => advanceStage(f.deal.id, f.kind === 'install' ? 'installed' : 'paid')}
+              style={styles.followUpYesButton}
+            >
+              <Text style={styles.followUpYesText}>Yes</Text>
+            </Pressable>
+          </View>
+        </View>
+      ))}
+    </Section>
   );
 }
 
@@ -173,12 +272,23 @@ export default function DealsScreen() {
     let paid = 0;
     let pending = 0;
     for (const deal of deals) {
+      if (deal.stage === 'cancelled') continue;
       const amount = commissions[deal.id]?.amount ?? 0;
       if (deal.stage === 'paid') paid += amount;
       else pending += amount;
     }
     return { paid, pending, total: paid + pending };
   }, [deals, commissions]);
+
+  const cancels = useMemo(() => cancellationStats(deals, commissions), [deals, commissions]);
+  const livePipeline = useMemo(
+    () => deals.filter((d) => !d.deletedAt && d.stage !== 'cancelled'),
+    [deals]
+  );
+  const cancelledDeals = useMemo(
+    () => deals.filter((d) => !d.deletedAt && d.stage === 'cancelled'),
+    [deals]
+  );
 
   const daily = useMemo(() => dailyPoints(deals, 14), [deals]);
   const weekly = useMemo(() => weeklyPoints(deals, 8), [deals]);
@@ -199,15 +309,34 @@ export default function DealsScreen() {
           <StatTile label="Paid out" value={formatMoney(myCommissionTotals.paid)} accent={colors.success} />
         </View>
 
+        <NeedsAttention deals={deals} />
+
         <ClosingKpis todaySales={stats.todaySales} weekSales={stats.weekSales} />
 
-        <Section title={`Pipeline (${deals.filter((d) => !d.deletedAt).length})`}>
-          {deals.length === 0 ? (
+        <Section title={`Pipeline (${livePipeline.length})`}>
+          {livePipeline.length === 0 ? (
             <Text style={styles.emptyText}>No deals logged yet — tap the + button to add one.</Text>
           ) : (
-            deals.filter((d) => !d.deletedAt).map((deal) => <DealRow key={deal.id} deal={deal} />)
+            livePipeline.map((deal) => <DealRow key={deal.id} deal={deal} />)
           )}
         </Section>
+
+        {cancelledDeals.length > 0 && (
+          <Section title={`Cancelled (${cancelledDeals.length})`}>
+            <View style={styles.grid}>
+              <StatTile
+                label="Cancel rate"
+                value={`${cancels.cancelRate.toFixed(1)}%`}
+                sublabel={`${cancels.cancelled} of ${cancels.cancelled + livePipeline.length}`}
+                accent={colors.danger}
+              />
+              <StatTile label="Commission lost" value={formatMoney(cancels.lost)} accent={colors.danger} />
+            </View>
+            {cancelledDeals.map((deal) => (
+              <DealRow key={deal.id} deal={deal} />
+            ))}
+          </Section>
+        )}
 
         <Section title="Daily Sales" right={<Text style={styles.rangeLabel}>Last 14 Days</Text>}>
           <BarChart data={dailyChart} />
@@ -395,5 +524,92 @@ const styles = StyleSheet.create({
     color: '#8A3324',
     fontWeight: '700',
     fontSize: 13,
+  },
+  rowAction: {
+    padding: 4,
+  },
+  cancelLinkRow: {
+    alignSelf: 'flex-start',
+  },
+  cancelLink: {
+    ...typography.caption,
+    fontSize: 12,
+    color: colors.textFaint,
+    fontWeight: '600',
+  },
+  cancelBlock: {
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+  },
+  cancelPrompt: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  cancelInput: {
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.sm,
+    color: colors.text,
+    fontSize: 14,
+  },
+  cancelButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  cancelledBlock: {
+    gap: spacing.xs,
+  },
+  cancelReason: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+  linkText: {
+    ...typography.caption,
+    fontSize: 12,
+    color: colors.accent,
+    fontWeight: '700',
+  },
+  followUpCard: {
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  followUpQuestion: {
+    ...typography.subtitle,
+    fontSize: 15,
+    color: colors.text,
+  },
+  followUpMeta: {
+    ...typography.caption,
+    fontSize: 12,
+    color: colors.textFaint,
+  },
+  followUpButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  followUpYesButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.sm,
+  },
+  followUpYesText: {
+    color: colors.background,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
