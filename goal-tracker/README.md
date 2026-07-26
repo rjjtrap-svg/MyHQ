@@ -4,6 +4,15 @@ An iPhone-first sales goal tracker built with Expo + React Native. Log a deal in
 
 Default targets (edit anytime in **Settings**): **118 sales** → **88 installs** at 75% retention.
 
+## Live web version
+
+A web build of this app (React Native Web via `expo export -p web`) is deployed at
+**https://goal-tracker-nu-beige.vercel.app** — open it on your phone and add it to your
+home screen for an app-like icon. This is a companion to the native app: haptics and
+push notifications aren't available in a browser, but goal tracking, the dashboard,
+analytics, and milestone celebrations all work the same. `vercel.json` sets `cleanUrls`
+so each screen resolves without a `.html` suffix.
+
 ## Stack
 
 - Expo + Expo Router (TypeScript, file-based routing)
