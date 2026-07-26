@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -40,6 +39,8 @@ export default function AddDealScreen() {
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
   const [savedDealId, setSavedDealId] = useState<string | null>(null);
   const [date, setDate] = useState(todayISO());
   const [customerName, setCustomerName] = useState('');
@@ -58,47 +59,62 @@ export default function AddDealScreen() {
   }
 
   async function captureAndUpload(uri: string) {
+    setError(null);
     if (!teamId) {
-      Alert.alert('No team loaded', 'Try again in a moment.');
+      setError('No team loaded yet — try again in a moment.');
       return;
     }
     setUploading(true);
     try {
+      setUploadStage('Preparing photo…');
       const prepared = await prepareImageForUpload(uri);
       const id = generateId();
+      setUploadStage('Uploading photo…');
       const photoUrl = await uploadDealPhoto(teamId, id, prepared);
+      setUploadStage('Saving deal…');
       await addDeal(repUid, repName, { date: todayISO(), photoUrl }, id);
       setPhotoUri(uri);
       setSavedDealId(id);
       haptic('success');
     } catch (err: any) {
       haptic('error');
-      Alert.alert('Upload failed', err?.message ?? 'Check your connection and try again.');
+      setError(err?.message ?? 'Check your connection and try again.');
     } finally {
       setUploading(false);
+      setUploadStage('');
     }
   }
 
   async function takePhoto() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Camera access needed', 'Enable camera access in your phone settings to log a deal.');
-      return;
+    setError(null);
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        setError('Enable camera access in your browser/phone settings to log a deal.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+      if (result.canceled) return;
+      await captureAndUpload(result.assets[0].uri);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not open the camera.');
     }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-    if (result.canceled) return;
-    await captureAndUpload(result.assets[0].uri);
   }
 
   async function pickFromLibrary() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Photo access needed', 'Enable photo library access in your phone settings.');
-      return;
+    setError(null);
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setError('Enable photo library access in your browser/phone settings.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+      if (result.canceled) return;
+      await captureAndUpload(result.assets[0].uri);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not open the photo library.');
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
-    if (result.canceled) return;
-    await captureAndUpload(result.assets[0].uri);
   }
 
   function fillFromOcrLine(line: string) {
@@ -113,12 +129,13 @@ export default function AddDealScreen() {
 
   async function saveDetails() {
     if (!savedDealId) return;
+    setError(null);
     setSaving(true);
     try {
       await updateDealDetails(savedDealId, { customerName, address, notes, date });
       router.back();
     } catch (err: any) {
-      Alert.alert('Couldn’t save details', err?.message ?? 'Try again.');
+      setError(err?.message ?? 'Try again.');
     } finally {
       setSaving(false);
     }
@@ -170,7 +187,13 @@ export default function AddDealScreen() {
               {uploading && (
                 <View style={styles.uploadingRow}>
                   <ActivityIndicator color={colors.primary} />
-                  <Text style={styles.uploadingText}>Uploading…</Text>
+                  <Text style={styles.uploadingText}>{uploadStage || 'Uploading…'}</Text>
+                </View>
+              )}
+
+              {error && (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorText}>{error}</Text>
                 </View>
               )}
             </>
@@ -245,6 +268,12 @@ export default function AddDealScreen() {
                   multiline
                 />
               </Field>
+
+              {error && (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
 
               <Pressable style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={saveDetails} disabled={saving}>
                 <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save details'}</Text>
@@ -352,6 +381,19 @@ const styles = StyleSheet.create({
   },
   uploadingText: {
     color: colors.textMuted,
+  },
+  errorBanner: {
+    backgroundColor: '#3a1d1d',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#7a3b3b',
+    padding: spacing.sm + 2,
+    marginTop: spacing.md,
+  },
+  errorText: {
+    color: '#ff9b9b',
+    fontSize: 13,
+    fontWeight: '600',
   },
   photoPreviewRow: {
     flexDirection: 'row',
