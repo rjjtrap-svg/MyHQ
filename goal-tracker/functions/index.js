@@ -367,7 +367,10 @@ exports.askObjectionHandling = onCall({ region: 'us-east1', secrets: [anthropicA
     return { answer };
   } catch (err) {
     console.error('Objection handling request failed', err);
-    throw new HttpsError('internal', 'Could not reach the AI coach — try again in a moment.');
+    // Deliberately not 'internal'/'unknown' — the callable-functions client SDK redacts
+    // the message text for those two codes specifically and shows a bare "internal"
+    // string instead, no matter what's passed here. 'unavailable' still reaches the client.
+    throw new HttpsError('unavailable', 'Could not reach the AI coach — try again in a moment.');
   }
 });
 
@@ -507,6 +510,8 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
   } catch (err) {
     if (err instanceof HttpsError) throw err;
     console.error('askCoachAgent failed', err);
-    throw new HttpsError('internal', 'Could not reach the AI coach — try again in a moment.');
+    // See the comment on the same pattern in askObjectionHandling above — 'unavailable'
+    // instead of 'internal' so this message actually reaches the client.
+    throw new HttpsError('unavailable', 'Could not reach the AI coach — try again in a moment.');
   }
 });
