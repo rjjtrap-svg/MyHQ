@@ -1,7 +1,8 @@
 import React from 'react';
 import { FontAwesome } from '@expo/vector-icons';
-import { Tabs, useRouter } from 'expo-router';
+import { Redirect, Tabs, useRouter } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
+import { useAuthStore } from '@/src/store/authStore';
 import { colors } from '@/src/theme';
 
 function TabIcon({ name, color }: { name: React.ComponentProps<typeof FontAwesome>['name']; color: string }) {
@@ -24,6 +25,12 @@ function AddTabButtonIcon() {
 
 export default function TabLayout() {
   const router = useRouter();
+  const firebaseUser = useAuthStore((s) => s.firebaseUser);
+  const profile = useAuthStore((s) => s.profile);
+
+  if (!firebaseUser || !profile) {
+    return <Redirect href="/auth" />;
+  }
 
   return (
     <Tabs
@@ -44,10 +51,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="analytics"
+        name="deals"
         options={{
-          title: 'Analytics',
-          tabBarIcon: ({ color }) => <TabIcon name="bar-chart" color={color} />,
+          title: 'Deals',
+          tabBarIcon: ({ color }) => <TabIcon name="briefcase" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -61,6 +68,13 @@ export default function TabLayout() {
             e.preventDefault();
             router.push('/add-deal');
           },
+        }}
+      />
+      <Tabs.Screen
+        name="team"
+        options={{
+          title: 'Team',
+          tabBarIcon: ({ color }) => <TabIcon name="users" color={color} />,
         }}
       />
       <Tabs.Screen

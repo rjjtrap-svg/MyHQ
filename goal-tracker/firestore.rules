@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isTeamMember(teamId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid));
+    }
+
+    function isTeamManager(teamId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role == 'manager';
+    }
+
+    // Each user's own profile: { uid, email, displayName, teamId, role }.
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    match /teams/{teamId} {
+      // Any signed-in user can read team docs — needed so the join-by-invite-code lookup
+      // (a query over the whole `teams` collection) can find a team before the caller is a
+      // member of it. Team name/goal numbers aren't sensitive; commission is kept elsewhere.
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isTeamManager(teamId);
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isTeamMember(teamId);
+        allow create: if isSignedIn() && request.auth.uid == uid;
+        allow update, delete: if isTeamManager(teamId) || request.auth.uid == uid;
+      }
+
+      match /deals/{dealId} {
+        // Deals are visible to the whole team (leaderboard, manager oversight). Commission
+        // is NOT stored here — see /commissions below — so this is safe to share broadly.
+        allow read: if isTeamMember(teamId);
+        allow create: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
+        allow update: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId));
+        allow delete: if isTeamManager(teamId) || resource.data.repUid == request.auth.uid;
+      }
+
+      match /commissions/{dealId} {
+        // Commission is money: only the rep who earned it and the manager can ever read it.
+        // Reps must query with a `repUid == self` filter for a `list` to be permitted — an
+        // unfiltered query from a rep is rejected because the rule can't verify every
+        // possible result would satisfy it. The manager's role check holds regardless of
+        // the query shape, so an unfiltered manager query is allowed.
+        allow read: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId));
+        allow write: if isTeamMember(teamId) &&
+          (request.resource.data.repUid == request.auth.uid || isTeamManager(teamId));
+      }
+    }
+  }
+}

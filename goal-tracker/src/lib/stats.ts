@@ -1,4 +1,15 @@
-import { Deal, DailyPoint, GoalStats, MonthlyPoint, PaceStatus, Settings, WeeklyPoint, MILESTONES } from '@/src/types';
+import {
+  Deal,
+  DailyPoint,
+  GoalStats,
+  LeaderboardEntry,
+  Membership,
+  MonthlyPoint,
+  PaceStatus,
+  Settings,
+  WeeklyPoint,
+  MILESTONES,
+} from '@/src/types';
 import {
   addDays,
   daysBetween,
@@ -202,4 +213,24 @@ export function monthlyPoints(deals: Deal[], months = 6): MonthlyPoint[] {
     points.push({ month: key, label: monthLabel(d), count });
   }
   return points;
+}
+
+export function buildLeaderboard(deals: Deal[], members: Membership[]): LeaderboardEntry[] {
+  const active = activeDeals(deals);
+  const todayIso = todayISO();
+  const weekStartIso = toISODate(startOfWeek(new Date()));
+
+  const entries = members.map((member): LeaderboardEntry => {
+    const ownDeals = active.filter((d) => d.repUid === member.uid);
+    return {
+      uid: member.uid,
+      displayName: member.displayName,
+      role: member.role,
+      totalSales: ownDeals.length,
+      todaySales: ownDeals.filter((d) => d.date === todayIso).length,
+      weekSales: ownDeals.filter((d) => d.date >= weekStartIso).length,
+    };
+  });
+
+  return entries.sort((a, b) => b.totalSales - a.totalSales);
 }

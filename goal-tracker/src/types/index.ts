@@ -1,5 +1,10 @@
 export type OcrStatus = 'none' | 'pending' | 'done' | 'error';
 
+/** Pipeline position, sale through payout. Public — visible to the whole team. */
+export type DealStage = 'sold' | 'installed' | 'paid';
+
+export const DEAL_STAGES: DealStage[] = ['sold', 'installed', 'paid'];
+
 export interface Deal {
   id: string;
   /** ISO date string (yyyy-mm-dd) the deal counts against, not necessarily creation time */
@@ -22,6 +27,26 @@ export interface Deal {
   ocrStatus: OcrStatus;
   /** Text lines detected by Cloud Vision, offered as tap-to-fill suggestions. */
   ocrLines?: string[];
+
+  /** Sale-to-payout pipeline. Timestamps mark when each stage was reached. */
+  stage: DealStage;
+  soldAt: string;
+  installedAt?: string;
+  paidAt?: string;
+}
+
+/**
+ * Commission is kept OUT of the Deal doc on purpose: Deal is readable by the whole team
+ * (leaderboard etc.), but commission is money and should only ever be visible to the rep
+ * who earned it and the manager. Lives in a sibling collection so Firestore rules can
+ * enforce that split at the document level.
+ */
+export interface Commission {
+  dealId: string;
+  teamId: string;
+  repUid: string;
+  amount: number;
+  updatedAt: string;
 }
 
 export type Role = 'manager' | 'rep';

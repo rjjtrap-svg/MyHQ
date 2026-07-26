@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { collection, doc, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
-import { Deal } from '@/src/types';
+import { Deal, DealStage } from '@/src/types';
 import { db } from '@/src/firebase/config';
 import { generateId } from '@/src/lib/id';
 import { loadJSON, saveJSON, STORAGE_KEYS } from '@/src/lib/storage';
@@ -28,6 +28,7 @@ interface DealsState {
   subscribe: (teamId: string) => () => void;
   addDeal: (repUid: string, repName: string, input: AddDealInput, id?: string) => Promise<Deal>;
   updateDealDetails: (dealId: string, input: DealDetailsInput) => Promise<void>;
+  advanceStage: (dealId: string, stage: DealStage) => Promise<void>;
 }
 
 export const useDealsStore = create<DealsState>((set, get) => ({
@@ -83,10 +84,24 @@ export const useDealsStore = create<DealsState>((set, get) => ({
       repName,
       photoUrl: input.photoUrl,
       ocrStatus: input.photoUrl ? 'pending' : 'none',
+      stage: 'sold',
+      soldAt: now,
     };
 
     await setDoc(doc(db, 'teams', teamId, 'deals', dealId), deal);
     return deal;
+  },
+
+  advanceStage: async (dealId, stage) => {
+    const { teamId } = get();
+    if (!teamId || !db) throw new Error('No team loaded.');
+    const now = new Date().toISOString();
+    await updateDoc(doc(db, 'teams', teamId, 'deals', dealId), {
+      stage,
+      updatedAt: now,
+      ...(stage === 'installed' ? { installedAt: now } : {}),
+      ...(stage === 'paid' ? { paidAt: now } : {}),
+    });
   },
 
   updateDealDetails: async (dealId, input) => {

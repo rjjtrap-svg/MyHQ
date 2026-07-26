@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,61 +13,124 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { useDealsStore } from '@/src/store/dealsStore';
 import { useAuthStore } from '@/src/store/authStore';
+import { useTeamStore } from '@/src/store/teamStore';
+import { uploadDealPhoto } from '@/src/firebase/storage';
+import { prepareImageForUpload } from '@/src/lib/image';
+import { generateId } from '@/src/lib/id';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { addDays, todayISO, toISODate } from '@/src/lib/dates';
 
 export default function AddDealScreen() {
   const router = useRouter();
   const addDeal = useDealsStore((s) => s.addDeal);
+  const updateDealDetails = useDealsStore((s) => s.updateDealDetails);
+  const liveDeals = useDealsStore((s) => s.deals);
+
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const profile = useAuthStore((s) => s.profile);
+  const teamId = useTeamStore((s) => s.teamId);
   const repUid = firebaseUser?.uid ?? '';
   const repName = profile?.displayName ?? 'Unknown rep';
 
-  const [expanded, setExpanded] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [savedDealId, setSavedDealId] = useState<string | null>(null);
   const [date, setDate] = useState(todayISO());
   const [customerName, setCustomerName] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [justAdded, setJustAdded] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const yesterday = toISODate(addDays(new Date(), -1));
+  const liveDeal = savedDealId ? liveDeals.find((d) => d.id === savedDealId) : undefined;
 
-  function haptic() {
-    if (Platform.OS !== 'web') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  function haptic(type: 'success' | 'error' = 'success') {
+    if (Platform.OS === 'web') return;
+    Haptics.notificationAsync(
+      type === 'success' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error
+    ).catch(() => {});
+  }
+
+  async function captureAndUpload(uri: string) {
+    if (!teamId) {
+      Alert.alert('No team loaded', 'Try again in a moment.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const prepared = await prepareImageForUpload(uri);
+      const id = generateId();
+      const photoUrl = await uploadDealPhoto(teamId, id, prepared);
+      await addDeal(repUid, repName, { date: todayISO(), photoUrl }, id);
+      setPhotoUri(uri);
+      setSavedDealId(id);
+      haptic('success');
+    } catch (err: any) {
+      haptic('error');
+      Alert.alert('Upload failed', err?.message ?? 'Check your connection and try again.');
+    } finally {
+      setUploading(false);
     }
   }
 
-  function quickAdd() {
-    addDeal(repUid, repName, { date: todayISO() });
-    haptic();
-    setJustAdded(true);
-    setTimeout(() => router.back(), 350);
+  async function takePhoto() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Camera access needed', 'Enable camera access in your phone settings to log a deal.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+    if (result.canceled) return;
+    await captureAndUpload(result.assets[0].uri);
   }
 
-  function saveWithDetails() {
-    addDeal(repUid, repName, {
-      date,
-      customerName: customerName || undefined,
-      address: address || undefined,
-      notes: notes || undefined,
-    });
-    haptic();
-    router.back();
+  async function pickFromLibrary() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Photo access needed', 'Enable photo library access in your phone settings.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+    if (result.canceled) return;
+    await captureAndUpload(result.assets[0].uri);
+  }
+
+  function fillFromOcrLine(line: string) {
+    if (!customerName) {
+      setCustomerName(line);
+    } else if (!address) {
+      setAddress(line);
+    } else {
+      setAddress(line);
+    }
+  }
+
+  async function saveDetails() {
+    if (!savedDealId) return;
+    setSaving(true);
+    try {
+      await updateDealDetails(savedDealId, { customerName, address, notes, date });
+      router.back();
+    } catch (err: any) {
+      Alert.alert('Couldn’t save details', err?.message ?? 'Try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!firebaseUser || !profile) {
+    return <Redirect href="/auth" />;
   }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.topBar}>
           <Text style={styles.title}>Add Deal</Text>
           <Pressable onPress={() => router.back()} hitSlop={12}>
@@ -73,33 +139,77 @@ export default function AddDealScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable
-            onPress={quickAdd}
-            style={({ pressed }) => [
-              styles.quickAddButton,
-              pressed && { transform: [{ scale: 0.97 }] },
-              justAdded && styles.quickAddButtonSuccess,
-            ]}
-          >
-            <FontAwesome
-              name={justAdded ? 'check' : 'plus'}
-              size={40}
-              color={colors.background}
-            />
-            <Text style={styles.quickAddLabel}>
-              {justAdded ? 'Added!' : 'Tap to log one deal'}
-            </Text>
-          </Pressable>
+          {!photoUri ? (
+            <>
+              <View style={styles.photoRequiredCard}>
+                <FontAwesome name="camera" size={32} color={colors.primary} />
+                <Text style={styles.photoRequiredTitle}>Every deal needs a photo</Text>
+                <Text style={styles.photoRequiredHint}>
+                  Snap the contract, ID, or paperwork — we'll scan it for customer details you can tap to fill in.
+                </Text>
+              </View>
 
-          <Text style={styles.hint}>Counts instantly toward today's total. Add details below if you want.</Text>
+              <Pressable
+                style={[styles.actionButton, uploading && { opacity: 0.6 }]}
+                onPress={takePhoto}
+                disabled={uploading}
+              >
+                <FontAwesome name="camera" size={18} color={colors.background} />
+                <Text style={styles.actionButtonText}>Take photo</Text>
+              </Pressable>
 
-          <Pressable style={styles.expandRow} onPress={() => setExpanded((v) => !v)}>
-            <Text style={styles.expandText}>{expanded ? 'Hide details' : 'Add customer details'}</Text>
-            <FontAwesome name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textMuted} />
-          </Pressable>
+              <Pressable
+                style={[styles.actionButtonSecondary, uploading && { opacity: 0.6 }]}
+                onPress={pickFromLibrary}
+                disabled={uploading}
+              >
+                <FontAwesome name="image" size={16} color={colors.primary} />
+                <Text style={styles.actionButtonSecondaryText}>Choose from library</Text>
+              </Pressable>
 
-          {expanded && (
-            <View style={styles.form}>
+              {uploading && (
+                <View style={styles.uploadingRow}>
+                  <ActivityIndicator color={colors.primary} />
+                  <Text style={styles.uploadingText}>Uploading…</Text>
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              <View style={styles.photoPreviewRow}>
+                <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.savedText}>Deal logged — counts toward your total already.</Text>
+                  <Text style={styles.hint}>Add customer details below, or close this and fill them in later.</Text>
+                </View>
+              </View>
+
+              <View style={styles.ocrBox}>
+                {liveDeal?.ocrStatus === 'pending' && (
+                  <View style={styles.ocrRow}>
+                    <ActivityIndicator size="small" color={colors.accent} />
+                    <Text style={styles.ocrText}>Scanning photo for details…</Text>
+                  </View>
+                )}
+                {liveDeal?.ocrStatus === 'done' && (liveDeal.ocrLines?.length ?? 0) > 0 && (
+                  <>
+                    <Text style={styles.ocrLabel}>Detected text — tap to fill Name, then Address</Text>
+                    <View style={styles.chipWrap}>
+                      {liveDeal.ocrLines!.map((line, i) => (
+                        <Pressable key={i} style={styles.ocrChip} onPress={() => fillFromOcrLine(line)}>
+                          <Text style={styles.ocrChipText} numberOfLines={1}>
+                            {line}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </>
+                )}
+                {(liveDeal?.ocrStatus === 'error' || (liveDeal?.ocrStatus === 'done' && !liveDeal.ocrLines?.length)) && (
+                  <Text style={styles.ocrText}>No text detected — fill in the details manually below.</Text>
+                )}
+              </View>
+
               <View style={styles.dateRow}>
                 <DateChip label="Today" active={date === todayISO()} onPress={() => setDate(todayISO())} />
                 <DateChip label="Yesterday" active={date === yesterday} onPress={() => setDate(yesterday)} />
@@ -136,10 +246,10 @@ export default function AddDealScreen() {
                 />
               </Field>
 
-              <Pressable style={styles.saveButton} onPress={saveWithDetails}>
-                <Text style={styles.saveButtonText}>Save deal for {date}</Text>
+              <Pressable style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={saveDetails} disabled={saving}>
+                <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save details'}</Text>
               </Pressable>
-            </View>
+            </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -158,10 +268,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function DateChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.chip, active && styles.chipActive]}
-    >
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
     </Pressable>
   );
@@ -185,46 +292,127 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    alignItems: 'center',
   },
-  quickAddButton: {
-    width: '100%',
+  photoRequiredCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.xxl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  photoRequiredTitle: {
+    ...typography.subtitle,
+    color: colors.text,
+  },
+  photoRequiredHint: {
+    ...typography.caption,
+    color: colors.textFaint,
+    textAlign: 'center',
+  },
+  actionButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
   },
-  quickAddButtonSuccess: {
-    backgroundColor: colors.success,
-  },
-  quickAddLabel: {
+  actionButtonText: {
     color: colors.background,
-    fontWeight: '800',
-    fontSize: 17,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  actionButtonSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+  },
+  actionButtonSecondaryText: {
+    color: colors.primary,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  uploadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  uploadingText: {
+    color: colors.textMuted,
+  },
+  photoPreviewRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  photoPreview: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.md,
+  },
+  savedText: {
+    ...typography.body,
+    color: colors.success,
+    fontWeight: '700',
   },
   hint: {
     ...typography.caption,
     color: colors.textFaint,
-    textAlign: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
+  },
+  ocrBox: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
     marginBottom: spacing.lg,
   },
-  expandRow: {
+  ocrRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
   },
-  expandText: {
-    ...typography.body,
+  ocrText: {
+    ...typography.caption,
     color: colors.textMuted,
-    fontWeight: '600',
   },
-  form: {
-    width: '100%',
-    marginTop: spacing.lg,
+  ocrLabel: {
+    ...typography.caption,
+    color: colors.accent,
+    marginBottom: spacing.sm,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  ocrChip: {
+    maxWidth: '100%',
+    paddingVertical: 6,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.round,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: '#38E1C622',
+  },
+  ocrChipText: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: '600',
   },
   dateRow: {
     flexDirection: 'row',

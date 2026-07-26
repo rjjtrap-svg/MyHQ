@@ -1,0 +1,246 @@
+import React, { useMemo, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useGoalStats } from '@/src/hooks/useGoalStats';
+import { useAuthStore } from '@/src/store/authStore';
+import { useTeamStore } from '@/src/store/teamStore';
+import { useDealsStore } from '@/src/store/dealsStore';
+import { useCommissionStore } from '@/src/store/commissionStore';
+import { dailyPoints, monthlyPoints, weeklyPoints } from '@/src/lib/stats';
+import { parseISODate, shortDateLabel, weekdayLabel } from '@/src/lib/dates';
+import { BarChart } from '@/src/components/BarChart';
+import { Section } from '@/src/components/Section';
+import { StatTile } from '@/src/components/StatTile';
+import { StagePillRow } from '@/src/components/StagePill';
+import { colors, radius, spacing, typography } from '@/src/theme';
+import { Deal, DealStage } from '@/src/types';
+
+function formatMoney(amount: number): string {
+  return `$${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+}
+
+function DealRow({ deal }: { deal: Deal }) {
+  const teamId = useTeamStore((s) => s.teamId);
+  const advanceStage = useDealsStore((s) => s.advanceStage);
+  const commission = useCommissionStore((s) => s.byDealId[deal.id]);
+  const setCommission = useCommissionStore((s) => s.setCommission);
+
+  const [amountText, setAmountText] = useState(commission ? String(commission.amount) : '');
+
+  function saveAmount() {
+    const parsed = Number(amountText.replace(/[^0-9.]/g, ''));
+    if (!teamId || Number.isNaN(parsed)) return;
+    setCommission(teamId, deal.id, deal.repUid, parsed);
+  }
+
+  return (
+    <View style={styles.dealCard}>
+      <View style={styles.dealHeaderRow}>
+        {deal.photoUrl ? (
+          <Image source={{ uri: deal.photoUrl }} style={styles.thumb} />
+        ) : (
+          <View style={[styles.thumb, styles.thumbPlaceholder]} />
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.dealName} numberOfLines={1}>
+            {deal.customerName || 'Unnamed deal'}
+          </Text>
+          <Text style={styles.dealDate}>{shortDateLabel(parseISODate(deal.date))}</Text>
+        </View>
+      </View>
+
+      <StagePillRow stage={deal.stage} onAdvance={(stage: DealStage) => advanceStage(deal.id, stage)} />
+
+      <View style={styles.commissionRow}>
+        <Text style={styles.commissionLabel}>Commission</Text>
+        <View style={styles.commissionInputWrap}>
+          <Text style={styles.commissionPrefix}>$</Text>
+          <TextInput
+            value={amountText}
+            onChangeText={setAmountText}
+            onBlur={saveAmount}
+            placeholder="0"
+            placeholderTextColor={colors.textFaint}
+            keyboardType="decimal-pad"
+            style={styles.commissionInput}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export default function DealsScreen() {
+  const uid = useAuthStore((s) => s.firebaseUser?.uid);
+  const { deals, stats } = useGoalStats();
+  const commissions = useCommissionStore((s) => s.byDealId);
+
+  const myCommissionTotals = useMemo(() => {
+    let paid = 0;
+    let pending = 0;
+    for (const deal of deals) {
+      const amount = commissions[deal.id]?.amount ?? 0;
+      if (deal.stage === 'paid') paid += amount;
+      else pending += amount;
+    }
+    return { paid, pending, total: paid + pending };
+  }, [deals, commissions]);
+
+  const daily = useMemo(() => dailyPoints(deals, 14), [deals]);
+  const weekly = useMemo(() => weeklyPoints(deals, 8), [deals]);
+  const monthly = useMemo(() => monthlyPoints(deals, 6), [deals]);
+
+  const dailyChart = daily.map((p) => ({ label: weekdayLabel(parseISODate(p.date))[0], value: p.count }));
+  const weeklyChart = weekly.map((p) => ({ label: shortDateLabel(parseISODate(p.weekStart)), value: p.count }));
+  const monthlyChart = monthly.map((p) => ({ label: p.label, value: p.count }));
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.heading}>My Deals</Text>
+        <Text style={styles.subheading}>Private to you — only you and your manager see commission.</Text>
+
+        <View style={styles.grid}>
+          <StatTile label="Total commission" value={formatMoney(myCommissionTotals.total)} accent={colors.gold} />
+          <StatTile label="Paid out" value={formatMoney(myCommissionTotals.paid)} accent={colors.success} />
+        </View>
+
+        <Section title={`Pipeline (${deals.filter((d) => !d.deletedAt).length})`}>
+          {deals.length === 0 ? (
+            <Text style={styles.emptyText}>No deals logged yet — tap the + button to add one.</Text>
+          ) : (
+            deals.filter((d) => !d.deletedAt).map((deal) => <DealRow key={deal.id} deal={deal} />)
+          )}
+        </Section>
+
+        <Section title="Daily sales" right={<Text style={styles.rangeLabel}>Last 14 days</Text>}>
+          <BarChart data={dailyChart} />
+        </Section>
+
+        <Section title="Weekly sales" right={<Text style={styles.rangeLabel}>Last 8 weeks</Text>}>
+          <BarChart data={weeklyChart} color={colors.accent} />
+        </Section>
+
+        <Section title="Monthly sales" right={<Text style={styles.rangeLabel}>Last 6 months</Text>}>
+          <BarChart data={monthlyChart} color={colors.gold} />
+        </Section>
+
+        <Section title="Performance">
+          <View style={styles.grid}>
+            <StatTile label="Running average" value={stats.runningAverage.toFixed(1)} sublabel="sales / day" />
+            <StatTile
+              label="Best day"
+              value={stats.bestDay ? String(stats.bestDay.count) : '—'}
+              sublabel={stats.bestDay ? shortDateLabel(parseISODate(stats.bestDay.date)) : undefined}
+            />
+            <StatTile
+              label="Best week"
+              value={stats.bestWeek ? String(stats.bestWeek.count) : '—'}
+              sublabel={stats.bestWeek ? `wk of ${shortDateLabel(parseISODate(stats.bestWeek.weekStart))}` : undefined}
+            />
+            <StatTile label="Current streak" value={`${stats.currentStreak}d`} />
+            <StatTile label="Longest streak" value={`${stats.longestStreak}d`} />
+            <StatTile label="This month" value={String(stats.monthSales)} />
+          </View>
+        </Section>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  heading: {
+    ...typography.hero,
+    fontSize: 28,
+    color: colors.text,
+    marginTop: spacing.md,
+  },
+  subheading: {
+    ...typography.caption,
+    color: colors.textFaint,
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  rangeLabel: {
+    ...typography.caption,
+    color: colors.textFaint,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  emptyText: {
+    ...typography.body,
+    color: colors.textFaint,
+  },
+  dealCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  dealHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  thumb: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.sm,
+  },
+  thumbPlaceholder: {
+    backgroundColor: colors.surfaceElevated,
+  },
+  dealName: {
+    ...typography.subtitle,
+    fontSize: 15,
+    color: colors.text,
+  },
+  dealDate: {
+    ...typography.caption,
+    color: colors.textFaint,
+  },
+  commissionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  commissionLabel: {
+    ...typography.statLabel,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  commissionInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+  },
+  commissionPrefix: {
+    color: colors.textFaint,
+    fontSize: 14,
+  },
+  commissionInput: {
+    color: colors.text,
+    fontSize: 14,
+    paddingVertical: 6,
+    paddingLeft: 2,
+    minWidth: 60,
+  },
+});

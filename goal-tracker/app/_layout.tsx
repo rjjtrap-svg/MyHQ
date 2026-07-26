@@ -11,6 +11,7 @@ import 'react-native-reanimated';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
 import { useDealsStore } from '@/src/store/dealsStore';
+import { useCommissionStore } from '@/src/store/commissionStore';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { useUIStore } from '@/src/store/uiStore';
 import { syncDailyReminder } from '@/src/lib/notifications';
@@ -48,6 +49,7 @@ export default function RootLayout() {
 
   const subscribeTeam = useTeamStore((s) => s.subscribe);
   const subscribeDeals = useDealsStore((s) => s.subscribe);
+  const subscribeCommissions = useCommissionStore((s) => s.subscribe);
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
   const hydrateUI = useUIStore((s) => s.hydrate);
 
@@ -67,14 +69,16 @@ export default function RootLayout() {
 
   // Once we know which team the signed-in user belongs to, subscribe to its live data.
   useEffect(() => {
-    if (!profile?.teamId) return;
+    if (!profile?.teamId || !firebaseUser) return;
     const unsubTeam = subscribeTeam(profile.teamId);
     const unsubDeals = subscribeDeals(profile.teamId);
+    const unsubCommissions = subscribeCommissions(profile.teamId, firebaseUser.uid, profile.role === 'manager');
     return () => {
       unsubTeam();
       unsubDeals();
+      unsubCommissions();
     };
-  }, [profile?.teamId]);
+  }, [profile?.teamId, profile?.role, firebaseUser?.uid]);
 
   const appReady = fontsLoaded && personalDataReady && authInitialized;
 
@@ -109,20 +113,13 @@ export default function RootLayout() {
     return null;
   }
 
-  const signedIn = Boolean(firebaseUser && profile);
-
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style="light" />
       <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
-        {signedIn ? (
-          <>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="add-deal" options={{ presentation: 'modal', headerShown: false }} />
-          </>
-        ) : (
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
-        )}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="add-deal" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );

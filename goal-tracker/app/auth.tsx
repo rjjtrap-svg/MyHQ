@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Redirect } from 'expo-router';
 import { signInWithEmail, signUpWithEmail } from '@/src/firebase/auth';
 import { createTeamAndProfile, joinTeamByCode } from '@/src/firebase/teams';
 import { useAuthStore } from '@/src/store/authStore';
@@ -11,6 +12,8 @@ type Mode = 'sign-in' | 'sign-up';
 type TeamChoice = 'create' | 'join';
 
 export default function AuthScreen() {
+  const firebaseUser = useAuthStore((s) => s.firebaseUser);
+  const profile = useAuthStore((s) => s.profile);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
 
   const [mode, setMode] = useState<Mode>('sign-in');
@@ -22,6 +25,10 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [teamName, setTeamName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+
+  if (firebaseUser && profile) {
+    return <Redirect href="/" />;
+  }
 
   if (!firebaseEnabled) {
     return (
