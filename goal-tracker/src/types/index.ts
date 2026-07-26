@@ -1,3 +1,5 @@
+export type OcrStatus = 'none' | 'pending' | 'done' | 'error';
+
 export interface Deal {
   id: string;
   /** ISO date string (yyyy-mm-dd) the deal counts against, not necessarily creation time */
@@ -11,6 +13,57 @@ export interface Deal {
   synced: boolean;
   /** Set when the deal is deleted locally but the delete hasn't synced yet */
   deletedAt?: string;
+
+  /** Every deal requires a photo; these fields tie it to the team + rep and the OCR pipeline. */
+  teamId: string;
+  repUid: string;
+  repName: string;
+  photoUrl?: string;
+  ocrStatus: OcrStatus;
+  /** Text lines detected by Cloud Vision, offered as tap-to-fill suggestions. */
+  ocrLines?: string[];
+}
+
+export type Role = 'manager' | 'rep';
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  teamId: string;
+  role: Role;
+  createdAt: string;
+}
+
+/** A team's shared goal targets, set by the manager. Distinct from each rep's personal Settings. */
+export interface Team {
+  id: string;
+  name: string;
+  ownerUid: string;
+  inviteCode: string;
+  salesGoal: number;
+  installGoal: number;
+  retentionPercent: number;
+  deadline: string;
+  startDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Membership {
+  uid: string;
+  displayName: string;
+  role: Role;
+  joinedAt: string;
+}
+
+export interface LeaderboardEntry {
+  uid: string;
+  displayName: string;
+  role: Role;
+  totalSales: number;
+  todaySales: number;
+  weekSales: number;
 }
 
 export type PaceStatus = 'ahead' | 'on-pace' | 'behind';

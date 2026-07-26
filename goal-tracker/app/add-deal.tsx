@@ -14,12 +14,17 @@ import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useDealsStore } from '@/src/store/dealsStore';
+import { useAuthStore } from '@/src/store/authStore';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { addDays, todayISO, toISODate } from '@/src/lib/dates';
 
 export default function AddDealScreen() {
   const router = useRouter();
   const addDeal = useDealsStore((s) => s.addDeal);
+  const firebaseUser = useAuthStore((s) => s.firebaseUser);
+  const profile = useAuthStore((s) => s.profile);
+  const repUid = firebaseUser?.uid ?? '';
+  const repName = profile?.displayName ?? 'Unknown rep';
 
   const [expanded, setExpanded] = useState(false);
   const [date, setDate] = useState(todayISO());
@@ -37,14 +42,14 @@ export default function AddDealScreen() {
   }
 
   function quickAdd() {
-    addDeal({ date: todayISO() });
+    addDeal(repUid, repName, { date: todayISO() });
     haptic();
     setJustAdded(true);
     setTimeout(() => router.back(), 350);
   }
 
   function saveWithDetails() {
-    addDeal({
+    addDeal(repUid, repName, {
       date,
       customerName: customerName || undefined,
       address: address || undefined,

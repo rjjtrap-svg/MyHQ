@@ -1,7 +1,7 @@
 import { create } from 'zustand';
+import { collection, doc, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import { Deal } from '@/src/types';
-import { firebaseEnabled } from '@/src/firebase/config';
-import { pullRemoteDeals, pushDeal, pushDealDelete } from '@/src/firebase/sync';
+import { db } from '@/src/firebase/config';
 import { generateId } from '@/src/lib/id';
 import { loadJSON, saveJSON, STORAGE_KEYS } from '@/src/lib/storage';
 import { todayISO } from '@/src/lib/dates';
@@ -11,102 +11,93 @@ export interface AddDealInput {
   customerName?: string;
   address?: string;
   notes?: string;
+  photoUrl?: string;
+}
+
+export interface DealDetailsInput {
+  customerName?: string;
+  address?: string;
+  notes?: string;
+  date?: string;
 }
 
 interface DealsState {
   deals: Deal[];
-  hydrated: boolean;
-  hydrate: () => Promise<void>;
-  addDeal: (input?: AddDealInput) => Deal;
-  removeDeal: (id: string) => void;
-  retrySync: () => Promise<void>;
-}
-
-function mergeDeals(local: Deal[], remote: Deal[]): Deal[] {
-  const byId = new Map<string, Deal>();
-  for (const deal of local) byId.set(deal.id, deal);
-  for (const remoteDeal of remote) {
-    const existing = byId.get(remoteDeal.id);
-    if (!existing || new Date(remoteDeal.updatedAt) > new Date(existing.updatedAt)) {
-      byId.set(remoteDeal.id, { ...remoteDeal, synced: true });
-    }
-  }
-  return Array.from(byId.values()).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  teamId: string | null;
+  loading: boolean;
+  subscribe: (teamId: string) => () => void;
+  addDeal: (repUid: string, repName: string, input: AddDealInput, id?: string) => Promise<Deal>;
+  updateDealDetails: (dealId: string, input: DealDetailsInput) => Promise<void>;
 }
 
 export const useDealsStore = create<DealsState>((set, get) => ({
   deals: [],
-  hydrated: false,
+  teamId: null,
+  loading: true,
 
-  hydrate: async () => {
-    const stored = (await loadJSON<Deal[]>(STORAGE_KEYS.deals)) ?? [];
-    set({ deals: stored, hydrated: true });
+  subscribe: (teamId) => {
+    set({ teamId, loading: true });
 
-    if (firebaseEnabled) {
-      const remote = await pullRemoteDeals();
-      if (remote) {
-        const merged = mergeDeals(get().deals, remote);
-        set({ deals: merged });
-        await saveJSON(STORAGE_KEYS.deals, merged);
+    // Instant paint from the last-synced cache while the live listener spins up.
+    loadJSON<Deal[]>(STORAGE_KEYS.deals).then((cached) => {
+      if (cached && get().teamId === teamId && get().loading) {
+        set({ deals: cached });
       }
-      await get().retrySync();
+    });
+
+    if (!db) {
+      set({ loading: false });
+      return () => {};
     }
+
+    const dealsQuery = query(collection(db, 'teams', teamId, 'deals'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(
+      dealsQuery,
+      (snap) => {
+        const deals = snap.docs.map((d) => d.data() as Deal);
+        set({ deals, loading: false });
+        saveJSON(STORAGE_KEYS.deals, deals);
+      },
+      () => set({ loading: false })
+    );
+    return unsubscribe;
   },
 
-  addDeal: (input) => {
+  addDeal: async (repUid, repName, input, id) => {
+    const { teamId } = get();
+    if (!teamId || !db) throw new Error('No team loaded.');
+
     const now = new Date().toISOString();
+    const dealId = id ?? generateId();
     const deal: Deal = {
-      id: generateId(),
-      date: input?.date ?? todayISO(),
+      id: dealId,
+      date: input.date ?? todayISO(),
       createdAt: now,
       updatedAt: now,
-      customerName: input?.customerName?.trim() || undefined,
-      address: input?.address?.trim() || undefined,
-      notes: input?.notes?.trim() || undefined,
-      synced: !firebaseEnabled,
+      customerName: input.customerName?.trim() || undefined,
+      address: input.address?.trim() || undefined,
+      notes: input.notes?.trim() || undefined,
+      synced: true,
+      teamId,
+      repUid,
+      repName,
+      photoUrl: input.photoUrl,
+      ocrStatus: input.photoUrl ? 'pending' : 'none',
     };
 
-    const deals = [deal, ...get().deals];
-    set({ deals });
-    saveJSON(STORAGE_KEYS.deals, deals);
-
-    if (firebaseEnabled) {
-      pushDeal(deal).then((ok) => {
-        if (!ok) return;
-        const current = get().deals;
-        const updated = current.map((d) => (d.id === deal.id ? { ...d, synced: true } : d));
-        set({ deals: updated });
-        saveJSON(STORAGE_KEYS.deals, updated);
-      });
-    }
-
+    await setDoc(doc(db, 'teams', teamId, 'deals', dealId), deal);
     return deal;
   },
 
-  removeDeal: (id) => {
-    const now = new Date().toISOString();
-    const deals = get().deals.map((d) =>
-      d.id === id ? { ...d, deletedAt: now, updatedAt: now, synced: !firebaseEnabled } : d
-    );
-    set({ deals });
-    saveJSON(STORAGE_KEYS.deals, deals);
-
-    if (firebaseEnabled) {
-      pushDealDelete(id);
-    }
-  },
-
-  retrySync: async () => {
-    if (!firebaseEnabled) return;
-    const unsynced = get().deals.filter((d) => !d.synced);
-    for (const deal of unsynced) {
-      const ok = deal.deletedAt ? await pushDealDelete(deal.id) : await pushDeal(deal);
-      if (ok) {
-        const current = get().deals;
-        const updated = current.map((d) => (d.id === deal.id ? { ...d, synced: true } : d));
-        set({ deals: updated });
-        saveJSON(STORAGE_KEYS.deals, updated);
-      }
-    }
+  updateDealDetails: async (dealId, input) => {
+    const { teamId } = get();
+    if (!teamId || !db) throw new Error('No team loaded.');
+    await updateDoc(doc(db, 'teams', teamId, 'deals', dealId), {
+      ...(input.customerName !== undefined ? { customerName: input.customerName.trim() || null } : {}),
+      ...(input.address !== undefined ? { address: input.address.trim() || null } : {}),
+      ...(input.notes !== undefined ? { notes: input.notes.trim() || null } : {}),
+      ...(input.date !== undefined ? { date: input.date } : {}),
+      updatedAt: new Date().toISOString(),
+    });
   },
 }));
