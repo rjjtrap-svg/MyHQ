@@ -129,7 +129,7 @@ is an Apple platform restriction, not something the app can work around.
 
 ## AI Sales Coach
 
-The **Coach** tab has three sections:
+The **Coach** tab has four sections:
 
 - **Grade My Pitch** — a rep taps the mic and records a practice pitch (or a recap of a
   real door-knock). The audio uploads to `teams/{teamId}/pitch-audio/`, which triggers a
@@ -142,14 +142,24 @@ The **Coach** tab has three sections:
 - **Objection Handling** — a rep types a question (e.g. "they said they're already under
   contract") and an `askObjectionHandling` callable function answers it in-character as a
   sales trainer, grounded in the same fiber objection guide.
+- **Ask Anything** — an open-ended, ongoing chat with a persistent [Managed
+  Agent](https://platform.claude.com/docs/en/managed-agents) (`askCoachAgent` callable),
+  distinct from Objections above: this one remembers the conversation across every message
+  a rep sends (a single Managed Agent *session* per rep, reused turn after turn), so it's
+  meant to be a "talk to it all day about anything" assistant rather than a one-shot Q&A.
+  History lives in `teams/{teamId}/coachChats/{repUid}/messages` and is private to that rep
+  — not visible to managers/team leads, unlike pitch submissions.
 - **Training** — a static reference page rendering the script/objection guide itself
   (approach → discovery → pitch → close, plus common objections and closing tips), so reps
   can study it without needing to ask the AI anything.
 
 **Setup:** requires the `ANTHROPIC_API_KEY` secret and the Speech-to-Text API (see step 8
-under Firebase setup above). Without those, recording still works but a submission will
-end in an `error` status instead of a grade, and the objection-handling assistant will
-fail with an error message.
+under Firebase setup above) for Grade My Pitch and Objections. Without those, recording
+still works but a submission will end in an `error` status instead of a grade, and the
+objection-handling assistant will fail with an error message. **Ask Anything** additionally
+requires a Managed Agent to already exist in the Anthropic console — the agent + execution
+environment ids are hardcoded as `COACH_AGENT_ID` / `COACH_ENVIRONMENT_ID` in
+`functions/index.js`; update those two constants to point at your own agent/environment.
 
 **Cost:** separate from Firebase billing — Anthropic API and Google Cloud Speech-to-Text
 are both pay-as-you-go, billed to whichever accounts own those API keys/projects. Grading
@@ -181,9 +191,10 @@ src/store/                Zustand stores
   overrideStore.ts           Manager/team_lead commission overrides (realtime, access-controlled)
   doorKnocksStore.ts         Per-rep-per-day door-knock counts
   pitchCoachStore.ts         Rep's pitch submissions (realtime)
+  coachChatStore.ts          Rep's Ask Anything chat history (realtime)
   settingsStore.ts / uiStore.ts   Personal, per-device (goal targets, celebrated milestones)
 
-src/firebase/              auth.ts, teams.ts, storage.ts, commissions.ts, overrides.ts, doorKnocks.ts, pitchCoaching.ts, config.ts
+src/firebase/              auth.ts, teams.ts, storage.ts, commissions.ts, overrides.ts, doorKnocks.ts, pitchCoaching.ts, coachChat.ts, config.ts
 src/lib/                   stats engine, dates, notifications, push (web FCM), image prep, local storage cache
 src/lib/fiberScript.ts     Fiber sales script/objection guide, rendered on the Training page
 functions/index.js         Cloud Vision OCR, milestone push notifications, pitch transcription/grading, objection handling

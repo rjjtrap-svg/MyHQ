@@ -15,6 +15,7 @@ import { useCommissionStore } from '@/src/store/commissionStore';
 import { useOverrideStore } from '@/src/store/overrideStore';
 import { useDoorKnocksStore } from '@/src/store/doorKnocksStore';
 import { usePitchCoachStore } from '@/src/store/pitchCoachStore';
+import { useCoachChatStore } from '@/src/store/coachChatStore';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { useUIStore } from '@/src/store/uiStore';
 import { syncDailyReminder } from '@/src/lib/notifications';
@@ -58,6 +59,7 @@ export default function RootLayout() {
   const subscribeOverrides = useOverrideStore((s) => s.subscribe);
   const subscribeDoorKnocks = useDoorKnocksStore((s) => s.subscribe);
   const subscribePitchSubs = usePitchCoachStore((s) => s.subscribe);
+  const subscribeCoachChat = useCoachChatStore((s) => s.subscribe);
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
   const hydrateUI = useUIStore((s) => s.hydrate);
 
@@ -83,12 +85,14 @@ export default function RootLayout() {
     const unsubCommissions = subscribeCommissions(profile.teamId, firebaseUser.uid, profile.role === 'manager');
     const unsubDoorKnocks = subscribeDoorKnocks(profile.teamId, firebaseUser.uid);
     const unsubPitchSubs = subscribePitchSubs(profile.teamId, firebaseUser.uid);
+    const unsubCoachChat = subscribeCoachChat(profile.teamId, firebaseUser.uid);
     return () => {
       unsubTeam();
       unsubDeals();
       unsubCommissions();
       unsubDoorKnocks();
       unsubPitchSubs();
+      unsubCoachChat();
     };
   }, [profile?.teamId, profile?.role, firebaseUser?.uid]);
 

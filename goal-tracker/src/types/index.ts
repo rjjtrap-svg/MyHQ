@@ -238,3 +238,11 @@ export interface ObjectionExchange {
   question: string;
   answer: string;
 }
+
+/** One turn in a rep's ongoing chat with the persistent Managed Agent coach. */
+export interface CoachChatMessage {
+  id: string;
+  role: 'user' | 'agent';
+  text: string;
+  createdAt: string;
+}

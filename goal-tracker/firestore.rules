@@ -110,6 +110,21 @@ service cloud.firestore {
         allow update: if isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid);
         allow delete: if isTeamManager(teamId) || resource.data.repUid == request.auth.uid;
       }
+
+      // A rep's ongoing chat with the persistent Managed Agent coach — doc id IS the rep's
+      // uid, so this is a private 1:1 assistant. Unlike pitchSubmissions, deliberately NOT
+      // readable by managers/team_leads: this is meant to be a judgment-free place to ask
+      // anything, not a monitored channel. The askCoachAgent Cloud Function uses the admin
+      // SDK to write the session id and both sides of every exchange, bypassing these rules.
+      match /coachChats/{repUid} {
+        allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
+        allow write: if false;
+
+        match /messages/{messageId} {
+          allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
+          allow write: if false;
+        }
+      }
     }
   }
 }

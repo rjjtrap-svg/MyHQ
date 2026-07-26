@@ -8,6 +8,7 @@ const { getStorage } = require('firebase-admin/storage');
 const { getMessaging } = require('firebase-admin/messaging');
 const vision = require('@google-cloud/vision');
 const speech = require('@google-cloud/speech');
+const Anthropic = require('@anthropic-ai/sdk');
 const ffmpegPath = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
 const os = require('os');
@@ -23,6 +24,14 @@ const visionClient = new vision.ImageAnnotatorClient();
 const speechClient = new speech.SpeechClient();
 const anthropicApiKey = defineSecret('ANTHROPIC_API_KEY');
 const CLAUDE_MODEL = 'claude-sonnet-5';
+
+// The persistent Managed Agent backing "Ask Coach Anything" — created once in the
+// Anthropic console, distinct from the plain Messages-API calls (callClaude below) used
+// for pitch grading/objection handling. A Managed Agent keeps its own memory across turns
+// via sessions, so unlike those two, this doesn't need FIBER_SALES_CONTEXT stuffed into
+// every call — the agent's own configuration already knows what it's for.
+const COACH_AGENT_ID = 'agent_01XyRX1aWbz2ubMAB4ddyWXT';
+const COACH_ENVIRONMENT_ID = 'env_01RWT3z2Z55cB78jNdGyTuKM';
 
 // Keep in sync with DAILY_SALE_MILESTONES in src/types/index.ts.
 const DAILY_SALE_MILESTONES = [2, 6, 8, 10];
@@ -355,6 +364,86 @@ exports.askObjectionHandling = onCall({ region: 'us-east1', secrets: [anthropicA
     return { answer };
   } catch (err) {
     console.error('Objection handling request failed', err);
+    throw new HttpsError('internal', 'Could not reach the AI coach — try again in a moment.');
+  }
+});
+
+/** Sends one message into a Managed Agent session and waits for its full reply, collecting
+ * incremental `agent.message` deltas rather than the whole event log (so a long-running
+ * chat doesn't re-read earlier turns on every call) and stopping at `session.status_idle`. */
+async function runCoachAgentTurn(anthropic, sessionId, message) {
+  await anthropic.beta.sessions.events.send(sessionId, {
+    events: [{ type: 'user.message', content: [{ type: 'text', text: message }] }],
+  });
+
+  let answer = '';
+  const stream = await anthropic.beta.sessions.events.stream(sessionId, { event_deltas: ['agent.message'] });
+  for await (const event of stream) {
+    if (event.type === 'event_delta' && event.event?.type === 'agent.message') {
+      const block = event.event.content?.[0];
+      if (block?.type === 'text') answer += block.text;
+    } else if (event.type === 'agent.message') {
+      answer = (event.content || []).map((b) => b.text || '').join('');
+    } else if (event.type === 'session.status_idle') {
+      break;
+    }
+  }
+  return answer.trim();
+}
+
+// Callable from the client: a rep's freeform, ongoing chat with the persistent Managed
+// Agent coach ("Ask Coach Anything" — Coach tab). Unlike askObjectionHandling, this is a
+// real multi-turn conversation: the same Managed Agent session is reused for every message
+// a given rep sends, so the agent remembers earlier turns instead of starting fresh each time.
+exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey], timeoutSeconds: 300 }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in required.');
+  }
+  const teamId = String(request.data?.teamId || '').trim();
+  const message = String(request.data?.message || '').trim();
+  if (!teamId) {
+    throw new HttpsError('invalid-argument', 'teamId is required.');
+  }
+  if (!message) {
+    throw new HttpsError('invalid-argument', 'Message is required.');
+  }
+  if (message.length > 4000) {
+    throw new HttpsError('invalid-argument', 'Message is too long.');
+  }
+
+  const repUid = request.auth.uid;
+  const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(repUid);
+  const messagesRef = chatRef.collection('messages');
+
+  try {
+    const anthropic = new Anthropic({ apiKey: anthropicApiKey.value() });
+
+    const chatSnap = await chatRef.get();
+    let sessionId = chatSnap.exists ? chatSnap.data().sessionId : undefined;
+    if (!sessionId) {
+      const session = await anthropic.beta.sessions.create({
+        agent: COACH_AGENT_ID,
+        environment_id: COACH_ENVIRONMENT_ID,
+      });
+      sessionId = session.id;
+    }
+    const now = new Date().toISOString();
+    await chatRef.set({ repUid, teamId, sessionId, updatedAt: now }, { merge: true });
+
+    const userMsgRef = messagesRef.doc();
+    await userMsgRef.set({ id: userMsgRef.id, role: 'user', text: message, createdAt: now });
+
+    const answer = await runCoachAgentTurn(anthropic, sessionId, message);
+    if (!answer) {
+      throw new Error('No reply received from the coach agent.');
+    }
+
+    const agentMsgRef = messagesRef.doc();
+    await agentMsgRef.set({ id: agentMsgRef.id, role: 'agent', text: answer, createdAt: new Date().toISOString() });
+
+    return { answer };
+  } catch (err) {
+    console.error('askCoachAgent failed', err);
     throw new HttpsError('internal', 'Could not reach the AI coach — try again in a moment.');
   }
 });

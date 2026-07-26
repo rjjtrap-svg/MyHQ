@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
@@ -6,14 +6,16 @@ import { Audio } from 'expo-av';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
 import { usePitchCoachStore } from '@/src/store/pitchCoachStore';
+import { useCoachChatStore } from '@/src/store/coachChatStore';
 import { createPitchSubmission, uploadPitchAudio, askObjectionHandling } from '@/src/firebase/pitchCoaching';
+import { sendCoachChatMessage } from '@/src/firebase/coachChat';
 import { generateId } from '@/src/lib/id';
 import { CLOSING_TIPS, OBJECTIONS, PITCH_SCRIPT } from '@/src/lib/fiberScript';
 import { Section } from '@/src/components/Section';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { ObjectionExchange, PitchSubmission } from '@/src/types';
 
-type CoachTab = 'pitch' | 'objections' | 'training';
+type CoachTab = 'pitch' | 'objections' | 'chat' | 'training';
 
 const STATUS_LABELS: Record<PitchSubmission['status'], string> = {
   uploading: 'Uploading…',
@@ -27,6 +29,7 @@ function SegmentedControl({ value, onChange }: { value: CoachTab; onChange: (v: 
   const options: { key: CoachTab; label: string }[] = [
     { key: 'pitch', label: 'Grade My Pitch' },
     { key: 'objections', label: 'Objections' },
+    { key: 'chat', label: 'Ask Anything' },
     { key: 'training', label: 'Training' },
   ];
   return (
@@ -267,6 +270,80 @@ function ObjectionsSection() {
   );
 }
 
+function ChatSection({ scrollRef }: { scrollRef: React.RefObject<ScrollView> }) {
+  const teamId = useTeamStore((s) => s.teamId);
+  const messages = useCoachChatStore((s) => s.messages);
+
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [messages.length, sending]);
+
+  async function send() {
+    const trimmed = input.trim();
+    if (!trimmed || !teamId || sending) return;
+    setError(null);
+    setInput('');
+    setSending(true);
+    try {
+      await sendCoachChatMessage(teamId, trimmed);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not reach the AI coach.');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <>
+      <View style={styles.recordCard}>
+        <Text style={styles.recordHint}>
+          Ask this coach anything, any time of day — it remembers your conversation, so you can keep coming back to
+          it instead of starting over each time.
+        </Text>
+      </View>
+
+      {messages.length === 0 && !sending && <Text style={styles.emptyText}>No messages yet — ask your first question below.</Text>}
+
+      {messages.map((m) => (
+        <View key={m.id} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAgent]}>
+          <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAgentText}>{m.text}</Text>
+        </View>
+      ))}
+
+      {sending && (
+        <View style={styles.inProgressRow}>
+          <ActivityIndicator size="small" color={colors.accent} />
+          <Text style={styles.inProgressText}>Thinking…</Text>
+        </View>
+      )}
+
+      {error && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>{error}</Text>
+        </View>
+      )}
+
+      <View style={styles.chatInputRow}>
+        <TextInput
+          style={styles.chatInput}
+          value={input}
+          onChangeText={setInput}
+          placeholder="Ask the coach anything…"
+          placeholderTextColor={colors.textFaint}
+          multiline
+        />
+        <Pressable style={[styles.chatSendButton, sending && { opacity: 0.6 }]} onPress={send} disabled={sending}>
+          <FontAwesome name="arrow-up" size={16} color={colors.background} />
+        </Pressable>
+      </View>
+    </>
+  );
+}
+
 function TrainingSection() {
   return (
     <>
@@ -305,10 +382,11 @@ function TrainingSection() {
 
 export default function CoachScreen() {
   const [tab, setTab] = useState<CoachTab>('pitch');
+  const scrollRef = useRef<ScrollView>(null);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.heading}>AI Sales Coach</Text>
         <Text style={styles.subheading}>Practice, get objection help, and review the script — all in one place.</Text>
 
@@ -316,6 +394,7 @@ export default function CoachScreen() {
 
         {tab === 'pitch' && <GradePitchSection />}
         {tab === 'objections' && <ObjectionsSection />}
+        {tab === 'chat' && <ChatSection scrollRef={scrollRef} />}
         {tab === 'training' && <TrainingSection />}
       </ScrollView>
     </SafeAreaView>
@@ -557,5 +636,57 @@ const styles = StyleSheet.create({
   objectionResponse: {
     ...typography.body,
     color: colors.textMuted,
+  },
+  chatBubble: {
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    maxWidth: '85%',
+  },
+  chatBubbleUser: {
+    alignSelf: 'flex-end',
+    backgroundColor: colors.primary,
+  },
+  chatBubbleAgent: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chatBubbleUserText: {
+    ...typography.body,
+    color: colors.background,
+  },
+  chatBubbleAgentText: {
+    ...typography.body,
+    color: colors.text,
+  },
+  chatInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  chatInput: {
+    flex: 1,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    color: colors.text,
+    fontSize: 15,
+    maxHeight: 120,
+    textAlignVertical: 'top',
+  },
+  chatSendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
