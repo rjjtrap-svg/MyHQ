@@ -6,7 +6,7 @@ import { useAuthStore } from '@/src/store/authStore';
 import { colors } from '@/src/theme';
 
 function TabIcon({ name, color }: { name: React.ComponentProps<typeof FontAwesome>['name']; color: string }) {
-  return <FontAwesome name={name} size={22} color={color} />;
+  return <FontAwesome name={name} size={19} color={color} />;
 }
 
 // Purely visual — the tab bar's own touchable handles the press (see the
@@ -41,6 +41,7 @@ export default function TabLayout() {
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: true,
         tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabItem,
       }}
     >
       <Tabs.Screen
@@ -85,6 +86,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <TabIcon name="user" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
@@ -102,9 +110,15 @@ const styles = StyleSheet.create({
     height: Platform.select({ ios: 88, default: 64 }),
     paddingTop: 8,
   },
+  // Seven destinations across a phone-width bar, so labels are set small and tight —
+  // any larger and "Settings"/"Profile" start truncating on narrow devices.
   tabLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  tabItem: {
+    paddingHorizontal: 0,
   },
   addButtonWrap: {
     alignItems: 'center',

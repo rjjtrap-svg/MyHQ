@@ -14,6 +14,13 @@ service firebase.storage {
       allow read, write: if request.auth != null;
     }
 
+    // Profile pictures. Readable by any signed-in user (teammates see each other's
+    // profile cards), but only the owner can replace their own.
+    match /teams/{teamId}/profile-photos/{uid}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
     // Accountability Coach photo/voice-memo attachments — path is namespaced by the
     // uploading rep's own uid, so scope read/write to that same uid (this is meant to be
     // a private, judgment-free space — tighter than the coarse team-wide rules above).

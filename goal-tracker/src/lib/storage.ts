@@ -21,4 +21,5 @@ export const STORAGE_KEYS = {
   deals: '@goal-tracker/deals',
   settings: '@goal-tracker/settings',
   celebratedMilestones: '@goal-tracker/celebrated-milestones',
+  celebratedDailyAlerts: '@goal-tracker/celebrated-daily-alerts',
 } as const;

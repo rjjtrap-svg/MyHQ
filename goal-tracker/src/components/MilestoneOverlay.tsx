@@ -2,25 +2,37 @@ import React, { useRef } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { FontAwesome } from '@expo/vector-icons';
+import { DAILY_SALE_ALERTS } from '@/src/types';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
+type DailyAlert = (typeof DAILY_SALE_ALERTS)[number];
+
 interface MilestoneOverlayProps {
+  /** A career milestone total (10/25/50…), or null. */
   milestone: number | null;
+  /** A same-day streak alert (Heating Up, On Fire…), or null. */
+  dailyAlert?: DailyAlert | null;
   salesGoal: number;
   onDismiss: () => void;
 }
 
-export function MilestoneOverlay({ milestone, salesGoal, onDismiss }: MilestoneOverlayProps) {
+export function MilestoneOverlay({ milestone, dailyAlert, salesGoal, onDismiss }: MilestoneOverlayProps) {
   const { width } = useWindowDimensions();
   const cannonRef = useRef<ConfettiCannon>(null);
 
-  if (milestone === null) return null;
+  if (!dailyAlert && milestone === null) return null;
 
-  const isGoal = milestone >= salesGoal;
-  const title = isGoal ? 'GOAL REACHED' : `${milestone} SALES`;
-  const subtitle = isGoal
-    ? "You hit your sales goal. That's the whole mission, done."
-    : `${milestone} deals in the books. Keep the streak alive.`;
+  // A same-day streak wins the tie — it's the more immediate thing that just happened.
+  const isDaily = !!dailyAlert;
+  const isGoal = !isDaily && milestone !== null && milestone >= salesGoal;
+
+  const title = isDaily ? dailyAlert.title : isGoal ? 'GOAL REACHED' : `${milestone} SALES`;
+  const subtitle = isDaily
+    ? dailyAlert.blurb
+    : isGoal
+      ? "You hit your sales goal. That's the whole mission, done."
+      : `${milestone} deals in the books. Keep the streak alive.`;
+  const icon = isDaily ? 'fire' : isGoal ? 'trophy' : 'star';
 
   return (
     <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
@@ -34,7 +46,7 @@ export function MilestoneOverlay({ milestone, salesGoal, onDismiss }: MilestoneO
       <Pressable style={styles.backdrop} onPress={onDismiss}>
         <View style={styles.card}>
           <View style={styles.iconWrap}>
-            <FontAwesome name={isGoal ? 'trophy' : 'star'} size={32} color={colors.gold} />
+            <FontAwesome name={icon} size={32} color={colors.gold} />
           </View>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
@@ -78,6 +90,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     letterSpacing: 1,
     marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
     ...typography.body,

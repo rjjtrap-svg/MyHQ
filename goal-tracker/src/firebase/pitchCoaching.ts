@@ -1,5 +1,5 @@
-import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
+import { deleteObject, ref, uploadBytes, getDownloadURL, listAll } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
 import { PitchSubmission } from '@/src/types';
 import { db, storage, functions } from './config';
@@ -69,6 +69,32 @@ export function subscribePitchSubmissions(
     },
     () => callback([])
   );
+}
+
+/**
+ * Removes a practice pitch: the Firestore doc plus its recording in Storage. Firestore
+ * rules already limit this to the rep who recorded it (or the manager).
+ *
+ * The audio file's extension depends on what the device recorded, so rather than guessing
+ * we list the pitch-audio folder and delete whatever is named after this submission —
+ * the upload names the file after the submission id precisely so it can be found again.
+ */
+export async function deletePitchSubmission(teamId: string, submissionId: string): Promise<void> {
+  if (!db) throw new Error('Firebase is not configured.');
+  await deleteDoc(doc(db, 'teams', teamId, 'pitchSubmissions', submissionId));
+
+  if (!storage) return;
+  try {
+    const folder = await listAll(ref(storage, `teams/${teamId}/pitch-audio`));
+    await Promise.all(
+      folder.items
+        .filter((item) => item.name.replace(/\.[^.]+$/, '') === submissionId)
+        .map((item) => deleteObject(item))
+    );
+  } catch {
+    // The recording may never have finished uploading, or may already be gone. The doc is
+    // deleted either way, which is what the rep asked for — don't fail the whole action.
+  }
 }
 
 export async function askObjectionHandling(question: string): Promise<string> {

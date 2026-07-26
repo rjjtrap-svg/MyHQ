@@ -94,6 +94,9 @@ export interface Membership {
   joinedAt: string;
   /** Only meaningful when role is 'rep' — the uid of the team_lead who oversees them. Set by the manager. */
   overseerUid?: string;
+  /** Profile card, visible to the whole team. Both are optional and self-edited. */
+  photoUrl?: string;
+  bio?: string;
 }
 
 export interface LeaderboardEntry {
@@ -137,7 +140,25 @@ export interface PushToken {
   createdAt: string;
 }
 
-export const DAILY_SALE_MILESTONES = [2, 6, 8, 10] as const;
+/**
+ * Same-day sale streaks the team gets pinged about, in escalating order. Keep the
+ * thresholds and copy in sync with DAILY_SALE_ALERTS in functions/index.js — the Cloud
+ * Function sends the push, this copy is what the app shows.
+ */
+export const DAILY_SALE_ALERTS = [
+  { count: 2, title: 'Heating Up 🔥', blurb: 'Two on the board.' },
+  { count: 4, title: 'On Fire 🔥🔥🔥', blurb: 'Four deep and rolling.' },
+  { count: 6, title: 'Burning Up 🔥🔥🔥🔥🔥', blurb: 'Six. The street is yours.' },
+  { count: 8, title: 'Selling Frenzy 🔥🔥🔥🔥🔥🔥🔥', blurb: 'Eight sales. Absolute tear.' },
+  { count: 10, title: "Daddy's Home 🍆🍆🍆", blurb: 'Ten in a day. Legendary.' },
+] as const;
+
+export const DAILY_SALE_MILESTONES = DAILY_SALE_ALERTS.map((a) => a.count);
+
+/** The alert copy for the highest threshold a rep has crossed today, if any. */
+export function dailySaleAlertFor(count: number) {
+  return [...DAILY_SALE_ALERTS].reverse().find((a) => count >= a.count) ?? null;
+}
 
 export type PaceStatus = 'ahead' | 'on-pace' | 'behind';
 

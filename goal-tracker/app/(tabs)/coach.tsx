@@ -8,7 +8,12 @@ import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
 import { usePitchCoachStore } from '@/src/store/pitchCoachStore';
 import { useCoachChatStore } from '@/src/store/coachChatStore';
-import { createPitchSubmission, uploadPitchAudio, askObjectionHandling } from '@/src/firebase/pitchCoaching';
+import {
+  askObjectionHandling,
+  createPitchSubmission,
+  deletePitchSubmission,
+  uploadPitchAudio,
+} from '@/src/firebase/pitchCoaching';
 import {
   deleteCoachChatMessage,
   resetCoachChatSession,
@@ -32,24 +37,37 @@ const STATUS_LABELS: Record<PitchSubmission['status'], string> = {
   error: 'Error',
 };
 
-function SegmentedControl({ value, onChange }: { value: CoachTab; onChange: (v: CoachTab) => void }) {
-  const options: { key: CoachTab; label: string }[] = [
-    { key: 'accountability', label: 'Accountability' },
-    { key: 'pitch', label: 'Grade My Pitch' },
-    { key: 'objections', label: 'Objections' },
-    { key: 'training', label: 'Training' },
+/**
+ * Four cards in a 2x2 grid rather than one segmented bar — with four labels this long,
+ * a single row squeezed every label to the point of truncation.
+ */
+function CoachModePicker({ value, onChange }: { value: CoachTab; onChange: (v: CoachTab) => void }) {
+  const options: { key: CoachTab; label: string; hint: string; icon: React.ComponentProps<typeof FontAwesome>['name'] }[] = [
+    { key: 'accountability', label: 'Accountability', hint: 'Talk it out', icon: 'comments' },
+    { key: 'pitch', label: 'Grade My Pitch', hint: 'Record & score', icon: 'microphone' },
+    { key: 'objections', label: 'Objections', hint: 'Live answers', icon: 'shield' },
+    { key: 'training', label: 'Training', hint: 'Script & guide', icon: 'book' },
   ];
   return (
-    <View style={styles.segmentRow}>
-      {options.map((o) => (
-        <Pressable
-          key={o.key}
-          style={[styles.segmentButton, value === o.key && styles.segmentButtonActive]}
-          onPress={() => onChange(o.key)}
-        >
-          <Text style={[styles.segmentText, value === o.key && styles.segmentTextActive]}>{o.label}</Text>
-        </Pressable>
-      ))}
+    <View style={styles.modeGrid}>
+      {options.map((o) => {
+        const active = value === o.key;
+        return (
+          <Pressable
+            key={o.key}
+            style={[styles.modeCard, active && styles.modeCardActive]}
+            onPress={() => onChange(o.key)}
+          >
+            <FontAwesome
+              name={o.icon}
+              size={18}
+              color={active ? colors.gold : colors.textFaint}
+            />
+            <Text style={[styles.modeLabel, active && styles.modeLabelActive]}>{o.label}</Text>
+            <Text style={[styles.modeHint, active && styles.modeHintActive]}>{o.hint}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -61,12 +79,29 @@ function GradeColor(grade?: number): string {
   return colors.danger;
 }
 
-function PitchSubmissionCard({ submission }: { submission: PitchSubmission }) {
+function PitchSubmissionCard({
+  submission,
+  onDelete,
+  deleting,
+}: {
+  submission: PitchSubmission;
+  onDelete: (id: string) => void;
+  deleting: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const inProgress = submission.status !== 'done' && submission.status !== 'error';
 
   return (
     <Pressable style={styles.submissionCard} onPress={() => setExpanded((v) => !v)}>
+      <Pressable
+        style={styles.submissionDeleteButton}
+        onPress={() => setConfirming((v) => !v)}
+        hitSlop={8}
+      >
+        <FontAwesome name="trash-o" size={14} color={colors.textFaint} />
+      </Pressable>
+
       <View style={styles.submissionHeaderRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.submissionDate}>
@@ -94,6 +129,22 @@ function PitchSubmissionCard({ submission }: { submission: PitchSubmission }) {
           <Text style={[styles.gradeText, { color: GradeColor(submission.grade) }]}>{submission.grade}</Text>
         )}
       </View>
+
+      {confirming && (
+        <View style={styles.deleteConfirmRow}>
+          <Text style={styles.deleteConfirmText}>Delete this pitch?</Text>
+          <Pressable onPress={() => setConfirming(false)} style={styles.resetCancelButton} disabled={deleting}>
+            <Text style={styles.resetCancelText}>Cancel</Text>
+          </Pressable>
+          <Pressable onPress={() => onDelete(submission.id)} style={styles.deleteConfirmButton} disabled={deleting}>
+            {deleting ? (
+              <ActivityIndicator size="small" color={colors.background} />
+            ) : (
+              <Text style={styles.resetConfirmButtonText}>Delete</Text>
+            )}
+          </Pressable>
+        </View>
+      )}
 
       {expanded && submission.status === 'done' && (
         <View style={styles.expandedBlock}>
@@ -139,6 +190,20 @@ function GradePitchSection() {
   const [isRecording, setIsRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function removeSubmission(id: string) {
+    if (!teamId || deletingId) return;
+    setError(null);
+    setDeletingId(id);
+    try {
+      await deletePitchSubmission(teamId, id);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not delete that pitch.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function startRecording() {
     setError(null);
@@ -210,7 +275,14 @@ function GradePitchSection() {
         {submissions.length === 0 ? (
           <Text style={styles.emptyText}>No practice pitches recorded yet.</Text>
         ) : (
-          submissions.map((s) => <PitchSubmissionCard key={s.id} submission={s} />)
+          submissions.map((s) => (
+            <PitchSubmissionCard
+              key={s.id}
+              submission={s}
+              onDelete={removeSubmission}
+              deleting={deletingId === s.id}
+            />
+          ))
         )}
       </Section>
     </>
@@ -449,7 +521,7 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
       <View style={styles.recordCard}>
         <Text style={styles.recordHint}>
           Talk to your coach about anything — a rough day, a weird objection, a win worth celebrating. Type it,
-          snap a photo, or record a voice memo. It remembers the whole conversation.
+          snap a photo, or record a voice memo. It remembers you between conversations, not just within one.
         </Text>
       </View>
 
@@ -461,8 +533,8 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
       ) : (
         <View style={styles.resetConfirmCard}>
           <Text style={styles.resetConfirmText}>
-            Start fresh? Your coach won't remember this conversation — older messages stay visible, but it forgets
-            the context.
+            Start fresh? This clears the current thread. Your coach keeps its long-term memory of you, so it
+            still knows your goals, your history, and what you've worked on together.
           </Text>
           <View style={styles.resetConfirmButtons}>
             <Pressable
@@ -626,7 +698,7 @@ export default function CoachScreen() {
             : 'Practice, get objection help, and review the script — all in one place.'}
         </Text>
 
-        <SegmentedControl value={tab} onChange={setTab} />
+        <CoachModePicker value={tab} onChange={setTab} />
 
         {tab === 'accountability' && <AccountabilityCoachSection scrollRef={scrollRef} />}
         {tab === 'pitch' && <GradePitchSection />}
@@ -658,31 +730,50 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     marginBottom: spacing.lg,
   },
-  segmentRow: {
+  modeGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  modeCard: {
+    width: '48.5%',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 3,
-    marginBottom: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm + 2,
+    gap: spacing.xs,
   },
-  segmentButton: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-    borderRadius: radius.sm,
+  modeCardActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  segmentButtonActive: {
-    backgroundColor: colors.primaryMuted,
+  modeLabel: {
+    ...typography.eyebrow,
+    fontSize: 11,
+    color: colors.text,
+    marginTop: spacing.xs,
   },
-  segmentText: {
-    color: colors.textMuted,
-    fontWeight: '700',
-    fontSize: 12,
+  modeLabelActive: {
+    color: colors.background,
   },
-  segmentTextActive: {
-    color: colors.primary,
+  modeHint: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.textFaint,
+  },
+  modeHintActive: {
+    color: colors.primaryMuted,
+  },
+  submissionDeleteButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    padding: 4,
+    zIndex: 1,
   },
   recordCard: {
     alignItems: 'center',

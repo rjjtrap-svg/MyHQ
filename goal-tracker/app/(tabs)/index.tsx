@@ -9,6 +9,9 @@ import { StreakFlame } from '@/src/components/StreakFlame';
 import { StatTile } from '@/src/components/StatTile';
 import { MilestoneOverlay } from '@/src/components/MilestoneOverlay';
 import { Section } from '@/src/components/Section';
+import { Emblem } from '@/src/components/Emblem';
+import { WaveRule } from '@/src/components/WaveRule';
+import { PullQuote } from '@/src/components/PullQuote';
 import { colors, spacing, typography } from '@/src/theme';
 import { parseISODate, shortDateLabel, weekdayLabel } from '@/src/lib/dates';
 
@@ -20,6 +23,8 @@ export default function HomeScreen() {
   const { settings, stats } = useGoalStats();
   const pendingCelebration = useUIStore((s) => s.pendingCelebration);
   const clearCelebration = useUIStore((s) => s.clearCelebration);
+  const pendingDailyAlert = useUIStore((s) => s.pendingDailyAlert);
+  const clearDailyAlert = useUIStore((s) => s.clearDailyAlert);
 
   const today = new Date();
 
@@ -27,9 +32,16 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>{weekdayLabel(today)}, {shortDateLabel(today)}</Text>
-          <Text style={styles.heading}>Goal Tracker</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>
+              {weekdayLabel(today)} · {shortDateLabel(today)}
+            </Text>
+            <Text style={styles.heading}>Goal Tracker</Text>
+          </View>
+          <Emblem size={44} />
         </View>
+
+        <WaveRule style={styles.headerWave} color={colors.border} />
 
         <View style={styles.ringWrap}>
           <CircularProgress progress={stats.percentComplete} size={230} strokeWidth={20}>
@@ -79,12 +91,15 @@ export default function HomeScreen() {
             />
           </View>
         </Section>
+
+        <PullQuote />
       </ScrollView>
 
       <MilestoneOverlay
         milestone={pendingCelebration}
+        dailyAlert={pendingDailyAlert}
         salesGoal={settings.salesGoal}
-        onDismiss={clearCelebration}
+        onDismiss={pendingDailyAlert ? clearDailyAlert : clearCelebration}
       />
     </SafeAreaView>
   );
@@ -100,19 +115,28 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+  },
+  headerText: {
+    flex: 1,
+  },
+  headerWave: {
     marginTop: spacing.md,
     marginBottom: spacing.lg,
+    opacity: 0.9,
   },
   eyebrow: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
+    ...typography.eyebrow,
+    color: colors.gold,
   },
   heading: {
     ...typography.hero,
     color: colors.text,
     fontSize: 32,
-    marginTop: 2,
+    marginTop: 4,
   },
   ringWrap: {
     alignItems: 'center',

@@ -11,6 +11,7 @@ export function useGoalStats() {
   const allDeals = useDealsStore((s) => s.deals);
   const settings = useSettingsStore((s) => s.settings);
   const checkMilestones = useUIStore((s) => s.checkMilestones);
+  const checkDailyAlerts = useUIStore((s) => s.checkDailyAlerts);
 
   const deals = useMemo(() => allDeals.filter((d) => d.repUid === uid), [allDeals, uid]);
   const stats = useMemo(() => computeGoalStats(deals, settings), [deals, settings]);
@@ -18,6 +19,10 @@ export function useGoalStats() {
   useEffect(() => {
     checkMilestones(stats.reachedMilestones);
   }, [stats.reachedMilestones.join(','), checkMilestones]);
+
+  useEffect(() => {
+    checkDailyAlerts(stats.todaySales);
+  }, [stats.todaySales, checkDailyAlerts]);
 
   return { deals, settings, stats };
 }

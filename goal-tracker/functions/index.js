@@ -35,8 +35,15 @@ const CLAUDE_MODEL = 'claude-opus-5';
 const COACH_AGENT_ID = 'agent_01XyRX1aWbz2ubMAB4ddyWXT';
 const COACH_ENVIRONMENT_ID = 'env_01RWT3z2Z55cB78jNdGyTuKM';
 
-// Keep in sync with DAILY_SALE_MILESTONES in src/types/index.ts.
-const DAILY_SALE_MILESTONES = [2, 6, 8, 10];
+// Keep in sync with DAILY_SALE_ALERTS in src/types/index.ts.
+const DAILY_SALE_ALERTS = [
+  { count: 2, title: 'Heating Up 🔥' },
+  { count: 4, title: 'On Fire 🔥🔥🔥' },
+  { count: 6, title: 'Burning Up 🔥🔥🔥🔥🔥' },
+  { count: 8, title: 'Selling Frenzy 🔥🔥🔥🔥🔥🔥🔥' },
+  { count: 10, title: "Daddy's Home 🍆🍆🍆" },
+];
+const DAILY_SALE_MILESTONES = DAILY_SALE_ALERTS.map((a) => a.count);
 
 // Matches teams/{teamId}/deal-photos/{dealId}.jpg (or .jpeg/.png) — the client names the
 // upload after the deal it belongs to so this function knows which Firestore doc to update.
@@ -175,9 +182,10 @@ exports.onDealCreatedNotifyMilestone = onDocumentCreated('teams/{teamId}/deals/{
   if (tokens.length === 0) return;
 
   const highest = Math.max(...newlyCrossed);
+  const alert = DAILY_SALE_ALERTS.find((a) => a.count === highest);
   const message = {
     notification: {
-      title: 'Goal Tracker',
+      title: alert ? alert.title : 'Goal Tracker',
       body: `${deal.repName || 'A rep'} just hit ${highest} sales today!`,
     },
     tokens,
@@ -478,16 +486,51 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
     const anthropic = new Anthropic({ apiKey: anthropicApiKey.value() });
 
     const chatSnap = await chatRef.get();
-    let sessionId = chatSnap.exists ? chatSnap.data().sessionId : undefined;
+    const chatData = chatSnap.exists ? chatSnap.data() : {};
+
+    // A session's own context dies with the session, so on its own "Start a new
+    // conversation" would give the rep an amnesiac coach. A memory store is workspace-
+    // scoped and outlives every session: it's mounted into each new session as a
+    // directory the agent reads and writes with ordinary file tools, so what it learned
+    // about this rep in January is still there in June, across any number of sessions.
+    // One store per rep — never shared — since it holds personal coaching notes.
+    let memoryStoreId = chatData.memoryStoreId;
+    if (!memoryStoreId) {
+      const store = await anthropic.beta.memoryStores.create({
+        name: `coach-${teamId}-${repUid}`,
+        description:
+          'Long-term coaching notes for one sales rep: their goals, recurring struggles, ' +
+          'what advice has and has not worked, personal context they have shared, and ' +
+          'notable wins. Read this at the start of every conversation and keep it current.',
+      });
+      memoryStoreId = store.id;
+    }
+
+    let sessionId = chatData.sessionId;
     if (!sessionId) {
       const session = await anthropic.beta.sessions.create({
         agent: COACH_AGENT_ID,
         environment_id: COACH_ENVIRONMENT_ID,
+        resources: [
+          {
+            type: 'memory_store',
+            memory_store_id: memoryStoreId,
+            access: 'read_write',
+            instructions:
+              'Your long-term memory of this rep, carried over from every previous ' +
+              'conversation. Read it before you answer the first message so you pick up ' +
+              'where you left off instead of starting cold. As the conversation goes on, ' +
+              'write down anything worth remembering next time — their goals, what they ' +
+              'are struggling with, advice that landed, wins, and personal context. Keep ' +
+              'it organized as small topic files and update stale notes rather than ' +
+              'appending duplicates.',
+          },
+        ],
       });
       sessionId = session.id;
     }
     const now = new Date().toISOString();
-    await chatRef.set({ repUid, teamId, sessionId, updatedAt: now }, { merge: true });
+    await chatRef.set({ repUid, teamId, sessionId, memoryStoreId, updatedAt: now }, { merge: true });
 
     // Build both the content sent to the agent and the plain-text version stored/shown in
     // Firestore — a voice memo's "text" is its transcript, since there's nothing else to show.
@@ -550,8 +593,11 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
 // *next* message starts a brand-new session. Needed because a session's system
 // instructions are fixed for its whole lifetime (per Anthropic's docs) — if the agent gets
 // upgraded (new instructions/knowledge/model) in the console, a rep's existing ongoing
-// conversation won't pick that up on its own, only a fresh session will. Doesn't touch
-// existing chat history — old messages stay visible, only future ones start a new memory.
+// conversation won't pick that up on its own, only a fresh session will.
+//
+// Deliberately leaves memoryStoreId alone: the rep's long-term memory store is re-attached
+// to the new session, so a fresh conversation still remembers everything the coach has
+// learned about them. This only resets the *session*, never the memory.
 exports.resetCoachAgentSession = onCall({ region: 'us-east1' }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign in required.');
