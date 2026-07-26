@@ -70,19 +70,22 @@ export const useDealsStore = create<DealsState>((set, get) => ({
 
     const now = new Date().toISOString();
     const dealId = id ?? generateId();
+    const customerName = input.customerName?.trim();
+    const address = input.address?.trim();
+    const notes = input.notes?.trim();
     const deal: Deal = {
       id: dealId,
       date: input.date ?? todayISO(),
       createdAt: now,
       updatedAt: now,
-      customerName: input.customerName?.trim() || undefined,
-      address: input.address?.trim() || undefined,
-      notes: input.notes?.trim() || undefined,
+      ...(customerName ? { customerName } : {}),
+      ...(address ? { address } : {}),
+      ...(notes ? { notes } : {}),
       synced: true,
       teamId,
       repUid,
       repName,
-      photoUrl: input.photoUrl,
+      ...(input.photoUrl ? { photoUrl: input.photoUrl } : {}),
       ocrStatus: input.photoUrl ? 'pending' : 'none',
       stage: 'sold',
       soldAt: now,
