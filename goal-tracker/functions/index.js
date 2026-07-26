@@ -23,7 +23,9 @@ const db = getFirestore();
 const visionClient = new vision.ImageAnnotatorClient();
 const speechClient = new speech.SpeechClient();
 const anthropicApiKey = defineSecret('ANTHROPIC_API_KEY');
-const CLAUDE_MODEL = 'claude-sonnet-5';
+// Opus is the right default for a coach that's judging pitches and giving advice — swap to
+// 'claude-sonnet-5' here if you'd rather trade some quality for a noticeably cheaper bill.
+const CLAUDE_MODEL = 'claude-opus-5';
 
 // The persistent Managed Agent backing "Ask Coach Anything" — created once in the
 // Anthropic console, distinct from the plain Messages-API calls (callClaude below) used
@@ -227,7 +229,11 @@ async function callClaude(apiKey, system, userMessage, maxTokens) {
     throw new Error(`Claude API error ${response.status}: ${text.slice(0, 500)}`);
   }
   const data = await response.json();
-  return data.content?.[0]?.text ?? '';
+  // Claude Opus 5 thinks by default (adaptive), so `content` often starts with a
+  // `thinking` block ahead of the `text` block — content[0].text was silently undefined
+  // whenever that happened, making every call look like it "succeeded" with no answer.
+  const textBlock = (data.content || []).find((block) => block.type === 'text');
+  return textBlock?.text ?? '';
 }
 
 /** Downloads the uploaded audio, transcodes it to 16kHz mono LINEAR16 WAV so Speech-to-Text
@@ -436,24 +442,33 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
   if (message.length > MAX_COACH_CHAT_MESSAGE_LENGTH) {
     throw new HttpsError('invalid-argument', 'Message is too long.');
   }
-  if (image && (!image.base64 || !image.mediaType || !image.url)) {
+  if (image && (!image.base64 || !image.mediaType || !image.url || !image.path)) {
     throw new HttpsError('invalid-argument', 'Malformed image attachment.');
   }
 
   const repUid = request.auth.uid;
   await assertTeamMember(teamId, repUid);
 
+  // Both attachment paths are client-supplied and get stored for later use (audio is
+  // downloaded from Storage server-side below; both get deleted from Storage if the
+  // message is ever deleted) — without this check a caller could point either at ANY
+  // object in the bucket (another team's deal-photos, another rep's pitch-audio, etc.),
+  // not just their own chat media.
+  const expectedPathPrefix = `teams/${teamId}/coach-chat-media/${repUid}/`;
+  function assertOwnMediaPath(path) {
+    if (typeof path !== 'string' || path.includes('..') || !path.startsWith(expectedPathPrefix)) {
+      throw new HttpsError('invalid-argument', 'Invalid attachment path.');
+    }
+  }
+
   if (audio) {
     if (!audio.path || !audio.url) {
       throw new HttpsError('invalid-argument', 'Malformed audio attachment.');
     }
-    // audio.path is client-supplied and gets downloaded from Storage server-side below —
-    // without this check a caller could point it at ANY object in the bucket (another
-    // team's deal-photos, another rep's pitch-audio, etc.), not just their own chat media.
-    const expectedPrefix = `teams/${teamId}/coach-chat-media/${repUid}/`;
-    if (typeof audio.path !== 'string' || audio.path.includes('..') || !audio.path.startsWith(expectedPrefix)) {
-      throw new HttpsError('invalid-argument', 'Invalid audio path.');
-    }
+    assertOwnMediaPath(audio.path);
+  }
+  if (image) {
+    assertOwnMediaPath(image.path);
   }
 
   const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(repUid);
@@ -479,6 +494,7 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
     let displayText = message;
     let attachmentType;
     let attachmentUrl;
+    let attachmentPath;
     const content = [];
 
     if (audio) {
@@ -490,10 +506,12 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
       displayText = message ? `${message}\n\n"${transcript}"` : transcript;
       attachmentType = 'audio';
       attachmentUrl = audio.url;
+      attachmentPath = audio.path;
       content.push({ type: 'text', text: displayText });
     } else if (image) {
       attachmentType = 'image';
       attachmentUrl = image.url;
+      attachmentPath = image.path;
       displayText = message || '(photo attached)';
       if (message) content.push({ type: 'text', text: message });
       content.push({ type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.base64 } });
@@ -506,7 +524,7 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
       id: userMsgRef.id,
       role: 'user',
       text: displayText,
-      ...(attachmentType ? { attachmentType, attachmentUrl } : {}),
+      ...(attachmentType ? { attachmentType, attachmentUrl, attachmentPath } : {}),
       createdAt: now,
     });
 
@@ -545,5 +563,47 @@ exports.resetCoachAgentSession = onCall({ region: 'us-east1' }, async (request) 
   await assertTeamMember(teamId, request.auth.uid);
   const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(request.auth.uid);
   await chatRef.set({ sessionId: FieldValue.delete(), updatedAt: new Date().toISOString() }, { merge: true });
+  return { ok: true };
+});
+
+// Callable from the client: deletes one message from the rep's own Accountability Coach
+// chat (e.g. an accidental voice memo or photo) — the Firestore doc, plus its Storage
+// attachment if it had one. Always scoped to the caller's own chat: the doc path is
+// teams/{teamId}/coachChats/{request.auth.uid}/messages/{messageId}, so there's no way to
+// pass another rep's message id and have it resolve to their data.
+exports.deleteCoachChatMessage = onCall({ region: 'us-east1' }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in required.');
+  }
+  const teamId = String(request.data?.teamId || '').trim();
+  const messageId = String(request.data?.messageId || '').trim();
+  if (!teamId || !messageId) {
+    throw new HttpsError('invalid-argument', 'teamId and messageId are required.');
+  }
+  await assertTeamMember(teamId, request.auth.uid);
+
+  const messageRef = db
+    .collection('teams')
+    .doc(teamId)
+    .collection('coachChats')
+    .doc(request.auth.uid)
+    .collection('messages')
+    .doc(messageId);
+
+  const snap = await messageRef.get();
+  if (!snap.exists) {
+    return { ok: true };
+  }
+  const attachmentPath = snap.data().attachmentPath;
+  await messageRef.delete();
+
+  if (attachmentPath) {
+    await getStorage()
+      .bucket()
+      .file(attachmentPath)
+      .delete()
+      .catch((err) => console.error('Failed to delete coach chat attachment', attachmentPath, err));
+  }
+
   return { ok: true };
 });

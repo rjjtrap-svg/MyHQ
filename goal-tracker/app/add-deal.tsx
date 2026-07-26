@@ -395,15 +395,15 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   errorBanner: {
-    backgroundColor: '#3a1d1d',
+    backgroundColor: '#F3DCD5',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#7a3b3b',
+    borderColor: '#D9A68F',
     padding: spacing.sm + 2,
     marginTop: spacing.md,
   },
   errorText: {
-    color: '#ff9b9b',
+    color: '#8A3324',
     fontSize: 13,
     fontWeight: '600',
   },

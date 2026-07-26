@@ -6,13 +6,13 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "goaltracker",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B0D12",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F7F1E6",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B0D12"
+      "backgroundColor": "#F7F1E6"
     },
     "ios": {
       "supportsTablet": true,
@@ -24,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0B0D12"
+        "backgroundColor": "#F7F1E6"
       },
       "package": "com.goaltracker.app"
     },
@@ -38,7 +38,7 @@
       [
         "expo-notifications",
         {
-          "color": "#5B8CFF"
+          "color": "#5C3A21"
         }
       ],
       [

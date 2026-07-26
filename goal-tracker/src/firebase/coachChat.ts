@@ -35,6 +35,9 @@ export interface CoachChatImageUpload {
   base64: string;
   mediaType: string;
   url: string;
+  /** Storage object path — kept alongside the download URL so a later delete can remove
+   * the underlying file, not just the Firestore message that references it. */
+  path: string;
 }
 
 /** Uploads a photo attachment and reads it back as base64 (needed to send it as a vision
@@ -54,7 +57,7 @@ export async function uploadCoachChatImage(
   const imgRef = ref(storage, path);
   await uploadBytes(imgRef, blob, { contentType: mediaType });
   const [url, base64] = await Promise.all([getDownloadURL(imgRef), blobToBase64(blob)]);
-  return { base64, mediaType, url };
+  return { base64, mediaType, url, path };
 }
 
 export interface CoachChatAudioUpload {
@@ -125,4 +128,19 @@ export async function resetCoachChatSession(teamId: string): Promise<void> {
   if (!functions) throw new Error('Firebase is not configured.');
   const callable = httpsCallable<{ teamId: string }, { ok: boolean }>(functions, 'resetCoachAgentSession');
   await callable({ teamId });
+}
+
+/**
+ * Deletes one message (in case a voice memo or photo was sent by accident). Removes both
+ * the Firestore doc and, if the message had one, its Storage attachment. Only ever deletes
+ * from the caller's own chat — there is no way to pass another rep's message id and have
+ * it resolve to their data, since the chat doc id is always the caller's own uid.
+ */
+export async function deleteCoachChatMessage(teamId: string, messageId: string): Promise<void> {
+  if (!functions) throw new Error('Firebase is not configured.');
+  const callable = httpsCallable<{ teamId: string; messageId: string }, { ok: boolean }>(
+    functions,
+    'deleteCoachChatMessage'
+  );
+  await callable({ teamId, messageId });
 }

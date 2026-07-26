@@ -389,10 +389,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.sm,
-    backgroundColor: '#7a3b3b',
+    backgroundColor: '#D9A68F',
   },
   confirmDeleteButtonText: {
-    color: '#ff9b9b',
+    color: '#8A3324',
     fontWeight: '700',
     fontSize: 13,
   },

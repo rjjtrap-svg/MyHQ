@@ -9,7 +9,13 @@ import { useTeamStore } from '@/src/store/teamStore';
 import { usePitchCoachStore } from '@/src/store/pitchCoachStore';
 import { useCoachChatStore } from '@/src/store/coachChatStore';
 import { createPitchSubmission, uploadPitchAudio, askObjectionHandling } from '@/src/firebase/pitchCoaching';
-import { resetCoachChatSession, sendCoachChatMessage, uploadCoachChatAudio, uploadCoachChatImage } from '@/src/firebase/coachChat';
+import {
+  deleteCoachChatMessage,
+  resetCoachChatSession,
+  sendCoachChatMessage,
+  uploadCoachChatAudio,
+  uploadCoachChatImage,
+} from '@/src/firebase/coachChat';
 import { generateId } from '@/src/lib/id';
 import { CLOSING_TIPS, OBJECTIONS, PITCH_SCRIPT } from '@/src/lib/fiberScript';
 import { Section } from '@/src/components/Section';
@@ -320,6 +326,8 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
   const [error, setError] = useState<string | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -422,6 +430,20 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
     }
   }
 
+  async function confirmDelete(messageId: string) {
+    if (!teamId || deletingId) return;
+    setError(null);
+    setDeletingId(messageId);
+    try {
+      await deleteCoachChatMessage(teamId, messageId);
+      setConfirmDeleteId(null);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not delete that message.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <>
       <View style={styles.recordCard}>
@@ -464,13 +486,42 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
       {messages.length === 0 && !sending && <Text style={styles.emptyText}>Nothing here yet — say hello below.</Text>}
 
       {messages.map((m) => (
-        <View key={m.id} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAgent]}>
-          {m.attachmentType === 'image' && m.attachmentUrl && (
-            <Image source={{ uri: m.attachmentUrl }} style={styles.chatBubbleImage} resizeMode="cover" />
-          )}
-          {m.attachmentType === 'audio' && m.attachmentUrl && <AudioBubble url={m.attachmentUrl} />}
-          {!!m.text && (
-            <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAgentText}>{m.text}</Text>
+        <View key={m.id}>
+          <View style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAgent]}>
+            <Pressable
+              style={styles.chatBubbleDeleteButton}
+              onPress={() => setConfirmDeleteId((prev) => (prev === m.id ? null : m.id))}
+              hitSlop={8}
+            >
+              <FontAwesome name="trash-o" size={13} color={m.role === 'user' ? colors.background : colors.textFaint} />
+            </Pressable>
+            {m.attachmentType === 'image' && m.attachmentUrl && (
+              <Image source={{ uri: m.attachmentUrl }} style={styles.chatBubbleImage} resizeMode="cover" />
+            )}
+            {m.attachmentType === 'audio' && m.attachmentUrl && <AudioBubble url={m.attachmentUrl} />}
+            {!!m.text && (
+              <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAgentText}>{m.text}</Text>
+            )}
+          </View>
+
+          {confirmDeleteId === m.id && (
+            <View style={styles.deleteConfirmRow}>
+              <Text style={styles.deleteConfirmText}>Delete this message?</Text>
+              <Pressable onPress={() => setConfirmDeleteId(null)} style={styles.resetCancelButton} disabled={!!deletingId}>
+                <Text style={styles.resetCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => confirmDelete(m.id)}
+                style={styles.deleteConfirmButton}
+                disabled={!!deletingId}
+              >
+                {deletingId === m.id ? (
+                  <ActivityIndicator size="small" color={colors.background} />
+                ) : (
+                  <Text style={styles.resetConfirmButtonText}>Delete</Text>
+                )}
+              </Pressable>
+            </View>
           )}
         </View>
       ))}
@@ -667,16 +718,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   errorBanner: {
-    backgroundColor: '#3a1d1d',
+    backgroundColor: '#F3DCD5',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#7a3b3b',
+    borderColor: '#D9A68F',
     padding: spacing.sm + 2,
     marginTop: spacing.sm,
     alignSelf: 'stretch',
   },
   errorBannerText: {
-    color: '#ff9b9b',
+    color: '#8A3324',
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
@@ -826,8 +877,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
+    paddingRight: spacing.lg + spacing.sm,
     marginBottom: spacing.sm,
     maxWidth: '85%',
+    position: 'relative',
+  },
+  chatBubbleDeleteButton: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    padding: 4,
   },
   chatBubbleUser: {
     alignSelf: 'flex-end',
@@ -958,5 +1017,25 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontSize: 13,
     fontWeight: '700',
+  },
+  deleteConfirmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+    marginTop: -spacing.xs,
+  },
+  deleteConfirmText: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  deleteConfirmButton: {
+    backgroundColor: colors.danger,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    minWidth: 70,
+    alignItems: 'center',
   },
 });
