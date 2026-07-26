@@ -232,11 +232,14 @@ async function callClaude(apiKey, system, userMessage, maxTokens) {
 
 /** Downloads the uploaded audio, transcodes it to 16kHz mono LINEAR16 WAV so Speech-to-Text
  * gets a format it reliably supports regardless of what the recording browser/device produced
- * (Safari, Chrome, and native all encode differently). */
+ * (Safari, Chrome, and native all encode differently). `bucketName` is optional — pass
+ * undefined to use the project's default bucket (the coach chat flow doesn't have a Storage
+ * trigger event to read a bucket name off of, unlike the pitch-audio pipeline below). */
 async function transcodeToWav(bucketName, filePath) {
   const tmpIn = path.join(os.tmpdir(), `in-${Date.now()}${path.extname(filePath)}`);
   const tmpOut = path.join(os.tmpdir(), `out-${Date.now()}.wav`);
-  await getStorage().bucket(bucketName).file(filePath).download({ destination: tmpIn });
+  const bucket = bucketName ? getStorage().bucket(bucketName) : getStorage().bucket();
+  await bucket.file(filePath).download({ destination: tmpIn });
 
   await new Promise((resolve, reject) => {
     ffmpeg(tmpIn)
@@ -371,9 +374,9 @@ exports.askObjectionHandling = onCall({ region: 'us-east1', secrets: [anthropicA
 /** Sends one message into a Managed Agent session and waits for its full reply, collecting
  * incremental `agent.message` deltas rather than the whole event log (so a long-running
  * chat doesn't re-read earlier turns on every call) and stopping at `session.status_idle`. */
-async function runCoachAgentTurn(anthropic, sessionId, message) {
+async function runCoachAgentTurn(anthropic, sessionId, content) {
   await anthropic.beta.sessions.events.send(sessionId, {
-    events: [{ type: 'user.message', content: [{ type: 'text', text: message }] }],
+    events: [{ type: 'user.message', content }],
   });
 
   let answer = '';
@@ -391,24 +394,39 @@ async function runCoachAgentTurn(anthropic, sessionId, message) {
   return answer.trim();
 }
 
+const MAX_COACH_CHAT_MESSAGE_LENGTH = 4000;
+
 // Callable from the client: a rep's freeform, ongoing chat with the persistent Managed
-// Agent coach ("Ask Coach Anything" — Coach tab). Unlike askObjectionHandling, this is a
-// real multi-turn conversation: the same Managed Agent session is reused for every message
-// a given rep sends, so the agent remembers earlier turns instead of starting fresh each time.
+// Agent coach ("Accountability Coach" — Coach tab, default view). Unlike
+// askObjectionHandling, this is a real multi-turn conversation: the same Managed Agent
+// session is reused for every message a given rep sends, so the agent remembers earlier
+// turns instead of starting fresh each time. A message can be plain text, a photo (sent to
+// the agent as a vision content block), or a voice memo (transcribed server-side first,
+// reusing the same transcode/transcribe pipeline as pitch grading) — never more than one
+// attachment per message, matching the app's single "camera" / "mic" buttons.
 exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey], timeoutSeconds: 300 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign in required.');
   }
   const teamId = String(request.data?.teamId || '').trim();
   const message = String(request.data?.message || '').trim();
+  const image = request.data?.image;
+  const audio = request.data?.audio;
+
   if (!teamId) {
     throw new HttpsError('invalid-argument', 'teamId is required.');
   }
-  if (!message) {
-    throw new HttpsError('invalid-argument', 'Message is required.');
+  if (!message && !image && !audio) {
+    throw new HttpsError('invalid-argument', 'Say something, attach a photo, or record a voice memo.');
   }
-  if (message.length > 4000) {
+  if (message.length > MAX_COACH_CHAT_MESSAGE_LENGTH) {
     throw new HttpsError('invalid-argument', 'Message is too long.');
+  }
+  if (image && (!image.base64 || !image.mediaType || !image.url)) {
+    throw new HttpsError('invalid-argument', 'Malformed image attachment.');
+  }
+  if (audio && (!audio.path || !audio.url)) {
+    throw new HttpsError('invalid-argument', 'Malformed audio attachment.');
   }
 
   const repUid = request.auth.uid;
@@ -430,10 +448,43 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
     const now = new Date().toISOString();
     await chatRef.set({ repUid, teamId, sessionId, updatedAt: now }, { merge: true });
 
-    const userMsgRef = messagesRef.doc();
-    await userMsgRef.set({ id: userMsgRef.id, role: 'user', text: message, createdAt: now });
+    // Build both the content sent to the agent and the plain-text version stored/shown in
+    // Firestore — a voice memo's "text" is its transcript, since there's nothing else to show.
+    let displayText = message;
+    let attachmentType;
+    let attachmentUrl;
+    const content = [];
 
-    const answer = await runCoachAgentTurn(anthropic, sessionId, message);
+    if (audio) {
+      const wavBuffer = await transcodeToWav(undefined, audio.path);
+      const transcript = await transcribeWav(wavBuffer);
+      if (!transcript) {
+        throw new HttpsError('invalid-argument', 'Could not make out any speech in that recording.');
+      }
+      displayText = message ? `${message}\n\n"${transcript}"` : transcript;
+      attachmentType = 'audio';
+      attachmentUrl = audio.url;
+      content.push({ type: 'text', text: displayText });
+    } else if (image) {
+      attachmentType = 'image';
+      attachmentUrl = image.url;
+      displayText = message || '(photo attached)';
+      if (message) content.push({ type: 'text', text: message });
+      content.push({ type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.base64 } });
+    } else {
+      content.push({ type: 'text', text: message });
+    }
+
+    const userMsgRef = messagesRef.doc();
+    await userMsgRef.set({
+      id: userMsgRef.id,
+      role: 'user',
+      text: displayText,
+      ...(attachmentType ? { attachmentType, attachmentUrl } : {}),
+      createdAt: now,
+    });
+
+    const answer = await runCoachAgentTurn(anthropic, sessionId, content);
     if (!answer) {
       throw new Error('No reply received from the coach agent.');
     }
@@ -443,6 +494,7 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
 
     return { answer };
   } catch (err) {
+    if (err instanceof HttpsError) throw err;
     console.error('askCoachAgent failed', err);
     throw new HttpsError('internal', 'Could not reach the AI coach — try again in a moment.');
   }

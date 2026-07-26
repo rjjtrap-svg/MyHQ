@@ -129,8 +129,23 @@ is an Apple platform restriction, not something the app can work around.
 
 ## AI Sales Coach
 
-The **Coach** tab has four sections:
+The **Coach** tab opens directly on **Accountability Coach** (a segmented control switches
+to the other three sections below it):
 
+- **Accountability Coach** (default view) — an open-ended, ongoing chat with a persistent
+  [Managed Agent](https://platform.claude.com/docs/en/managed-agents) (`askCoachAgent`
+  callable). Unlike Objection Handling below, this one remembers the conversation across
+  every message a rep sends (a single Managed Agent *session* per rep, reused turn after
+  turn), so it's meant to be a "talk to it all day about anything" assistant rather than a
+  one-shot Q&A — a rough day, a weird situation at a door, a win worth celebrating. A rep
+  can type, snap a photo with the camera button (sent to the agent as an image, so it can
+  actually see what's attached), or record a voice memo with the mic button (transcribed
+  server-side — same transcode/Speech-to-Text pipeline as Grade My Pitch — before being
+  sent as text). History lives in `teams/{teamId}/coachChats/{repUid}/messages` and photo/
+  audio attachments in Storage under `teams/{teamId}/coach-chat-media/{repUid}/`, both
+  private to that rep — not visible to managers/team leads, unlike pitch submissions.
+  **Video isn't supported** — Claude can't process video today, so there's no video
+  attachment button; only photos and voice memos.
 - **Grade My Pitch** — a rep taps the mic and records a practice pitch (or a recap of a
   real door-knock). The audio uploads to `teams/{teamId}/pitch-audio/`, which triggers a
   Cloud Function (`onPitchAudioUploaded`) that transcodes it to WAV, sends it to Google
@@ -141,30 +156,26 @@ The **Coach** tab has four sections:
   managers/team leads can review a rep's history too.
 - **Objection Handling** — a rep types a question (e.g. "they said they're already under
   contract") and an `askObjectionHandling` callable function answers it in-character as a
-  sales trainer, grounded in the same fiber objection guide.
-- **Ask Anything** — an open-ended, ongoing chat with a persistent [Managed
-  Agent](https://platform.claude.com/docs/en/managed-agents) (`askCoachAgent` callable),
-  distinct from Objections above: this one remembers the conversation across every message
-  a rep sends (a single Managed Agent *session* per rep, reused turn after turn), so it's
-  meant to be a "talk to it all day about anything" assistant rather than a one-shot Q&A.
-  History lives in `teams/{teamId}/coachChats/{repUid}/messages` and is private to that rep
-  — not visible to managers/team leads, unlike pitch submissions.
+  sales trainer, grounded in the same fiber objection guide. Stateless — each question is
+  independent, unlike Accountability Coach's ongoing session.
 - **Training** — a static reference page rendering the script/objection guide itself
   (approach → discovery → pitch → close, plus common objections and closing tips), so reps
   can study it without needing to ask the AI anything.
 
 **Setup:** requires the `ANTHROPIC_API_KEY` secret and the Speech-to-Text API (see step 8
-under Firebase setup above) for Grade My Pitch and Objections. Without those, recording
-still works but a submission will end in an `error` status instead of a grade, and the
-objection-handling assistant will fail with an error message. **Ask Anything** additionally
-requires a Managed Agent to already exist in the Anthropic console — the agent + execution
-environment ids are hardcoded as `COACH_AGENT_ID` / `COACH_ENVIRONMENT_ID` in
-`functions/index.js`; update those two constants to point at your own agent/environment.
+under Firebase setup above) for all three AI-backed sections — without those, Grade My
+Pitch ends in an `error` status instead of a grade, and Objection Handling/Accountability
+Coach fail with an error message. Accountability Coach additionally requires a Managed
+Agent to already exist in the Anthropic console — the agent + execution environment ids
+are hardcoded as `COACH_AGENT_ID` / `COACH_ENVIRONMENT_ID` in `functions/index.js`; update
+those two constants to point at your own agent/environment.
 
 **Cost:** separate from Firebase billing — Anthropic API and Google Cloud Speech-to-Text
 are both pay-as-you-go, billed to whichever accounts own those API keys/projects. Grading
 a single pitch (a few thousand tokens) and answering an objection question both cost
-fractions of a cent on Claude; Speech-to-Text is billed per minute of audio.
+fractions of a cent on Claude; Speech-to-Text is billed per minute of audio; a photo sent
+to Accountability Coach costs a bit more in tokens than a text-only message (images are
+priced per-image on Claude), but still small change per photo.
 
 **Editing the script:** the same content lives in two places that must be kept in sync
 by hand — `src/lib/fiberScript.ts` (what the Training page renders) and
@@ -180,7 +191,7 @@ app/                     Expo Router screens
   (tabs)/index.tsx           Home — personal goal dashboard
   (tabs)/deals.tsx           My Deals — pipeline, commission entry, closing % KPIs, charts
   (tabs)/team.tsx            Team — leaderboard (today/week), commission rollup, rep overrides
-  (tabs)/coach.tsx           Coach — grade my pitch, objection handling, training reference
+  (tabs)/coach.tsx           Coach — accountability chat (default), grade my pitch, objection handling, training
   (tabs)/settings.tsx        Personal + team goals, role/overseer management, notifications
 
 src/store/                Zustand stores
@@ -191,13 +202,13 @@ src/store/                Zustand stores
   overrideStore.ts           Manager/team_lead commission overrides (realtime, access-controlled)
   doorKnocksStore.ts         Per-rep-per-day door-knock counts
   pitchCoachStore.ts         Rep's pitch submissions (realtime)
-  coachChatStore.ts          Rep's Ask Anything chat history (realtime)
+  coachChatStore.ts          Rep's Accountability Coach chat history (realtime)
   settingsStore.ts / uiStore.ts   Personal, per-device (goal targets, celebrated milestones)
 
 src/firebase/              auth.ts, teams.ts, storage.ts, commissions.ts, overrides.ts, doorKnocks.ts, pitchCoaching.ts, coachChat.ts, config.ts
 src/lib/                   stats engine, dates, notifications, push (web FCM), image prep, local storage cache
 src/lib/fiberScript.ts     Fiber sales script/objection guide, rendered on the Training page
-functions/index.js         Cloud Vision OCR, milestone push notifications, pitch transcription/grading, objection handling
+functions/index.js         Cloud Vision OCR, milestone push notifications, pitch transcription/grading, objection handling, Accountability Coach chat (askCoachAgent)
 functions/fiberScript.js   Same script/objection content as src/lib/fiberScript.ts, used as AI grading/coaching context
 public/firebase-messaging-sw.js   Web push service worker (config passed via query string)
 firestore.rules / storage.rules / firebase.json   Security rules + deploy config

@@ -244,5 +244,8 @@ export interface CoachChatMessage {
   id: string;
   role: 'user' | 'agent';
   text: string;
+  /** Present when the user attached a photo or voice memo to this message. */
+  attachmentType?: 'image' | 'audio';
+  attachmentUrl?: string;
   createdAt: string;
 }

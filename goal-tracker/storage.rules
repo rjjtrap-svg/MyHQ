@@ -13,5 +13,12 @@ service firebase.storage {
     match /teams/{teamId}/pitch-audio/{fileName} {
       allow read, write: if request.auth != null;
     }
+
+    // Accountability Coach photo/voice-memo attachments — path is namespaced by the
+    // uploading rep's own uid, so scope read/write to that same uid (this is meant to be
+    // a private, judgment-free space — tighter than the coarse team-wide rules above).
+    match /teams/{teamId}/coach-chat-media/{repUid}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == repUid;
+    }
   }
 }

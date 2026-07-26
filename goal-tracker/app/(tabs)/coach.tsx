@@ -1,21 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
 import { usePitchCoachStore } from '@/src/store/pitchCoachStore';
 import { useCoachChatStore } from '@/src/store/coachChatStore';
 import { createPitchSubmission, uploadPitchAudio, askObjectionHandling } from '@/src/firebase/pitchCoaching';
-import { sendCoachChatMessage } from '@/src/firebase/coachChat';
+import { sendCoachChatMessage, uploadCoachChatAudio, uploadCoachChatImage } from '@/src/firebase/coachChat';
 import { generateId } from '@/src/lib/id';
 import { CLOSING_TIPS, OBJECTIONS, PITCH_SCRIPT } from '@/src/lib/fiberScript';
 import { Section } from '@/src/components/Section';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { ObjectionExchange, PitchSubmission } from '@/src/types';
 
-type CoachTab = 'pitch' | 'objections' | 'chat' | 'training';
+type CoachTab = 'accountability' | 'pitch' | 'objections' | 'training';
 
 const STATUS_LABELS: Record<PitchSubmission['status'], string> = {
   uploading: 'Uploading…',
@@ -27,9 +28,9 @@ const STATUS_LABELS: Record<PitchSubmission['status'], string> = {
 
 function SegmentedControl({ value, onChange }: { value: CoachTab; onChange: (v: CoachTab) => void }) {
   const options: { key: CoachTab; label: string }[] = [
+    { key: 'accountability', label: 'Accountability' },
     { key: 'pitch', label: 'Grade My Pitch' },
     { key: 'objections', label: 'Objections' },
-    { key: 'chat', label: 'Ask Anything' },
     { key: 'training', label: 'Training' },
   ];
   return (
@@ -270,19 +271,59 @@ function ObjectionsSection() {
   );
 }
 
-function ChatSection({ scrollRef }: { scrollRef: React.RefObject<ScrollView> }) {
+function AudioBubble({ url }: { url: string }) {
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      soundRef.current?.unloadAsync();
+    };
+  }, []);
+
+  async function toggle() {
+    if (soundRef.current) {
+      if (playing) {
+        await soundRef.current.pauseAsync();
+        setPlaying(false);
+      } else {
+        await soundRef.current.playAsync();
+        setPlaying(true);
+      }
+      return;
+    }
+    const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
+    soundRef.current = sound;
+    setPlaying(true);
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) setPlaying(false);
+    });
+  }
+
+  return (
+    <Pressable style={styles.audioBubbleRow} onPress={toggle}>
+      <FontAwesome name={playing ? 'pause' : 'play'} size={13} color={colors.accent} />
+      <Text style={styles.audioBubbleLabel}>Voice memo</Text>
+    </Pressable>
+  );
+}
+
+function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<ScrollView> }) {
+  const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const teamId = useTeamStore((s) => s.teamId);
   const messages = useCoachChatStore((s) => s.messages);
 
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
   }, [messages.length, sending]);
 
-  async function send() {
+  async function sendText() {
     const trimmed = input.trim();
     if (!trimmed || !teamId || sending) return;
     setError(null);
@@ -297,20 +338,94 @@ function ChatSection({ scrollRef }: { scrollRef: React.RefObject<ScrollView> }) 
     }
   }
 
+  async function sendPhoto(localUri: string) {
+    if (!teamId || !firebaseUser || sending) return;
+    const caption = input.trim();
+    setError(null);
+    setInput('');
+    setSending(true);
+    try {
+      const image = await uploadCoachChatImage(teamId, firebaseUser.uid, generateId(), localUri);
+      await sendCoachChatMessage(teamId, caption, { image });
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not send that photo.');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function takePhoto() {
+    setError(null);
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        setError('Enable camera access to attach a photo.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.6 });
+      if (result.canceled) return;
+      await sendPhoto(result.assets[0].uri);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not open the camera.');
+    }
+  }
+
+  async function startRecording() {
+    setError(null);
+    try {
+      const perm = await Audio.requestPermissionsAsync();
+      if (!perm.granted) {
+        setError('Enable microphone access to record a voice memo.');
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording: rec } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      setRecording(rec);
+      setIsRecording(true);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not start recording.');
+    }
+  }
+
+  async function stopRecording() {
+    if (!recording || !teamId || !firebaseUser) return;
+    setIsRecording(false);
+    setError(null);
+    setSending(true);
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
+      if (!uri) throw new Error('No recording found.');
+      const audio = await uploadCoachChatAudio(teamId, firebaseUser.uid, generateId(), uri);
+      await sendCoachChatMessage(teamId, '', { audio });
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not send that voice memo.');
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <>
       <View style={styles.recordCard}>
         <Text style={styles.recordHint}>
-          Ask this coach anything, any time of day — it remembers your conversation, so you can keep coming back to
-          it instead of starting over each time.
+          Talk to your coach about anything — a rough day, a weird objection, a win worth celebrating. Type it,
+          snap a photo, or record a voice memo. It remembers the whole conversation.
         </Text>
       </View>
 
-      {messages.length === 0 && !sending && <Text style={styles.emptyText}>No messages yet — ask your first question below.</Text>}
+      {messages.length === 0 && !sending && <Text style={styles.emptyText}>Nothing here yet — say hello below.</Text>}
 
       {messages.map((m) => (
         <View key={m.id} style={[styles.chatBubble, m.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAgent]}>
-          <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAgentText}>{m.text}</Text>
+          {m.attachmentType === 'image' && m.attachmentUrl && (
+            <Image source={{ uri: m.attachmentUrl }} style={styles.chatBubbleImage} resizeMode="cover" />
+          )}
+          {m.attachmentType === 'audio' && m.attachmentUrl && <AudioBubble url={m.attachmentUrl} />}
+          {!!m.text && (
+            <Text style={m.role === 'user' ? styles.chatBubbleUserText : styles.chatBubbleAgentText}>{m.text}</Text>
+          )}
         </View>
       ))}
 
@@ -328,15 +443,34 @@ function ChatSection({ scrollRef }: { scrollRef: React.RefObject<ScrollView> }) 
       )}
 
       <View style={styles.chatInputRow}>
+        <Pressable style={styles.chatIconButton} onPress={takePhoto} disabled={sending || isRecording}>
+          <FontAwesome name="camera" size={18} color={colors.text} />
+        </Pressable>
+        <Pressable
+          style={[styles.chatIconButton, isRecording && styles.chatIconButtonActive]}
+          onPress={isRecording ? stopRecording : startRecording}
+          disabled={sending && !isRecording}
+        >
+          <FontAwesome
+            name={isRecording ? 'stop' : 'microphone'}
+            size={18}
+            color={isRecording ? colors.background : colors.text}
+          />
+        </Pressable>
         <TextInput
           style={styles.chatInput}
           value={input}
           onChangeText={setInput}
-          placeholder="Ask the coach anything…"
+          placeholder="Say anything…"
           placeholderTextColor={colors.textFaint}
           multiline
+          editable={!isRecording}
         />
-        <Pressable style={[styles.chatSendButton, sending && { opacity: 0.6 }]} onPress={send} disabled={sending}>
+        <Pressable
+          style={[styles.chatSendButton, sending && { opacity: 0.6 }]}
+          onPress={sendText}
+          disabled={sending || isRecording}
+        >
           <FontAwesome name="arrow-up" size={16} color={colors.background} />
         </Pressable>
       </View>
@@ -381,20 +515,25 @@ function TrainingSection() {
 }
 
 export default function CoachScreen() {
-  const [tab, setTab] = useState<CoachTab>('pitch');
+  const [tab, setTab] = useState<CoachTab>('accountability');
   const scrollRef = useRef<ScrollView>(null);
+  const isAccountability = tab === 'accountability';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>AI Sales Coach</Text>
-        <Text style={styles.subheading}>Practice, get objection help, and review the script — all in one place.</Text>
+        <Text style={styles.heading}>{isAccountability ? 'Accountability Coach' : 'AI Sales Coach'}</Text>
+        <Text style={styles.subheading}>
+          {isAccountability
+            ? 'Your coach, on call — text, photos, or voice memos, any time of day.'
+            : 'Practice, get objection help, and review the script — all in one place.'}
+        </Text>
 
         <SegmentedControl value={tab} onChange={setTab} />
 
+        {tab === 'accountability' && <AccountabilityCoachSection scrollRef={scrollRef} />}
         {tab === 'pitch' && <GradePitchSection />}
         {tab === 'objections' && <ObjectionsSection />}
-        {tab === 'chat' && <ChatSection scrollRef={scrollRef} />}
         {tab === 'training' && <TrainingSection />}
       </ScrollView>
     </SafeAreaView>
@@ -688,5 +827,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  chatIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatIconButtonActive: {
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
+  },
+  chatBubbleImage: {
+    width: 200,
+    height: 200,
+    borderRadius: radius.sm,
+    marginBottom: spacing.xs,
+    backgroundColor: colors.surfaceElevated,
+  },
+  audioBubbleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: 2,
+  },
+  audioBubbleLabel: {
+    ...typography.caption,
+    color: colors.accent,
+    fontWeight: '600',
   },
 });
