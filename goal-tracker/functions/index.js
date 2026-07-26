@@ -21,21 +21,40 @@ const ADDRESS_RE = new RegExp(`^\\d+[\\w\\s.,'-]*\\b(${STREET_SUFFIXES})\\b\\.?`
 const NAME_RE = /^[A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+){1,2}$/;
 const NAME_BLACKLIST =
   /\b(invoice|contract|estimate|customer|bill\s*to|ship\s*to|date|total|signature|address|phone|email|order|receipt|company|account|balance|amount|due|paid|quote|proposal)\b/i;
+const MAX_FIELD_LENGTH = 80;
+
+// Most real paperwork (CRM order screens, contracts, invoices) explicitly labels these
+// fields — matching the label directly is far more reliable than guessing from bare text
+// anywhere on the page, which can false-positive on unrelated capitalized text (a company
+// name in a browser tab, a plan name, etc).
+const NAME_LABELS = 'customer\\s*name|full\\s*name|name';
+const ADDRESS_LABELS = 'service\\s*address|installation\\s*address|street\\s*address|mailing\\s*address|address';
+
+function extractLabeledValue(lines, labelAlternation) {
+  const inlineRe = new RegExp(`^(?:${labelAlternation})\\s*[:\\-]\\s*(.+)$`, 'i');
+  const labelOnlyRe = new RegExp(`^(?:${labelAlternation})\\s*[:\\-]?\\s*$`, 'i');
+  for (let i = 0; i < lines.length; i++) {
+    const inlineMatch = lines[i].match(inlineRe);
+    const inlineValue = inlineMatch?.[1]?.trim();
+    if (inlineValue && inlineValue.length <= MAX_FIELD_LENGTH) return inlineValue;
+
+    if (labelOnlyRe.test(lines[i])) {
+      const next = lines[i + 1]?.trim();
+      if (next && next.length <= MAX_FIELD_LENGTH) return next;
+    }
+  }
+  return undefined;
+}
 
 function guessNameAndAddress(lines) {
-  let guessedName;
-  let guessedAddress;
-  for (const line of lines) {
-    if (!guessedAddress && ADDRESS_RE.test(line)) {
-      guessedAddress = line;
-      continue;
-    }
-    if (!guessedName && NAME_RE.test(line) && !NAME_BLACKLIST.test(line) && !ADDRESS_RE.test(line)) {
-      guessedName = line;
-    }
-    if (guessedName && guessedAddress) break;
-  }
-  return { guessedName, guessedAddress };
+  const guessedName = extractLabeledValue(lines, NAME_LABELS);
+  const guessedAddress = extractLabeledValue(lines, ADDRESS_LABELS);
+
+  // Fall back to bare pattern matching for paperwork with no explicit labels (e.g. an ID).
+  return {
+    guessedName: guessedName ?? lines.find((line) => NAME_RE.test(line) && !NAME_BLACKLIST.test(line) && !ADDRESS_RE.test(line)),
+    guessedAddress: guessedAddress ?? lines.find((line) => ADDRESS_RE.test(line)),
+  };
 }
 
 // Must match the region of the Storage bucket it listens to — a storage-triggered
