@@ -8,16 +8,23 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore';
+import * as Crypto from 'expo-crypto';
 import { Membership, Team, UserProfile } from '@/src/types';
 import { addDays, toISODate } from '@/src/lib/dates';
 import { db } from './config';
 
 const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
 
-export function generateInviteCode(): string {
+/**
+ * Uses a real CSPRNG (not Math.random, which is predictable) since this code is the only
+ * thing gating who can join a team. getRandomBytesAsync avoids getRandomBytes' documented
+ * Math.random fallback in dev builds.
+ */
+export async function generateInviteCode(): Promise<string> {
+  const bytes = await Crypto.getRandomBytesAsync(6);
   let code = '';
-  for (let i = 0; i < 6; i += 1) {
-    code += INVITE_CODE_CHARS[Math.floor(Math.random() * INVITE_CODE_CHARS.length)];
+  for (const byte of bytes) {
+    code += INVITE_CODE_CHARS[byte % INVITE_CODE_CHARS.length];
   }
   return code;
 }
@@ -31,11 +38,12 @@ export async function createTeamAndProfile(
   if (!db) throw new Error('Firebase is not configured.');
   const now = new Date().toISOString();
   const teamRef = doc(collection(db, 'teams'));
+  const inviteCode = await generateInviteCode();
   const team: Team = {
     id: teamRef.id,
     name: teamName.trim() || `${displayName}'s Team`,
     ownerUid: uid,
-    inviteCode: generateInviteCode(),
+    inviteCode,
     salesGoal: 118,
     installGoal: 88,
     retentionPercent: 75,
@@ -111,7 +119,7 @@ export async function updateTeamGoal(teamId: string, partial: Partial<Team>): Pr
 
 export async function regenerateInviteCode(teamId: string): Promise<string> {
   if (!db) throw new Error('Firebase is not configured.');
-  const code = generateInviteCode();
+  const code = await generateInviteCode();
   await setDoc(doc(db, 'teams', teamId), { inviteCode: code, updatedAt: new Date().toISOString() }, { merge: true });
   return code;
 }
