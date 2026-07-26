@@ -399,6 +399,17 @@ async function runCoachAgentTurn(anthropic, sessionId, content) {
 
 const MAX_COACH_CHAT_MESSAGE_LENGTH = 4000;
 
+// Mirrors firestore.rules' isTeamMember(teamId): membership is a doc at
+// teams/{teamId}/members/{uid}, not an array field on the team doc. Cloud Functions use
+// the admin SDK and bypass Firestore rules entirely, so callables that take a
+// client-supplied teamId must check this themselves rather than relying on rules.
+async function assertTeamMember(teamId, uid) {
+  const memberSnap = await db.collection('teams').doc(teamId).collection('members').doc(uid).get();
+  if (!memberSnap.exists) {
+    throw new HttpsError('permission-denied', 'Not a member of this team.');
+  }
+}
+
 // Callable from the client: a rep's freeform, ongoing chat with the persistent Managed
 // Agent coach ("Accountability Coach" — Coach tab, default view). Unlike
 // askObjectionHandling, this is a real multi-turn conversation: the same Managed Agent
@@ -430,6 +441,7 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
   }
 
   const repUid = request.auth.uid;
+  await assertTeamMember(teamId, repUid);
 
   if (audio) {
     if (!audio.path || !audio.url) {
@@ -530,6 +542,7 @@ exports.resetCoachAgentSession = onCall({ region: 'us-east1' }, async (request) 
   if (!teamId) {
     throw new HttpsError('invalid-argument', 'teamId is required.');
   }
+  await assertTeamMember(teamId, request.auth.uid);
   const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(request.auth.uid);
   await chatRef.set({ sessionId: FieldValue.delete(), updatedAt: new Date().toISOString() }, { merge: true });
   return { ok: true };
