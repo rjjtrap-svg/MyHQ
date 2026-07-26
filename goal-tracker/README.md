@@ -9,6 +9,11 @@ and weekly sales, with push notifications when someone hits a milestone.
 Default personal targets (edit anytime in **Settings**): **118 sales** → **88 installs**
 at 75% retention. Team goals are set separately by the manager.
 
+There's also an **AI Sales Coach** (Coach tab) — reps record a practice pitch and get it
+transcribed and graded by AI, ask an objection-handling assistant trained on the team's
+fiber script, and reference the same script/objection guide as a training page. See
+[AI Sales Coach](#ai-sales-coach) below for what it does and the extra setup it needs.
+
 ## Roles
 
 - **Rep** — logs their own deals, sees the shared leaderboard, enters their own commission
@@ -38,15 +43,25 @@ form.
 5. In Project settings, add a **Web app** and copy its config values.
 6. Copy `.env.example` to `.env` and fill in the `EXPO_PUBLIC_FIREBASE_*` values. These are client-side config, not secrets — safe to ship in the app bundle. `.env` is still gitignored as hygiene.
 7. **Optional, for push notifications:** Project settings → **Cloud Messaging** tab → Web Push certificates → "Generate key pair" → copy it into `EXPO_PUBLIC_FIREBASE_VAPID_KEY` in `.env`.
-8. Install the [Firebase CLI](https://firebase.google.com/docs/cli) if you don't have it (`npm install -g firebase-tools`), then from the `goal-tracker/` directory:
+8. **For the AI Sales Coach** (skip if you don't want that feature yet):
+   - Enable the **Cloud Speech-to-Text API** for your project: [console.cloud.google.com/apis/library/speech.googleapis.com](https://console.cloud.google.com/apis/library/speech.googleapis.com) → pick your Firebase project → **Enable**.
+   - Get an API key from [console.anthropic.com](https://console.anthropic.com) (Settings → API Keys).
+   - Set it as a Cloud Functions secret (never put this one in `.env` — it's a real billable credential, not client-safe config like the Firebase values above):
+     ```bash
+     firebase functions:secrets:set ANTHROPIC_API_KEY
+     ```
+     It'll prompt you to paste the key value; it's stored encrypted in Google Secret Manager, not in any file.
+9. Install the [Firebase CLI](https://firebase.google.com/docs/cli) if you don't have it (`npm install -g firebase-tools`), then from the `goal-tracker/` directory:
    ```bash
    firebase login
    firebase use --add          # pick the project you just created
+   cd functions && npm install && cd ..
    firebase deploy --only firestore:rules,storage:rules,functions
    ```
-   This deploys `firestore.rules`, `storage.rules`, and both Cloud Functions in `functions/`
-   (OCR, and the milestone push-notification trigger).
-9. Restart `expo start` (or reload the app) once `.env` is filled in.
+   This deploys `firestore.rules`, `storage.rules`, and all Cloud Functions in `functions/`
+   (OCR, the milestone push-notification trigger, and — if you did step 8 — pitch
+   transcription/grading and the objection-handling assistant).
+10. Restart `expo start` (or reload the app) once `.env` is filled in.
 
 **Note:** deploying Firebase rules and the Cloud Function needs outbound access to Google's APIs. If you're running this from a sandboxed/restricted environment, do this step from your own machine.
 
@@ -108,6 +123,40 @@ setup above) and the function to be deployed.
 (Share → Add to Home Screen) — a regular Safari tab can't receive push on iOS at all. This
 is an Apple platform restriction, not something the app can work around.
 
+## AI Sales Coach
+
+The **Coach** tab has three sections:
+
+- **Grade My Pitch** — a rep taps the mic and records a practice pitch (or a recap of a
+  real door-knock). The audio uploads to `teams/{teamId}/pitch-audio/`, which triggers a
+  Cloud Function (`onPitchAudioUploaded`) that transcodes it to WAV, sends it to Google
+  Cloud Speech-to-Text, then sends the transcript to Claude along with the team's fiber
+  sales script/objection guide as grading context. The rep sees a live status
+  (uploading → transcribing → grading → done) and, once graded, a 0–100 score with a
+  summary, strengths, and specific things to improve — stored in `pitchSubmissions/` so
+  managers/team leads can review a rep's history too.
+- **Objection Handling** — a rep types a question (e.g. "they said they're already under
+  contract") and an `askObjectionHandling` callable function answers it in-character as a
+  sales trainer, grounded in the same fiber objection guide.
+- **Training** — a static reference page rendering the script/objection guide itself
+  (approach → discovery → pitch → close, plus common objections and closing tips), so reps
+  can study it without needing to ask the AI anything.
+
+**Setup:** requires the `ANTHROPIC_API_KEY` secret and the Speech-to-Text API (see step 8
+under Firebase setup above). Without those, recording still works but a submission will
+end in an `error` status instead of a grade, and the objection-handling assistant will
+fail with an error message.
+
+**Cost:** separate from Firebase billing — Anthropic API and Google Cloud Speech-to-Text
+are both pay-as-you-go, billed to whichever accounts own those API keys/projects. Grading
+a single pitch (a few thousand tokens) and answering an objection question both cost
+fractions of a cent on Claude; Speech-to-Text is billed per minute of audio.
+
+**Editing the script:** the same content lives in two places that must be kept in sync
+by hand — `src/lib/fiberScript.ts` (what the Training page renders) and
+`functions/fiberScript.js` (what the Cloud Functions use as AI context) — because the
+Cloud Function can't import from the app's `src/` directory.
+
 ## Project layout
 
 ```
@@ -117,6 +166,7 @@ app/                     Expo Router screens
   (tabs)/index.tsx           Home — personal goal dashboard
   (tabs)/deals.tsx           My Deals — pipeline, commission entry, closing % KPIs, charts
   (tabs)/team.tsx            Team — leaderboard (today/week), commission rollup, rep overrides
+  (tabs)/coach.tsx           Coach — grade my pitch, objection handling, training reference
   (tabs)/settings.tsx        Personal + team goals, role/overseer management, notifications
 
 src/store/                Zustand stores
@@ -126,11 +176,14 @@ src/store/                Zustand stores
   commissionStore.ts         Per-rep commission (realtime, access-controlled)
   overrideStore.ts           Manager/team_lead commission overrides (realtime, access-controlled)
   doorKnocksStore.ts         Per-rep-per-day door-knock counts
+  pitchCoachStore.ts         Rep's pitch submissions (realtime)
   settingsStore.ts / uiStore.ts   Personal, per-device (goal targets, celebrated milestones)
 
-src/firebase/              auth.ts, teams.ts, storage.ts, commissions.ts, overrides.ts, doorKnocks.ts, config.ts
+src/firebase/              auth.ts, teams.ts, storage.ts, commissions.ts, overrides.ts, doorKnocks.ts, pitchCoaching.ts, config.ts
 src/lib/                   stats engine, dates, notifications, push (web FCM), image prep, local storage cache
-functions/index.js         Cloud Vision OCR + milestone push-notification triggers
+src/lib/fiberScript.ts     Fiber sales script/objection guide, rendered on the Training page
+functions/index.js         Cloud Vision OCR, milestone push notifications, pitch transcription/grading, objection handling
+functions/fiberScript.js   Same script/objection content as src/lib/fiberScript.ts, used as AI grading/coaching context
 public/firebase-messaging-sw.js   Web push service worker (config passed via query string)
 firestore.rules / storage.rules / firebase.json   Security rules + deploy config
 ```

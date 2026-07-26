@@ -211,3 +211,30 @@ export interface MonthlyPoint {
   label: string;
   count: number;
 }
+
+export type PitchSubmissionStatus = 'uploading' | 'transcribing' | 'grading' | 'done' | 'error';
+
+/** A rep's recorded practice pitch, transcribed and graded by an AI coach. */
+export interface PitchSubmission {
+  id: string;
+  teamId: string;
+  repUid: string;
+  repName: string;
+  status: PitchSubmissionStatus;
+  audioUrl?: string;
+  transcript?: string;
+  /** 0-100 */
+  grade?: number;
+  summary?: string;
+  strengths?: string[];
+  improvements?: string[];
+  errorMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ObjectionExchange {
+  id: string;
+  question: string;
+  answer: string;
+}

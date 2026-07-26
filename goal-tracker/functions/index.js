@@ -1,13 +1,28 @@
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
+const { getStorage } = require('firebase-admin/storage');
 const { getMessaging } = require('firebase-admin/messaging');
 const vision = require('@google-cloud/vision');
+const speech = require('@google-cloud/speech');
+const ffmpegPath = require('ffmpeg-static');
+const ffmpeg = require('fluent-ffmpeg');
+const os = require('os');
+const path = require('path');
+const fs = require('fs');
+const { FIBER_SALES_CONTEXT } = require('./fiberScript');
+
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 initializeApp();
 const db = getFirestore();
 const visionClient = new vision.ImageAnnotatorClient();
+const speechClient = new speech.SpeechClient();
+const anthropicApiKey = defineSecret('ANTHROPIC_API_KEY');
+const CLAUDE_MODEL = 'claude-sonnet-5';
 
 // Keep in sync with DAILY_SALE_MILESTONES in src/types/index.ts.
 const DAILY_SALE_MILESTONES = [2, 6, 8, 10];
@@ -176,5 +191,170 @@ exports.onDealCreatedNotifyMilestone = onDocumentCreated('teams/{teamId}/deals/{
     );
   } catch (err) {
     console.error('Failed to send milestone push notification', err);
+  }
+});
+
+// Matches teams/{teamId}/pitch-audio/{submissionId}.<ext> — same naming convention as the
+// deal-photo pipeline: the client names the upload after the Firestore doc it belongs to.
+const PITCH_AUDIO_PATTERN = /^teams\/([^/]+)\/pitch-audio\/([^/.]+)\.\w+$/i;
+
+async function callClaude(apiKey, system, userMessage, maxTokens) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: 'user', content: userMessage }],
+    }),
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`Claude API error ${response.status}: ${text.slice(0, 500)}`);
+  }
+  const data = await response.json();
+  return data.content?.[0]?.text ?? '';
+}
+
+/** Downloads the uploaded audio, transcodes it to 16kHz mono LINEAR16 WAV so Speech-to-Text
+ * gets a format it reliably supports regardless of what the recording browser/device produced
+ * (Safari, Chrome, and native all encode differently). */
+async function transcodeToWav(bucketName, filePath) {
+  const tmpIn = path.join(os.tmpdir(), `in-${Date.now()}${path.extname(filePath)}`);
+  const tmpOut = path.join(os.tmpdir(), `out-${Date.now()}.wav`);
+  await getStorage().bucket(bucketName).file(filePath).download({ destination: tmpIn });
+
+  await new Promise((resolve, reject) => {
+    ffmpeg(tmpIn)
+      .audioChannels(1)
+      .audioFrequency(16000)
+      .audioCodec('pcm_s16le')
+      .format('wav')
+      .on('error', reject)
+      .on('end', resolve)
+      .save(tmpOut);
+  });
+
+  const wavBuffer = fs.readFileSync(tmpOut);
+  fs.unlink(tmpIn, () => {});
+  fs.unlink(tmpOut, () => {});
+  return wavBuffer;
+}
+
+async function transcribeWav(wavBuffer) {
+  const [operation] = await speechClient.longRunningRecognize({
+    config: {
+      encoding: 'LINEAR16',
+      sampleRateHertz: 16000,
+      languageCode: 'en-US',
+      model: 'default',
+    },
+    audio: { content: wavBuffer.toString('base64') },
+  });
+  const [response] = await operation.promise();
+  return (response.results || [])
+    .map((r) => r.alternatives?.[0]?.transcript || '')
+    .join(' ')
+    .trim();
+}
+
+const GRADE_PROMPT_SUFFIX = `
+Grade the practice pitch transcript below against the script and objection guide. Respond
+with ONLY a JSON object (no markdown fences, no other text) in exactly this shape:
+{"grade": <integer 0-100>, "summary": "<2-3 sentence overall assessment>", "strengths": ["<short point>", ...], "improvements": ["<short point>", ...]}
+Keep strengths and improvements to 2-4 items each, short and specific to what was actually said.
+
+TRANSCRIPT:
+`;
+
+// Storage-triggered: transcodes the recording, transcribes it, then has Claude grade it
+// against the fiber sales script. Needs more memory/time than the OCR function since audio
+// transcoding + a longer AI response take longer than a quick image scan.
+exports.onPitchAudioUploaded = onObjectFinalized(
+  { region: 'us-east1', cpu: 1, memory: '1GiB', timeoutSeconds: 300, secrets: [anthropicApiKey] },
+  async (event) => {
+    const filePath = event.data.name;
+    const bucketName = event.data.bucket;
+    const match = filePath.match(PITCH_AUDIO_PATTERN);
+    if (!match) {
+      console.log('Ignoring upload outside pitch-audio path:', filePath);
+      return;
+    }
+    const [, teamId, submissionId] = match;
+    const subRef = db.collection('teams').doc(teamId).collection('pitchSubmissions').doc(submissionId);
+
+    try {
+      await subRef.set({ status: 'transcribing', updatedAt: new Date().toISOString() }, { merge: true });
+      const wavBuffer = await transcodeToWav(bucketName, filePath);
+      const transcript = await transcribeWav(wavBuffer);
+
+      if (!transcript) {
+        await subRef.set(
+          { status: 'error', errorMessage: 'No speech detected in the recording.', updatedAt: new Date().toISOString() },
+          { merge: true }
+        );
+        return;
+      }
+
+      await subRef.set({ status: 'grading', transcript, updatedAt: new Date().toISOString() }, { merge: true });
+
+      const raw = await callClaude(
+        anthropicApiKey.value(),
+        FIBER_SALES_CONTEXT,
+        GRADE_PROMPT_SUFFIX + transcript,
+        1024
+      );
+      const parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, ''));
+
+      await subRef.set(
+        {
+          status: 'done',
+          grade: parsed.grade,
+          summary: parsed.summary,
+          strengths: parsed.strengths || [],
+          improvements: parsed.improvements || [],
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.error('Pitch grading failed for', filePath, err);
+      await subRef
+        .set({ status: 'error', errorMessage: String(err.message || err), updatedAt: new Date().toISOString() }, { merge: true })
+        .catch(() => {});
+    }
+  }
+);
+
+// Callable from the client: a rep asks a live objection-handling question and gets an answer
+// grounded in the fiber sales script above.
+exports.askObjectionHandling = onCall({ region: 'us-east1', secrets: [anthropicApiKey] }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in required.');
+  }
+  const question = String(request.data?.question || '').trim();
+  if (!question) {
+    throw new HttpsError('invalid-argument', 'Question is required.');
+  }
+  if (question.length > 2000) {
+    throw new HttpsError('invalid-argument', 'Question is too long.');
+  }
+
+  try {
+    const answer = await callClaude(
+      anthropicApiKey.value(),
+      FIBER_SALES_CONTEXT,
+      `A rep in the field is asking for help handling this situation at the door:\n\n"${question}"\n\nGive a short, practical, spoken-word response they could actually say, grounded in the objection guide above. 2-4 sentences.`,
+      512
+    );
+    return { answer };
+  } catch (err) {
+    console.error('Objection handling request failed', err);
+    throw new HttpsError('internal', 'Could not reach the AI coach — try again in a moment.');
   }
 });

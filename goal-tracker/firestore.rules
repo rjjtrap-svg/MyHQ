@@ -99,6 +99,17 @@ service cloud.firestore {
           (resource.data.repUid == request.auth.uid || isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid));
         allow write: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
       }
+
+      match /pitchSubmissions/{submissionId} {
+        // A rep's own AI-graded practice pitch. Visible to the rep, the manager, and their
+        // overseeing team_lead (coaching purposes) — the Cloud Function that fills in the
+        // transcript/grade uses the admin SDK and bypasses these rules entirely.
+        allow read: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid));
+        allow create: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
+        allow update: if isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid);
+        allow delete: if isTeamManager(teamId) || resource.data.repUid == request.auth.uid;
+      }
     }
   }
 }

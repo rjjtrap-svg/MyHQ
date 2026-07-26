@@ -1,12 +1,15 @@
 {
   "name": "functions",
-  "description": "OCR pipeline for Goal Tracker deal photos",
+  "description": "OCR + AI sales coach pipeline for Goal Tracker",
   "main": "index.js",
   "engines": {
     "node": "20"
   },
   "dependencies": {
+    "@google-cloud/speech": "^6.7.1",
     "@google-cloud/vision": "^4.3.2",
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.3",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.0.1"
   },

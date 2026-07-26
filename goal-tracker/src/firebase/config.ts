@@ -6,6 +6,7 @@ import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
 import { getReactNativePersistence, getAuth, initializeAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import { getFunctions, type Functions } from 'firebase/functions';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -27,6 +28,7 @@ let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
 let storage: FirebaseStorage | undefined;
+let functions: Functions | undefined;
 
 if (firebaseEnabled) {
   app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
@@ -41,6 +43,8 @@ if (firebaseEnabled) {
   }
   db = getFirestore(app);
   storage = getStorage(app);
+  // Must match the region the Cloud Functions are deployed to (see functions/index.js).
+  functions = getFunctions(app, 'us-east1');
 }
 
-export { app, auth, db, storage, firebaseConfig };
+export { app, auth, db, storage, functions, firebaseConfig };

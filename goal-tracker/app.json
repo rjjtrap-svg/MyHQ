@@ -16,7 +16,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.goaltracker.app"
+      "bundleIdentifier": "com.goaltracker.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Used to record practice pitches for the AI sales coach."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -36,6 +39,12 @@
         "expo-notifications",
         {
           "color": "#5B8CFF"
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Used to record practice pitches for the AI sales coach."
         }
       ]
     ],
