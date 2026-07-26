@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FontAwesome } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { signInWithEmail, signUpWithEmail } from '@/src/firebase/auth';
 import { createTeamAndProfile, joinTeamByCode } from '@/src/firebase/teams';
@@ -19,6 +20,8 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<Mode>('sign-in');
   const [teamChoice, setTeamChoice] = useState<TeamChoice>('create');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -45,31 +48,33 @@ export default function AuthScreen() {
   }
 
   async function handleSignIn() {
+    setError(null);
     if (!email || !password) {
-      Alert.alert('Missing info', 'Enter your email and password.');
+      setError('Enter your email and password.');
       return;
     }
     setBusy(true);
     try {
       await signInWithEmail(email, password);
     } catch (err: any) {
-      Alert.alert('Sign in failed', err?.message ?? 'Check your email and password.');
+      setError(err?.message ?? 'Check your email and password.');
     } finally {
       setBusy(false);
     }
   }
 
   async function handleSignUp() {
+    setError(null);
     if (!displayName || !email || !password) {
-      Alert.alert('Missing info', 'Fill in your name, email, and password.');
+      setError('Fill in your name, email, and password.');
       return;
     }
     if (teamChoice === 'create' && !teamName) {
-      Alert.alert('Missing info', 'Give your team a name.');
+      setError('Give your team a name.');
       return;
     }
     if (teamChoice === 'join' && !inviteCode) {
-      Alert.alert('Missing info', 'Enter the invite code your manager gave you.');
+      setError('Enter the invite code your manager gave you.');
       return;
     }
 
@@ -83,7 +88,7 @@ export default function AuthScreen() {
       }
       await refreshProfile();
     } catch (err: any) {
-      Alert.alert('Sign up failed', err?.message ?? 'Something went wrong.');
+      setError(err?.message ?? 'Something went wrong.');
     } finally {
       setBusy(false);
     }
@@ -128,14 +133,28 @@ export default function AuthScreen() {
         </Field>
 
         <Field label="Password">
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="At least 6 characters"
-            placeholderTextColor={colors.textFaint}
-            style={styles.input}
-            secureTextEntry
-          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="At least 6 characters"
+              placeholderTextColor={colors.textFaint}
+              style={[styles.input, styles.passwordInput]}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+            />
+            <Pressable
+              style={styles.eyeButton}
+              onPress={() => setShowPassword((v) => !v)}
+              hitSlop={10}
+            >
+              <FontAwesome
+                name={showPassword ? 'eye-slash' : 'eye'}
+                size={18}
+                color={colors.textMuted}
+              />
+            </Pressable>
+          </View>
         </Field>
 
         {mode === 'sign-up' && (
@@ -172,6 +191,12 @@ export default function AuthScreen() {
               </Field>
             )}
           </>
+        )}
+
+        {error && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
         )}
 
         <Pressable
@@ -285,6 +310,31 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     color: colors.text,
     fontSize: 15,
+  },
+  passwordRow: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    paddingRight: spacing.xl + spacing.md,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: spacing.md,
+    padding: spacing.xs,
+  },
+  errorBanner: {
+    backgroundColor: '#3a1d1d',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: '#7a3b3b',
+    padding: spacing.sm + 2,
+    marginTop: spacing.sm,
+  },
+  errorText: {
+    color: '#ff9b9b',
+    fontSize: 13,
+    fontWeight: '600',
   },
   submitButton: {
     backgroundColor: colors.primary,
