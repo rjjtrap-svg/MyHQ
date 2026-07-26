@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -9,8 +10,7 @@ import {
   where,
 } from 'firebase/firestore';
 import * as Crypto from 'expo-crypto';
-import { Membership, Team, UserProfile } from '@/src/types';
-import { addDays, toISODate } from '@/src/lib/dates';
+import { Membership, Role, Team, UserProfile } from '@/src/types';
 import { db } from './config';
 
 const INVITE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
@@ -27,40 +27,6 @@ export async function generateInviteCode(): Promise<string> {
     code += INVITE_CODE_CHARS[byte % INVITE_CODE_CHARS.length];
   }
   return code;
-}
-
-export async function createTeamAndProfile(
-  uid: string,
-  email: string,
-  displayName: string,
-  teamName: string
-): Promise<string> {
-  if (!db) throw new Error('Firebase is not configured.');
-  const now = new Date().toISOString();
-  const teamRef = doc(collection(db, 'teams'));
-  const inviteCode = await generateInviteCode();
-  const team: Team = {
-    id: teamRef.id,
-    name: teamName.trim() || `${displayName}'s Team`,
-    ownerUid: uid,
-    inviteCode,
-    salesGoal: 118,
-    installGoal: 88,
-    retentionPercent: 75,
-    startDate: toISODate(new Date()),
-    deadline: toISODate(addDays(new Date(), 60)),
-    createdAt: now,
-    updatedAt: now,
-  };
-  await setDoc(teamRef, team);
-
-  const membership: Membership = { uid, displayName, role: 'manager', joinedAt: now };
-  await setDoc(doc(db, 'teams', teamRef.id, 'members', uid), membership);
-
-  const profile: UserProfile = { uid, email, displayName, teamId: teamRef.id, role: 'manager', createdAt: now };
-  await setDoc(doc(db, 'users', uid), profile);
-
-  return teamRef.id;
 }
 
 export async function joinTeamByCode(
@@ -122,4 +88,20 @@ export async function regenerateInviteCode(teamId: string): Promise<string> {
   const code = await generateInviteCode();
   await setDoc(doc(db, 'teams', teamId), { inviteCode: code, updatedAt: new Date().toISOString() }, { merge: true });
   return code;
+}
+
+/** Manager-only: promote/demote a member between rep, team_lead, and manager. */
+export async function updateMemberRole(teamId: string, uid: string, role: Role): Promise<void> {
+  if (!db) throw new Error('Firebase is not configured.');
+  await setDoc(doc(db, 'teams', teamId, 'members', uid), { role }, { merge: true });
+}
+
+/** Manager-only: assign (or clear, with null) which team_lead oversees a given rep. */
+export async function assignOverseer(teamId: string, repUid: string, overseerUid: string | null): Promise<void> {
+  if (!db) throw new Error('Firebase is not configured.');
+  await setDoc(
+    doc(db, 'teams', teamId, 'members', repUid),
+    { overseerUid: overseerUid ?? deleteField() },
+    { merge: true }
+  );
 }

@@ -1,11 +1,16 @@
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
+const { getMessaging } = require('firebase-admin/messaging');
 const vision = require('@google-cloud/vision');
 
 initializeApp();
 const db = getFirestore();
 const visionClient = new vision.ImageAnnotatorClient();
+
+// Keep in sync with DAILY_SALE_MILESTONES in src/types/index.ts.
+const DAILY_SALE_MILESTONES = [2, 6, 8, 10];
 
 // Matches teams/{teamId}/deal-photos/{dealId}.jpg (or .jpeg/.png) — the client names the
 // upload after the deal it belongs to so this function knows which Firestore doc to update.
@@ -100,5 +105,76 @@ exports.onDealPhotoUploaded = onObjectFinalized({ region: 'us-east1', cpu: 1 }, 
     await dealRef
       .set({ ocrStatus: 'error', updatedAt: new Date().toISOString() }, { merge: true })
       .catch(() => {});
+  }
+});
+
+// Fires a push notification to the whole team the moment a rep crosses a daily sale
+// milestone (2/6/8/10 sales *that day*). A per-rep-per-day tracking doc prevents duplicate
+// sends if this trigger somehow runs more than once for the same deal.
+exports.onDealCreatedNotifyMilestone = onDocumentCreated('teams/{teamId}/deals/{dealId}', async (event) => {
+  const deal = event.data?.data();
+  if (!deal || !deal.repUid || !deal.date) return;
+  const { teamId } = event.params;
+
+  const dealsForDaySnap = await db
+    .collection('teams')
+    .doc(teamId)
+    .collection('deals')
+    .where('repUid', '==', deal.repUid)
+    .where('date', '==', deal.date)
+    .get();
+  const countToday = dealsForDaySnap.size;
+
+  const crossed = DAILY_SALE_MILESTONES.filter((m) => countToday >= m);
+  if (crossed.length === 0) return;
+
+  const milestoneRef = db
+    .collection('teams')
+    .doc(teamId)
+    .collection('dailyMilestones')
+    .doc(`${deal.repUid}_${deal.date}`);
+
+  const newlyCrossed = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(milestoneRef);
+    const already = snap.exists ? snap.data().remindedThresholds || [] : [];
+    const fresh = crossed.filter((m) => !already.includes(m));
+    if (fresh.length === 0) return [];
+    tx.set(milestoneRef, { remindedThresholds: [...already, ...fresh] }, { merge: true });
+    return fresh;
+  });
+  if (newlyCrossed.length === 0) return;
+
+  const tokensSnap = await db.collection('pushTokens').where('teamId', '==', teamId).get();
+  const tokens = tokensSnap.docs.map((d) => d.data().token).filter(Boolean);
+  if (tokens.length === 0) return;
+
+  const highest = Math.max(...newlyCrossed);
+  const message = {
+    notification: {
+      title: 'Goal Tracker',
+      body: `${deal.repName || 'A rep'} just hit ${highest} sales today!`,
+    },
+    tokens,
+  };
+
+  try {
+    const response = await getMessaging().sendEachForMulticast(message);
+    const deadTokens = [];
+    response.responses.forEach((r, i) => {
+      if (!r.success && r.error?.code === 'messaging/registration-token-not-registered') {
+        deadTokens.push(tokens[i]);
+      }
+    });
+    await Promise.all(
+      deadTokens.map((t) =>
+        db
+          .collection('pushTokens')
+          .doc(t)
+          .delete()
+          .catch(() => {})
+      )
+    );
+  } catch (err) {
+    console.error('Failed to send milestone push notification', err);
   }
 });

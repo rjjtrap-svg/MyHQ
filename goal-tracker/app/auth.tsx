@@ -4,13 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { signInWithEmail, signUpWithEmail } from '@/src/firebase/auth';
-import { createTeamAndProfile, joinTeamByCode } from '@/src/firebase/teams';
+import { joinTeamByCode } from '@/src/firebase/teams';
 import { useAuthStore } from '@/src/store/authStore';
 import { firebaseEnabled } from '@/src/firebase/config';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
 type Mode = 'sign-in' | 'sign-up';
-type TeamChoice = 'create' | 'join';
 
 export default function AuthScreen() {
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
@@ -18,7 +17,6 @@ export default function AuthScreen() {
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
 
   const [mode, setMode] = useState<Mode>('sign-in');
-  const [teamChoice, setTeamChoice] = useState<TeamChoice>('create');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +24,6 @@ export default function AuthScreen() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [teamName, setTeamName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
 
   if (firebaseUser && profile) {
@@ -37,7 +34,7 @@ export default function AuthScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.centerContent}>
-          <Text style={styles.heading}>Setup needed</Text>
+          <Text style={styles.heading}>Setup Needed</Text>
           <Text style={styles.body}>
             Team accounts, shared deal visibility, and photo uploads all need a real Firebase project.
             Add your Firebase config to `.env` (see the README), then reload.
@@ -69,11 +66,7 @@ export default function AuthScreen() {
       setError('Fill in your name, email, and password.');
       return;
     }
-    if (teamChoice === 'create' && !teamName) {
-      setError('Give your team a name.');
-      return;
-    }
-    if (teamChoice === 'join' && !inviteCode) {
+    if (!inviteCode) {
       setError('Enter the invite code your manager gave you.');
       return;
     }
@@ -81,11 +74,7 @@ export default function AuthScreen() {
     setBusy(true);
     try {
       const user = await signUpWithEmail(email, password, displayName);
-      if (teamChoice === 'create') {
-        await createTeamAndProfile(user.uid, email, displayName, teamName);
-      } else {
-        await joinTeamByCode(user.uid, email, displayName, inviteCode);
-      }
+      await joinTeamByCode(user.uid, email, displayName, inviteCode);
       await refreshProfile();
     } catch (err: any) {
       setError(err?.message ?? 'Something went wrong.');
@@ -158,39 +147,16 @@ export default function AuthScreen() {
         </Field>
 
         {mode === 'sign-up' && (
-          <>
-            <View style={styles.modeRow}>
-              <ModeTab
-                label="Start a team"
-                active={teamChoice === 'create'}
-                onPress={() => setTeamChoice('create')}
-              />
-              <ModeTab label="Join a team" active={teamChoice === 'join'} onPress={() => setTeamChoice('join')} />
-            </View>
-
-            {teamChoice === 'create' ? (
-              <Field label="Team name">
-                <TextInput
-                  value={teamName}
-                  onChangeText={setTeamName}
-                  placeholder="Cityside Solar Blitz"
-                  placeholderTextColor={colors.textFaint}
-                  style={styles.input}
-                />
-              </Field>
-            ) : (
-              <Field label="Invite code">
-                <TextInput
-                  value={inviteCode}
-                  onChangeText={setInviteCode}
-                  placeholder="ABC123"
-                  placeholderTextColor={colors.textFaint}
-                  style={styles.input}
-                  autoCapitalize="characters"
-                />
-              </Field>
-            )}
-          </>
+          <Field label="Invite code">
+            <TextInput
+              value={inviteCode}
+              onChangeText={setInviteCode}
+              placeholder="ABC123"
+              placeholderTextColor={colors.textFaint}
+              style={styles.input}
+              autoCapitalize="characters"
+            />
+          </Field>
         )}
 
         {error && (

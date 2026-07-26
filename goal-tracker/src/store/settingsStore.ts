@@ -17,13 +17,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   hydrated: false,
 
   hydrate: async () => {
+    const defaults = createDefaultSettings();
     const stored = await loadJSON<Settings>(STORAGE_KEYS.settings);
-    let settings = stored ?? createDefaultSettings();
+    let settings: Settings = stored ? { ...defaults, ...stored } : defaults;
 
     if (firebaseEnabled) {
       const remote = await pullRemoteSettings();
       if (remote && (!stored || new Date(remote.updatedAt) > new Date(stored.updatedAt))) {
-        settings = remote;
+        settings = { ...defaults, ...remote };
       }
     }
 

@@ -64,7 +64,7 @@ export default function HomeScreen() {
           </View>
         </Section>
 
-        <Section title="Overall progress">
+        <Section title="Overall Progress">
           <View style={styles.grid}>
             <StatTile label="Total sales" value={String(stats.totalSales)} />
             <StatTile label="Sales remaining" value={String(stats.salesRemaining)} />

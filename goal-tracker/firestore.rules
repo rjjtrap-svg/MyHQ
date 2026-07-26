@@ -16,10 +16,27 @@ service cloud.firestore {
         get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role == 'manager';
     }
 
+    // True when the caller is the team_lead assigned to oversee the given rep (set by the
+    // manager on the rep's membership doc). Used to gate overrides/doorKnocks visibility.
+    // Uses .get(...) with a default since most reps have no overseerUid field at all until
+    // a manager assigns one — direct dot access on a missing key throws in Firestore rules.
+    function isOverseerOf(teamId, repUid) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/teams/$(teamId)/members/$(repUid)).data.get('overseerUid', null) == request.auth.uid;
+    }
+
     // Each user's own profile: { uid, email, displayName, teamId, role }.
     match /users/{uid} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Web push registrations. Each doc is keyed by the token itself; only its owner can
+    // read/write it. Cloud Functions (admin SDK) bypass these rules entirely to query across
+    // a team when sending a milestone notification.
+    match /pushTokens/{tokenId} {
+      allow read, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create, update: if isSignedIn() && request.resource.data.uid == request.auth.uid;
     }
 
     match /teams/{teamId} {
@@ -34,7 +51,14 @@ service cloud.firestore {
       match /members/{uid} {
         allow read: if isTeamMember(teamId);
         allow create: if isSignedIn() && request.auth.uid == uid;
-        allow update, delete: if isTeamManager(teamId) || request.auth.uid == uid;
+        // A member can update their own doc (e.g. displayName), but only the manager can
+        // change role/overseerUid — otherwise a rep could self-promote to manager by writing
+        // their own membership doc.
+        allow update: if isTeamManager(teamId) ||
+          (request.auth.uid == uid &&
+            request.resource.data.role == resource.data.role &&
+            request.resource.data.get('overseerUid', null) == resource.data.get('overseerUid', null));
+        allow delete: if isTeamManager(teamId);
       }
 
       match /deals/{dealId} {
@@ -57,6 +81,23 @@ service cloud.firestore {
           (resource.data.repUid == request.auth.uid || isTeamManager(teamId));
         allow write: if isTeamMember(teamId) &&
           (request.resource.data.repUid == request.auth.uid || isTeamManager(teamId));
+      }
+
+      match /overrides/{dealId} {
+        // A manager/team_lead correction to a rep's commission. Deliberately NEVER readable
+        // by the rep it's about — only the manager and that rep's assigned team_lead.
+        allow read: if isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid);
+        allow create: if isTeamManager(teamId) || isOverseerOf(teamId, request.resource.data.repUid);
+        allow update: if isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid);
+        allow delete: if isTeamManager(teamId);
+      }
+
+      match /doorKnocks/{docId} {
+        // A rep's own daily door-knock count, for their closing % KPI. Visible to the rep
+        // themselves plus the manager and their overseeing team_lead.
+        allow read: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid));
+        allow write: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
       }
     }
   }

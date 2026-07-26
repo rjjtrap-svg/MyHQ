@@ -16,6 +16,9 @@ export function createDefaultSettings(): Settings {
     dailyTarget: 2,
     notificationsEnabled: false,
     notificationTimes: [{ id: generateId(), hour: 9, minute: 0, enabled: true }],
+    dealLogReminderEnabled: false,
+    dealLogReminderHour: 20,
+    dealLogReminderMinute: 0,
     updatedAt: new Date().toISOString(),
   };
 }

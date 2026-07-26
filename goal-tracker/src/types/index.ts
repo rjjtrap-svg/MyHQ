@@ -52,7 +52,8 @@ export interface Commission {
   updatedAt: string;
 }
 
-export type Role = 'manager' | 'rep';
+/** manager sees/oversees everyone; team_lead oversees an assigned subset of reps; rep is a rep. */
+export type Role = 'manager' | 'team_lead' | 'rep';
 
 export interface UserProfile {
   uid: string;
@@ -76,6 +77,14 @@ export interface Team {
   startDate: string;
   createdAt: string;
   updatedAt: string;
+  /** Free-text label shown in Settings, e.g. "Cityside" — informational only. */
+  company?: string;
+  /**
+   * Set when this company's confirmation paperwork never has customer info on it (e.g.
+   * Cityside), so the Add Deal screen skips waiting on/showing OCR results and goes
+   * straight to manual entry instead of wasting the rep's time.
+   */
+  autoFillDisabled?: boolean;
 }
 
 export interface Membership {
@@ -83,6 +92,8 @@ export interface Membership {
   displayName: string;
   role: Role;
   joinedAt: string;
+  /** Only meaningful when role is 'rep' — the uid of the team_lead who oversees them. Set by the manager. */
+  overseerUid?: string;
 }
 
 export interface LeaderboardEntry {
@@ -93,6 +104,40 @@ export interface LeaderboardEntry {
   todaySales: number;
   weekSales: number;
 }
+
+/** A rep's self-reported door-knock count for one day — used to compute closing %. */
+export interface DoorKnockEntry {
+  teamId: string;
+  repUid: string;
+  /** ISO date string (yyyy-mm-dd) */
+  date: string;
+  count: number;
+  updatedAt: string;
+}
+
+/**
+ * A manager/team_lead correction to a rep's commission on a specific deal. Deliberately kept
+ * in its own collection with its own Firestore rules — NOT readable by the rep it's about,
+ * only by that rep's overseeing team_lead and the manager.
+ */
+export interface CommissionOverride {
+  dealId: string;
+  teamId: string;
+  repUid: string;
+  amount: number;
+  setByUid: string;
+  updatedAt: string;
+}
+
+/** A registered web-push token for one browser/device, so Cloud Functions can send to it. */
+export interface PushToken {
+  token: string;
+  uid: string;
+  teamId: string;
+  createdAt: string;
+}
+
+export const DAILY_SALE_MILESTONES = [2, 6, 8, 10] as const;
 
 export type PaceStatus = 'ahead' | 'on-pace' | 'behind';
 
@@ -114,6 +159,10 @@ export interface Settings {
   dailyTarget: number;
   notificationTimes: NotificationTime[];
   notificationsEnabled: boolean;
+  /** A simple end-of-day nudge to log any deals from today — separate from pace reminders. */
+  dealLogReminderEnabled: boolean;
+  dealLogReminderHour: number;
+  dealLogReminderMinute: number;
   updatedAt: string;
 }
 

@@ -60,26 +60,44 @@ export async function syncDailyReminder(settings: Settings, deals: Deal[] = []):
 
   await Notifications.cancelAllScheduledNotificationsAsync();
 
-  if (!settings.notificationsEnabled) return;
+  const anyEnabled = settings.notificationsEnabled || settings.dealLogReminderEnabled;
+  if (!anyEnabled) return;
 
   const granted = await requestNotificationPermissions();
   if (!granted) return;
 
   await ensureAndroidChannel();
 
-  const body = buildReminderMessage(deals, settings);
-  const enabledTimes = settings.notificationTimes.filter((t) => t.enabled);
+  if (settings.notificationsEnabled) {
+    const body = buildReminderMessage(deals, settings);
+    const enabledTimes = settings.notificationTimes.filter((t) => t.enabled);
 
-  for (const time of enabledTimes) {
+    for (const time of enabledTimes) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Goal Tracker',
+          body,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: time.hour,
+          minute: time.minute,
+          channelId: Platform.OS === 'android' ? CATEGORY : undefined,
+        },
+      });
+    }
+  }
+
+  if (settings.dealLogReminderEnabled) {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Goal Tracker',
-        body,
+        body: "Don't forget to log today's deals before you call it a day.",
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: time.hour,
-        minute: time.minute,
+        hour: settings.dealLogReminderHour,
+        minute: settings.dealLogReminderMinute,
         channelId: Platform.OS === 'android' ? CATEGORY : undefined,
       },
     });

@@ -34,8 +34,10 @@ export default function AddDealScreen() {
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const profile = useAuthStore((s) => s.profile);
   const teamId = useTeamStore((s) => s.teamId);
+  const team = useTeamStore((s) => s.team);
   const repUid = firebaseUser?.uid ?? '';
   const repName = profile?.displayName ?? 'Unknown rep';
+  const autoFillDisabled = !!team?.autoFillDisabled;
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -56,7 +58,7 @@ export default function AddDealScreen() {
   // after the guess lands.
   const autofilledRef = useRef(false);
   useEffect(() => {
-    if (autofilledRef.current || !liveDeal || liveDeal.ocrStatus !== 'done') return;
+    if (autoFillDisabled || autofilledRef.current || !liveDeal || liveDeal.ocrStatus !== 'done') return;
     const { ocrGuessedName, ocrGuessedAddress } = liveDeal;
     if (!ocrGuessedName && !ocrGuessedAddress) return;
     autofilledRef.current = true;
@@ -165,7 +167,9 @@ export default function AddDealScreen() {
                 <FontAwesome name="camera" size={32} color={colors.primary} />
                 <Text style={styles.photoRequiredTitle}>Every deal needs a photo</Text>
                 <Text style={styles.photoRequiredHint}>
-                  Snap the contract, ID, or paperwork — we'll scan it for customer details you can tap to fill in.
+                  {autoFillDisabled
+                    ? "Snap the contract, ID, or paperwork — you'll enter customer details manually."
+                    : "Snap the contract, ID, or paperwork — we'll scan it and auto-fill customer details for you."}
                 </Text>
               </View>
 
@@ -211,22 +215,33 @@ export default function AddDealScreen() {
               </View>
 
               <View style={styles.ocrBox}>
-                {liveDeal?.ocrStatus === 'pending' && (
-                  <View style={styles.ocrRow}>
-                    <ActivityIndicator size="small" color={colors.accent} />
-                    <Text style={styles.ocrText}>Scanning photo for details…</Text>
-                  </View>
-                )}
-                {liveDeal?.ocrStatus === 'done' && (liveDeal.ocrGuessedName || liveDeal.ocrGuessedAddress) && (
-                  <Text style={styles.ocrLabelSuccess}>
-                    Auto-filled from the photo below — double-check it's correct.
+                {autoFillDisabled ? (
+                  <Text style={styles.ocrText}>
+                    {team?.company || 'This company'}'s confirmation screens don't include customer info — enter the
+                    details manually below.
                   </Text>
-                )}
-                {liveDeal?.ocrStatus === 'done' && !liveDeal.ocrGuessedName && !liveDeal.ocrGuessedAddress && (
-                  <Text style={styles.ocrText}>Couldn't find a clear name/address — fill in the details manually below.</Text>
-                )}
-                {liveDeal?.ocrStatus === 'error' && (
-                  <Text style={styles.ocrText}>No text detected — fill in the details manually below.</Text>
+                ) : (
+                  <>
+                    {liveDeal?.ocrStatus === 'pending' && (
+                      <View style={styles.ocrRow}>
+                        <ActivityIndicator size="small" color={colors.accent} />
+                        <Text style={styles.ocrText}>Scanning photo for details…</Text>
+                      </View>
+                    )}
+                    {liveDeal?.ocrStatus === 'done' && (liveDeal.ocrGuessedName || liveDeal.ocrGuessedAddress) && (
+                      <Text style={styles.ocrLabelSuccess}>
+                        Auto-filled from the photo below — double-check it's correct.
+                      </Text>
+                    )}
+                    {liveDeal?.ocrStatus === 'done' && !liveDeal.ocrGuessedName && !liveDeal.ocrGuessedAddress && (
+                      <Text style={styles.ocrText}>
+                        Couldn't find a clear name/address — fill in the details manually below.
+                      </Text>
+                    )}
+                    {liveDeal?.ocrStatus === 'error' && (
+                      <Text style={styles.ocrText}>No text detected — fill in the details manually below.</Text>
+                    )}
+                  </>
                 )}
               </View>
 

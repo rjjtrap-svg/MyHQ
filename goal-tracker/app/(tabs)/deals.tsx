@@ -7,14 +7,20 @@ import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
 import { useDealsStore } from '@/src/store/dealsStore';
 import { useCommissionStore } from '@/src/store/commissionStore';
+import { useDoorKnocksStore } from '@/src/store/doorKnocksStore';
 import { dailyPoints, monthlyPoints, weeklyPoints } from '@/src/lib/stats';
-import { parseISODate, shortDateLabel, weekdayLabel } from '@/src/lib/dates';
+import { parseISODate, shortDateLabel, startOfWeek, todayISO, toISODate, weekdayLabel } from '@/src/lib/dates';
 import { BarChart } from '@/src/components/BarChart';
 import { Section } from '@/src/components/Section';
 import { StatTile } from '@/src/components/StatTile';
 import { StagePillRow } from '@/src/components/StagePill';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { Deal, DealStage } from '@/src/types';
+
+function formatPercent(numerator: number, denominator: number): string {
+  if (denominator <= 0) return '—';
+  return `${Math.round((numerator / denominator) * 100)}%`;
+}
 
 function formatMoney(amount: number): string {
   return `$${amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
@@ -107,6 +113,57 @@ function DealRow({ deal }: { deal: Deal }) {
   );
 }
 
+function ClosingKpis({ todaySales, weekSales }: { todaySales: number; weekSales: number }) {
+  const uid = useAuthStore((s) => s.firebaseUser?.uid);
+  const teamId = useTeamStore((s) => s.teamId);
+  const doorKnocksByDate = useDoorKnocksStore((s) => s.byDate);
+  const setDoorKnocksToday = useDoorKnocksStore((s) => s.setToday);
+
+  const today = todayISO();
+  const weekStartIso = toISODate(startOfWeek(new Date()));
+  const doorsToday = doorKnocksByDate[today] ?? 0;
+  const doorsThisWeek = useMemo(
+    () =>
+      Object.entries(doorKnocksByDate)
+        .filter(([date]) => date >= weekStartIso)
+        .reduce((sum, [, count]) => sum + count, 0),
+    [doorKnocksByDate, weekStartIso]
+  );
+
+  const [text, setText] = useState(String(doorsToday || ''));
+
+  function save() {
+    const parsed = Number(text.replace(/[^0-9]/g, ''));
+    if (!uid || !teamId || !Number.isFinite(parsed)) return;
+    setDoorKnocksToday(teamId, uid, today, parsed);
+  }
+
+  return (
+    <Section title="Closing % (KPIs)">
+      <View style={styles.field}>
+        <Text style={styles.fieldLabel}>Doors knocked today</Text>
+        <TextInput
+          style={styles.input}
+          value={text}
+          onChangeText={setText}
+          onBlur={save}
+          keyboardType="number-pad"
+          placeholder="0"
+          placeholderTextColor={colors.textFaint}
+        />
+      </View>
+      <View style={styles.grid}>
+        <StatTile label="Closing % today" value={formatPercent(todaySales, doorsToday)} sublabel={`${todaySales} / ${doorsToday}`} />
+        <StatTile
+          label="Closing % this week"
+          value={formatPercent(weekSales, doorsThisWeek)}
+          sublabel={`${weekSales} / ${doorsThisWeek}`}
+        />
+      </View>
+    </Section>
+  );
+}
+
 export default function DealsScreen() {
   const uid = useAuthStore((s) => s.firebaseUser?.uid);
   const { deals, stats } = useGoalStats();
@@ -142,6 +199,8 @@ export default function DealsScreen() {
           <StatTile label="Paid out" value={formatMoney(myCommissionTotals.paid)} accent={colors.success} />
         </View>
 
+        <ClosingKpis todaySales={stats.todaySales} weekSales={stats.weekSales} />
+
         <Section title={`Pipeline (${deals.filter((d) => !d.deletedAt).length})`}>
           {deals.length === 0 ? (
             <Text style={styles.emptyText}>No deals logged yet — tap the + button to add one.</Text>
@@ -150,15 +209,15 @@ export default function DealsScreen() {
           )}
         </Section>
 
-        <Section title="Daily sales" right={<Text style={styles.rangeLabel}>Last 14 days</Text>}>
+        <Section title="Daily Sales" right={<Text style={styles.rangeLabel}>Last 14 Days</Text>}>
           <BarChart data={dailyChart} />
         </Section>
 
-        <Section title="Weekly sales" right={<Text style={styles.rangeLabel}>Last 8 weeks</Text>}>
+        <Section title="Weekly Sales" right={<Text style={styles.rangeLabel}>Last 8 Weeks</Text>}>
           <BarChart data={weeklyChart} color={colors.accent} />
         </Section>
 
-        <Section title="Monthly sales" right={<Text style={styles.rangeLabel}>Last 6 months</Text>}>
+        <Section title="Monthly Sales" right={<Text style={styles.rangeLabel}>Last 6 Months</Text>}>
           <BarChart data={monthlyChart} color={colors.gold} />
         </Section>
 
@@ -218,6 +277,25 @@ const styles = StyleSheet.create({
   emptyText: {
     ...typography.body,
     color: colors.textFaint,
+  },
+  field: {
+    marginBottom: spacing.md,
+  },
+  fieldLabel: {
+    ...typography.statLabel,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    marginBottom: spacing.xs,
+  },
+  input: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    color: colors.text,
+    fontSize: 15,
   },
   dealCard: {
     backgroundColor: colors.surface,
