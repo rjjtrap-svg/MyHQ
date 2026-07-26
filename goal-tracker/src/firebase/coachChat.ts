@@ -114,3 +114,15 @@ export async function sendCoachChatMessage(
   const result = await callable({ teamId, message, image: attachment?.image, audio: attachment?.audio });
   return result.data.answer;
 }
+
+/**
+ * Clears the rep's stored Managed Agent session so their next message starts a fresh one
+ * — needed because a session's instructions/knowledge are locked in for its whole
+ * lifetime, so if the agent gets upgraded in the Anthropic console, an already-ongoing
+ * conversation won't pick that up on its own. Existing chat history is untouched.
+ */
+export async function resetCoachChatSession(teamId: string): Promise<void> {
+  if (!functions) throw new Error('Firebase is not configured.');
+  const callable = httpsCallable<{ teamId: string }, { ok: boolean }>(functions, 'resetCoachAgentSession');
+  await callable({ teamId });
+}

@@ -146,6 +146,15 @@ to the other three sections below it):
   private to that rep — not visible to managers/team leads, unlike pitch submissions.
   **Video isn't supported** — Claude can't process video today, so there's no video
   attachment button; only photos and voice memos.
+
+  **Updating the agent:** a Managed Agent session's instructions/knowledge/model are fixed
+  for that session's entire lifetime (per Anthropic's docs) — since each rep gets one
+  long-running session reused for every message, editing the agent in the Anthropic
+  console does NOT retroactively change a rep's already-ongoing conversation, only brand-
+  new ones. The "Start a new conversation" link above the chat (`resetCoachAgentSession`
+  callable) clears just the stored session id so a rep's next message creates a fresh
+  session on the current agent version — their prior messages stay visible, only the
+  agent's memory resets. Tell reps to tap that after you make a meaningful agent update.
 - **Grade My Pitch** — a rep taps the mic and records a practice pitch (or a recap of a
   real door-knock). The audio uploads to `teams/{teamId}/pitch-audio/`, which triggers a
   Cloud Function (`onPitchAudioUploaded`) that transcodes it to WAV, sends it to Google

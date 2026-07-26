@@ -3,7 +3,7 @@ const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 const { getMessaging } = require('firebase-admin/messaging');
 const vision = require('@google-cloud/vision');
@@ -514,4 +514,23 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
     // instead of 'internal' so this message actually reaches the client.
     throw new HttpsError('unavailable', 'Could not reach the AI coach — try again in a moment.');
   }
+});
+
+// Callable from the client: clears the rep's stored Managed Agent session id so their
+// *next* message starts a brand-new session. Needed because a session's system
+// instructions are fixed for its whole lifetime (per Anthropic's docs) — if the agent gets
+// upgraded (new instructions/knowledge/model) in the console, a rep's existing ongoing
+// conversation won't pick that up on its own, only a fresh session will. Doesn't touch
+// existing chat history — old messages stay visible, only future ones start a new memory.
+exports.resetCoachAgentSession = onCall({ region: 'us-east1' }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in required.');
+  }
+  const teamId = String(request.data?.teamId || '').trim();
+  if (!teamId) {
+    throw new HttpsError('invalid-argument', 'teamId is required.');
+  }
+  const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(request.auth.uid);
+  await chatRef.set({ sessionId: FieldValue.delete(), updatedAt: new Date().toISOString() }, { merge: true });
+  return { ok: true };
 });

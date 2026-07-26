@@ -9,7 +9,7 @@ import { useTeamStore } from '@/src/store/teamStore';
 import { usePitchCoachStore } from '@/src/store/pitchCoachStore';
 import { useCoachChatStore } from '@/src/store/coachChatStore';
 import { createPitchSubmission, uploadPitchAudio, askObjectionHandling } from '@/src/firebase/pitchCoaching';
-import { sendCoachChatMessage, uploadCoachChatAudio, uploadCoachChatImage } from '@/src/firebase/coachChat';
+import { resetCoachChatSession, sendCoachChatMessage, uploadCoachChatAudio, uploadCoachChatImage } from '@/src/firebase/coachChat';
 import { generateId } from '@/src/lib/id';
 import { CLOSING_TIPS, OBJECTIONS, PITCH_SCRIPT } from '@/src/lib/fiberScript';
 import { Section } from '@/src/components/Section';
@@ -318,6 +318,8 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -406,6 +408,20 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
     }
   }
 
+  async function confirmReset() {
+    if (!teamId || resetting) return;
+    setError(null);
+    setResetting(true);
+    try {
+      await resetCoachChatSession(teamId);
+      setConfirmingReset(false);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not start a new conversation.');
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <>
       <View style={styles.recordCard}>
@@ -414,6 +430,36 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
           snap a photo, or record a voice memo. It remembers the whole conversation.
         </Text>
       </View>
+
+      {!confirmingReset ? (
+        <Pressable onPress={() => setConfirmingReset(true)} style={styles.newConversationRow}>
+          <FontAwesome name="refresh" size={12} color={colors.textFaint} />
+          <Text style={styles.newConversationText}>Start a new conversation</Text>
+        </Pressable>
+      ) : (
+        <View style={styles.resetConfirmCard}>
+          <Text style={styles.resetConfirmText}>
+            Start fresh? Your coach won't remember this conversation — older messages stay visible, but it forgets
+            the context.
+          </Text>
+          <View style={styles.resetConfirmButtons}>
+            <Pressable
+              onPress={() => setConfirmingReset(false)}
+              style={styles.resetCancelButton}
+              disabled={resetting}
+            >
+              <Text style={styles.resetCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={confirmReset} style={styles.resetConfirmButton} disabled={resetting}>
+              {resetting ? (
+                <ActivityIndicator size="small" color={colors.background} />
+              ) : (
+                <Text style={styles.resetConfirmButtonText}>Start fresh</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {messages.length === 0 && !sending && <Text style={styles.emptyText}>Nothing here yet — say hello below.</Text>}
 
@@ -859,5 +905,58 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.accent,
     fontWeight: '600',
+  },
+  newConversationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  newConversationText: {
+    ...typography.caption,
+    color: colors.textFaint,
+    fontWeight: '600',
+  },
+  resetConfirmCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  resetConfirmText: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  resetConfirmButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  resetCancelButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+  },
+  resetCancelText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
+  resetConfirmButton: {
+    backgroundColor: colors.danger,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    minWidth: 90,
+    alignItems: 'center',
+  },
+  resetConfirmButtonText: {
+    color: colors.background,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
