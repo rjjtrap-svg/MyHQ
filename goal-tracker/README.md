@@ -227,6 +227,25 @@ A web build (React Native Web) can be deployed via `npx expo export -p web` — 
 up, joining a team, and photo/OCR all require the same Firebase project as native; a web
 deployment without `.env` configured will just show the "Setup needed" screen.
 
+### Branding: icon, splash, "Add to Home Screen", link previews
+
+- **App icon / splash / favicon** (`assets/images/icon.png`, `splash-icon.png`,
+  `favicon.png`, `adaptive-icon.png`) are a generated mark — a gradient progress ring
+  matching the in-app circular-progress colors (`src/theme/colors.ts`), not the default
+  Expo placeholder. Regenerate them by re-running the Pillow script this was built with if
+  you ever want to redesign it (not checked in — ask if you need it recreated).
+- **`app/+html.tsx`** sets the page `<title>`, a real `<link rel="manifest">`
+  (`public/manifest.webmanifest`) and `apple-touch-icon` so "Add to Home Screen" on iOS/
+  Android gets a proper name + icon and opens in its own standalone window instead of a
+  plain Safari bookmark — plus Open Graph / Twitter card tags (`public/og-cover.png`) so
+  pasting the link into iMessage/Slack/etc. shows a real preview card instead of a bare URL.
+- **If you already added the old version to your Home Screen**, remove it and re-add it —
+  iOS captures the icon at add-time and won't pick up the new one automatically.
+- **If your production domain ever changes** (custom domain, new Vercel project), update
+  the `SITE_URL` constant at the top of `app/+html.tsx` — the Open Graph tags need an
+  absolute URL to work in most link-preview scrapers, so a stale domain there means the
+  cover image silently stops showing up in shared links.
+
 ## Known trade-offs (MVP, worth knowing about before scaling this up)
 
 - **Storage rules are coarse-grained**: any signed-in user can read/write under `teams/{teamId}/deal-photos/`, not just members of that team. Tightening this to check team membership (via Storage rules' `firestore.get()`) is a reasonable hardening step.
