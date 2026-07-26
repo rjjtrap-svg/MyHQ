@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isTeamMember(teamId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid));
+    }
+
+    function isTeamManager(teamId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role == 'manager';
+    }
+
+    // True when the caller is the team_lead assigned to oversee the given rep (set by the
+    // manager on the rep's membership doc). Used to gate overrides/doorKnocks visibility.
+    // Uses .get(...) with a default since most reps have no overseerUid field at all until
+    // a manager assigns one — direct dot access on a missing key throws in Firestore rules.
+    function isOverseerOf(teamId, repUid) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/teams/$(teamId)/members/$(repUid)).data.get('overseerUid', null) == request.auth.uid;
+    }
+
+    // Each user's own profile: { uid, email, displayName, teamId, role }.
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Web push registrations. Each doc is keyed by the token itself; only its owner can
+    // read/write it. Cloud Functions (admin SDK) bypass these rules entirely to query across
+    // a team when sending a milestone notification.
+    match /pushTokens/{tokenId} {
+      allow read, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create, update: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+    }
+
+    match /teams/{teamId} {
+      // Any signed-in user can read team docs — needed so the join-by-invite-code lookup
+      // (a query over the whole `teams` collection) can find a team before the caller is a
+      // member of it. Team name/goal numbers aren't sensitive; commission is kept elsewhere.
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isTeamManager(teamId);
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isTeamMember(teamId);
+        allow create: if isSignedIn() && request.auth.uid == uid;
+        // A member can update their own doc (e.g. displayName), but only the manager can
+        // change role/overseerUid — otherwise a rep could self-promote to manager by writing
+        // their own membership doc.
+        allow update: if isTeamManager(teamId) ||
+          (request.auth.uid == uid &&
+            request.resource.data.role == resource.data.role &&
+            request.resource.data.get('overseerUid', null) == resource.data.get('overseerUid', null));
+        allow delete: if isTeamManager(teamId);
+      }
+
+      match /deals/{dealId} {
+        // Deals are visible to the whole team (leaderboard, manager oversight). Commission
+        // is NOT stored here — see /commissions below — so this is safe to share broadly.
+        allow read: if isTeamMember(teamId);
+        allow create: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
+        allow update: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId));
+        allow delete: if isTeamManager(teamId) || resource.data.repUid == request.auth.uid;
+      }
+
+      match /commissions/{dealId} {
+        // Commission is money: only the rep who earned it and the manager can ever read it.
+        // Reps must query with a `repUid == self` filter for a `list` to be permitted — an
+        // unfiltered query from a rep is rejected because the rule can't verify every
+        // possible result would satisfy it. The manager's role check holds regardless of
+        // the query shape, so an unfiltered manager query is allowed.
+        allow read: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId));
+        allow write: if isTeamMember(teamId) &&
+          (request.resource.data.repUid == request.auth.uid || isTeamManager(teamId));
+      }
+
+      match /overrides/{dealId} {
+        // A manager/team_lead correction to a rep's commission. Deliberately NEVER readable
+        // by the rep it's about — only the manager and that rep's assigned team_lead.
+        allow read: if isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid);
+        allow create: if isTeamManager(teamId) || isOverseerOf(teamId, request.resource.data.repUid);
+        allow update: if isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid);
+        allow delete: if isTeamManager(teamId);
+      }
+
+      match /doorKnocks/{docId} {
+        // A rep's own daily door-knock count, for their closing % KPI. Visible to the rep
+        // themselves plus the manager and their overseeing team_lead.
+        allow read: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid));
+        allow write: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
+      }
+
+      match /pitchSubmissions/{submissionId} {
+        // A rep's own AI-graded practice pitch. Visible to the rep, the manager, and their
+        // overseeing team_lead (coaching purposes) — the Cloud Function that fills in the
+        // transcript/grade uses the admin SDK and bypasses these rules entirely.
+        allow read: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid));
+        allow create: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
+        allow update: if isTeamManager(teamId) || isOverseerOf(teamId, resource.data.repUid);
+        allow delete: if isTeamManager(teamId) || resource.data.repUid == request.auth.uid;
+      }
+
+      // A rep's ongoing chat with the persistent Managed Agent coach — doc id IS the rep's
+      // uid, so this is a private 1:1 assistant. Unlike pitchSubmissions, deliberately NOT
+      // readable by managers/team_leads: this is meant to be a judgment-free place to ask
+      // anything, not a monitored channel. The askCoachAgent Cloud Function uses the admin
+      // SDK to write the session id and both sides of every exchange, bypassing these rules.
+      match /coachChats/{repUid} {
+        allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
+        allow write: if false;
+
+        match /messages/{messageId} {
+          allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
+          allow write: if false;
+        }
+      }
+    }
+  }
+}

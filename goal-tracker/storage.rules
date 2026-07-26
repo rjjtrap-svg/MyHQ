@@ -1,0 +1,31 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /teams/{teamId}/deal-photos/{fileName} {
+      // Kept simple on purpose: any signed-in user can read/write under a team's photo
+      // path. Firestore rules already gate who can see the *deal* the photo is attached
+      // to; a determined user could still guess another team's storage path. Tightening
+      // this to verify team membership (via `firestore.exists()` cross-service checks) is
+      // a reasonable hardening step once this is live — see the README.
+      allow read, write: if request.auth != null;
+    }
+
+    match /teams/{teamId}/pitch-audio/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Profile pictures. Readable by any signed-in user (teammates see each other's
+    // profile cards), but only the owner can replace their own.
+    match /teams/{teamId}/profile-photos/{uid}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Accountability Coach photo/voice-memo attachments — path is namespaced by the
+    // uploading rep's own uid, so scope read/write to that same uid (this is meant to be
+    // a private, judgment-free space — tighter than the coarse team-wide rules above).
+    match /teams/{teamId}/coach-chat-media/{repUid}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == repUid;
+    }
+  }
+}
