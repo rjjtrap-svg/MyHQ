@@ -425,11 +425,22 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
   if (image && (!image.base64 || !image.mediaType || !image.url)) {
     throw new HttpsError('invalid-argument', 'Malformed image attachment.');
   }
-  if (audio && (!audio.path || !audio.url)) {
-    throw new HttpsError('invalid-argument', 'Malformed audio attachment.');
-  }
 
   const repUid = request.auth.uid;
+
+  if (audio) {
+    if (!audio.path || !audio.url) {
+      throw new HttpsError('invalid-argument', 'Malformed audio attachment.');
+    }
+    // audio.path is client-supplied and gets downloaded from Storage server-side below —
+    // without this check a caller could point it at ANY object in the bucket (another
+    // team's deal-photos, another rep's pitch-audio, etc.), not just their own chat media.
+    const expectedPrefix = `teams/${teamId}/coach-chat-media/${repUid}/`;
+    if (typeof audio.path !== 'string' || audio.path.includes('..') || !audio.path.startsWith(expectedPrefix)) {
+      throw new HttpsError('invalid-argument', 'Invalid audio path.');
+    }
+  }
+
   const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(repUid);
   const messagesRef = chatRef.collection('messages');
 
