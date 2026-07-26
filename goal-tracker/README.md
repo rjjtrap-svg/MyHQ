@@ -54,9 +54,9 @@ Scan the QR code with Expo Go, press `i` for the iOS Simulator (macOS + Xcode), 
 
 1. Tapping **+** requires a photo (camera or library) before anything else — there's no way to log a deal without one.
 2. The photo uploads to Firebase Storage at `teams/{teamId}/deal-photos/{dealId}.jpg`, and the deal is created immediately (it counts toward stats right away, matching the "every submitted deal moves you closer to your goal" goal).
-3. A Storage-triggered Cloud Function (`functions/index.js`) runs the photo through Google Cloud Vision's text detection and writes the detected lines back onto the deal doc.
-4. Back in the app, those lines show up as tap-to-fill chips for **Customer name** / **Address** — the rep taps to accept a detected line, or just types it manually. OCR reads text; it doesn't guess which line is a name vs. an address (that'd be an unreliable guess without a fixed document layout), so the rep confirms.
-5. From the **Deals** tab, a rep advances their own deal through **Sold → Installed → Paid** and enters the commission amount for that deal.
+3. A Storage-triggered Cloud Function (`functions/index.js`) runs the photo through Google Cloud Vision's text detection, then applies regex heuristics (a line starting with a number + a street suffix like "St"/"Ave"/"Rd" is the address; a short run of capitalized words that isn't a form-label like "Invoice"/"Bill To" is the name) to guess a customer name and address.
+4. Back in the app, those guesses auto-fill **Customer name** / **Address** directly — no tapping required. The rep can still edit either field by hand if the guess is wrong or nothing was detected.
+5. From the **Deals** tab, a rep advances their own deal through **Sold → Installed → Paid**, enters the commission amount, or deletes the deal entirely (trash icon, with an inline confirm).
 
 ## Commission privacy
 

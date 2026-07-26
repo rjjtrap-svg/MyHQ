@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { collection, doc, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import { Deal, DealStage } from '@/src/types';
 import { db } from '@/src/firebase/config';
 import { generateId } from '@/src/lib/id';
@@ -29,6 +29,7 @@ interface DealsState {
   addDeal: (repUid: string, repName: string, input: AddDealInput, id?: string) => Promise<Deal>;
   updateDealDetails: (dealId: string, input: DealDetailsInput) => Promise<void>;
   advanceStage: (dealId: string, stage: DealStage) => Promise<void>;
+  deleteDeal: (dealId: string) => Promise<void>;
 }
 
 export const useDealsStore = create<DealsState>((set, get) => ({
@@ -105,6 +106,12 @@ export const useDealsStore = create<DealsState>((set, get) => ({
       ...(stage === 'installed' ? { installedAt: now } : {}),
       ...(stage === 'paid' ? { paidAt: now } : {}),
     });
+  },
+
+  deleteDeal: async (dealId) => {
+    const { teamId } = get();
+    if (!teamId || !db) throw new Error('No team loaded.');
+    await deleteDoc(doc(db, 'teams', teamId, 'deals', dealId));
   },
 
   updateDealDetails: async (dealId, input) => {

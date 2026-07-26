@@ -25,8 +25,11 @@ export interface Deal {
   repName: string;
   photoUrl?: string;
   ocrStatus: OcrStatus;
-  /** Text lines detected by Cloud Vision, offered as tap-to-fill suggestions. */
+  /** Raw text lines detected by Cloud Vision — kept as a fallback, not shown directly. */
   ocrLines?: string[];
+  /** Best-guess name/address the Cloud Function picked out of ocrLines via heuristics. */
+  ocrGuessedName?: string;
+  ocrGuessedAddress?: string;
 
   /** Sale-to-payout pipeline. Timestamps mark when each stage was reached. */
   stage: DealStage;

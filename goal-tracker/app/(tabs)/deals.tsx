@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FontAwesome } from '@expo/vector-icons';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
@@ -22,15 +23,28 @@ function formatMoney(amount: number): string {
 function DealRow({ deal }: { deal: Deal }) {
   const teamId = useTeamStore((s) => s.teamId);
   const advanceStage = useDealsStore((s) => s.advanceStage);
+  const deleteDeal = useDealsStore((s) => s.deleteDeal);
   const commission = useCommissionStore((s) => s.byDealId[deal.id]);
   const setCommission = useCommissionStore((s) => s.setCommission);
 
   const [amountText, setAmountText] = useState(commission ? String(commission.amount) : '');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   function saveAmount() {
     const parsed = Number(amountText.replace(/[^0-9.]/g, ''));
     if (!teamId || Number.isNaN(parsed)) return;
     setCommission(teamId, deal.id, deal.repUid, parsed);
+  }
+
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      await deleteDeal(deal.id);
+    } finally {
+      setDeleting(false);
+      setConfirmingDelete(false);
+    }
   }
 
   return (
@@ -47,25 +61,48 @@ function DealRow({ deal }: { deal: Deal }) {
           </Text>
           <Text style={styles.dealDate}>{shortDateLabel(parseISODate(deal.date))}</Text>
         </View>
+        <Pressable hitSlop={10} onPress={() => setConfirmingDelete(true)}>
+          <FontAwesome name="trash-o" size={18} color={colors.textFaint} />
+        </Pressable>
       </View>
 
-      <StagePillRow stage={deal.stage} onAdvance={(stage: DealStage) => advanceStage(deal.id, stage)} />
-
-      <View style={styles.commissionRow}>
-        <Text style={styles.commissionLabel}>Commission</Text>
-        <View style={styles.commissionInputWrap}>
-          <Text style={styles.commissionPrefix}>$</Text>
-          <TextInput
-            value={amountText}
-            onChangeText={setAmountText}
-            onBlur={saveAmount}
-            placeholder="0"
-            placeholderTextColor={colors.textFaint}
-            keyboardType="decimal-pad"
-            style={styles.commissionInput}
-          />
+      {confirmingDelete ? (
+        <View style={styles.confirmDeleteRow}>
+          <Text style={styles.confirmDeleteText}>Delete this deal?</Text>
+          <View style={styles.confirmDeleteButtons}>
+            <Pressable
+              style={styles.confirmCancelButton}
+              onPress={() => setConfirmingDelete(false)}
+              disabled={deleting}
+            >
+              <Text style={styles.confirmCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable style={styles.confirmDeleteButton} onPress={confirmDelete} disabled={deleting}>
+              <Text style={styles.confirmDeleteButtonText}>{deleting ? 'Deleting…' : 'Delete'}</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      ) : (
+        <>
+          <StagePillRow stage={deal.stage} onAdvance={(stage: DealStage) => advanceStage(deal.id, stage)} />
+
+          <View style={styles.commissionRow}>
+            <Text style={styles.commissionLabel}>Commission</Text>
+            <View style={styles.commissionInputWrap}>
+              <Text style={styles.commissionPrefix}>$</Text>
+              <TextInput
+                value={amountText}
+                onChangeText={setAmountText}
+                onBlur={saveAmount}
+                placeholder="0"
+                placeholderTextColor={colors.textFaint}
+                keyboardType="decimal-pad"
+                style={styles.commissionInput}
+              />
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -242,5 +279,43 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingLeft: 2,
     minWidth: 60,
+  },
+  confirmDeleteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  confirmDeleteText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  confirmDeleteButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  confirmCancelButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm + 2,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  confirmCancelText: {
+    color: colors.textMuted,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  confirmDeleteButton: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm + 2,
+    borderRadius: radius.sm,
+    backgroundColor: '#7a3b3b',
+  },
+  confirmDeleteButtonText: {
+    color: '#ff9b9b',
+    fontWeight: '700',
+    fontSize: 13,
   },
 });

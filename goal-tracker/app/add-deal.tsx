@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -50,6 +50,19 @@ export default function AddDealScreen() {
 
   const yesterday = toISODate(addDays(new Date(), -1));
   const liveDeal = savedDealId ? liveDeals.find((d) => d.id === savedDealId) : undefined;
+
+  // Auto-fills once from the Cloud Function's best guess, rather than making the rep tap
+  // to accept a chip. Only runs once per deal so it never clobbers a manual edit made
+  // after the guess lands.
+  const autofilledRef = useRef(false);
+  useEffect(() => {
+    if (autofilledRef.current || !liveDeal || liveDeal.ocrStatus !== 'done') return;
+    const { ocrGuessedName, ocrGuessedAddress } = liveDeal;
+    if (!ocrGuessedName && !ocrGuessedAddress) return;
+    autofilledRef.current = true;
+    if (ocrGuessedName) setCustomerName((prev) => prev || ocrGuessedName);
+    if (ocrGuessedAddress) setAddress((prev) => prev || ocrGuessedAddress);
+  }, [liveDeal]);
 
   function haptic(type: 'success' | 'error' = 'success') {
     if (Platform.OS === 'web') return;
@@ -114,16 +127,6 @@ export default function AddDealScreen() {
       await captureAndUpload(result.assets[0].uri);
     } catch (err: any) {
       setError(err?.message ?? 'Could not open the photo library.');
-    }
-  }
-
-  function fillFromOcrLine(line: string) {
-    if (!customerName) {
-      setCustomerName(line);
-    } else if (!address) {
-      setAddress(line);
-    } else {
-      setAddress(line);
     }
   }
 
@@ -214,21 +217,15 @@ export default function AddDealScreen() {
                     <Text style={styles.ocrText}>Scanning photo for details…</Text>
                   </View>
                 )}
-                {liveDeal?.ocrStatus === 'done' && (liveDeal.ocrLines?.length ?? 0) > 0 && (
-                  <>
-                    <Text style={styles.ocrLabel}>Detected text — tap to fill Name, then Address</Text>
-                    <View style={styles.chipWrap}>
-                      {liveDeal.ocrLines!.map((line, i) => (
-                        <Pressable key={i} style={styles.ocrChip} onPress={() => fillFromOcrLine(line)}>
-                          <Text style={styles.ocrChipText} numberOfLines={1}>
-                            {line}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </>
+                {liveDeal?.ocrStatus === 'done' && (liveDeal.ocrGuessedName || liveDeal.ocrGuessedAddress) && (
+                  <Text style={styles.ocrLabelSuccess}>
+                    Auto-filled from the photo below — double-check it's correct.
+                  </Text>
                 )}
-                {(liveDeal?.ocrStatus === 'error' || (liveDeal?.ocrStatus === 'done' && !liveDeal.ocrLines?.length)) && (
+                {liveDeal?.ocrStatus === 'done' && !liveDeal.ocrGuessedName && !liveDeal.ocrGuessedAddress && (
+                  <Text style={styles.ocrText}>Couldn't find a clear name/address — fill in the details manually below.</Text>
+                )}
+                {liveDeal?.ocrStatus === 'error' && (
                   <Text style={styles.ocrText}>No text detected — fill in the details manually below.</Text>
                 )}
               </View>
@@ -432,29 +429,9 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
   },
-  ocrLabel: {
+  ocrLabelSuccess: {
     ...typography.caption,
-    color: colors.accent,
-    marginBottom: spacing.sm,
-  },
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  ocrChip: {
-    maxWidth: '100%',
-    paddingVertical: 6,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.round,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    backgroundColor: '#38E1C622',
-  },
-  ocrChipText: {
-    color: colors.accent,
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.success,
   },
   dateRow: {
     flexDirection: 'row',
