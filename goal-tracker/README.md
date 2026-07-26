@@ -56,8 +56,12 @@ form.
    firebase login
    firebase use --add          # pick the project you just created
    cd functions && npm install && cd ..
-   firebase deploy --only firestore:rules,storage:rules,functions
+   firebase deploy --only firestore:rules,storage,functions
    ```
+   (Storage doesn't have a `rules`-only sub-target like Firestore does — `--only storage`
+   deploys its rules. Using `storage:rules` fails with "Could not find rules for the
+   following storage targets: rules".)
+
    This deploys `firestore.rules`, `storage.rules`, and all Cloud Functions in `functions/`
    (OCR, the milestone push-notification trigger, and — if you did step 8 — pitch
    transcription/grading and the objection-handling assistant).
