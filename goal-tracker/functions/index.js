@@ -11,7 +11,11 @@ const visionClient = new vision.ImageAnnotatorClient();
 // upload after the deal it belongs to so this function knows which Firestore doc to update.
 const PHOTO_PATH_PATTERN = /^teams\/([^/]+)\/deal-photos\/([^/.]+)\.(jpg|jpeg|png)$/i;
 
-exports.onDealPhotoUploaded = onObjectFinalized({ region: 'us-central1', cpu: 1 }, async (event) => {
+// Must match the region of the Storage bucket it listens to — a storage-triggered
+// function can't be in a different region than the bucket. us-east1 is Firebase's
+// default Storage bucket region for newer projects; change this if yours differs
+// (the error message from `firebase deploy` will say which region it expects).
+exports.onDealPhotoUploaded = onObjectFinalized({ region: 'us-east1', cpu: 1 }, async (event) => {
   const filePath = event.data.name;
   const bucketName = event.data.bucket;
 
