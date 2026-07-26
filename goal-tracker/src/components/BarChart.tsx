@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing } from '@/src/theme';
+import { colors, radius, spacing, typography } from '@/src/theme';
 
 export interface BarChartDatum {
   label: string;
@@ -58,16 +58,19 @@ const styles = StyleSheet.create({
   bar: {
     width: '55%',
     maxWidth: 20,
-    borderRadius: 5,
+    borderRadius: radius.sm,
   },
+  // Serif numerals above, patch lettering below — the same pairing the stat tiles and the
+  // profile scoreboard use, so charts read as part of the same system.
   valueLabel: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...typography.scoreValue,
+    fontSize: 13,
     color: colors.textMuted,
     marginBottom: 2,
   },
   label: {
-    fontSize: 10,
+    ...typography.eyebrow,
+    fontSize: 9,
     color: colors.textFaint,
     marginTop: spacing.xs,
   },

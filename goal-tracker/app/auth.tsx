@@ -7,6 +7,10 @@ import { signInWithEmail, signUpWithEmail } from '@/src/firebase/auth';
 import { joinTeamByCode } from '@/src/firebase/teams';
 import { useAuthStore } from '@/src/store/authStore';
 import { firebaseEnabled } from '@/src/firebase/config';
+import { Banner } from '@/src/components/Banner';
+import { Emblem } from '@/src/components/Emblem';
+import { WaveRule } from '@/src/components/WaveRule';
+import { Button, SegmentedToggle } from '@/src/components/Button';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
 type Mode = 'sign-in' | 'sign-up';
@@ -86,14 +90,27 @@ export default function AuthScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Goal Tracker</Text>
-        <Text style={styles.subtitle}>
-          {mode === 'sign-in' ? 'Welcome back.' : 'Create your account to get started.'}
-        </Text>
+        <View style={styles.brand}>
+          <Emblem size={92} />
+          <Text style={styles.eyebrow}>Door to door</Text>
+          <Text style={styles.title}>Goal Tracker</Text>
+          <Text style={styles.subtitle}>
+            {mode === 'sign-in' ? 'Welcome back.' : 'Create your account to get started.'}
+          </Text>
+        </View>
+
+        <WaveRule style={styles.brandWave} color={colors.border} />
 
         <View style={styles.modeRow}>
-          <ModeTab label="Sign in" active={mode === 'sign-in'} onPress={() => setMode('sign-in')} />
-          <ModeTab label="Sign up" active={mode === 'sign-up'} onPress={() => setMode('sign-up')} />
+          <SegmentedToggle
+            options={[
+              { key: 'sign-in', label: 'Sign in' },
+              { key: 'sign-up', label: 'Sign up' },
+            ]}
+            value={mode}
+            onChange={setMode}
+            stretch
+          />
         </View>
 
         {mode === 'sign-up' && (
@@ -160,32 +177,18 @@ export default function AuthScreen() {
         )}
 
         {error && (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
+          <Banner message={error} />
         )}
 
-        <Pressable
-          style={[styles.submitButton, busy && { opacity: 0.6 }]}
+        <Button
+          label={mode === 'sign-in' ? 'Sign in' : 'Create account'}
           onPress={mode === 'sign-in' ? handleSignIn : handleSignUp}
-          disabled={busy}
-        >
-          {busy ? (
-            <ActivityIndicator color={colors.background} />
-          ) : (
-            <Text style={styles.submitText}>{mode === 'sign-in' ? 'Sign in' : 'Create account'}</Text>
-          )}
-        </Pressable>
+          size="lg"
+          busy={busy}
+          style={{ marginTop: spacing.md }}
+        />
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function ModeTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.modeTab, active && styles.modeTabActive]} onPress={onPress}>
-      <Text style={[styles.modeTabText, active && styles.modeTabTextActive]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -214,14 +217,14 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.hero,
-    fontSize: 32,
+    fontSize: 34,
     color: colors.text,
+    marginTop: 2,
   },
   subtitle: {
     ...typography.body,
     color: colors.textMuted,
     marginTop: spacing.xs,
-    marginBottom: spacing.xl,
   },
   heading: {
     ...typography.title,
@@ -233,38 +236,27 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   modeRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 4,
     marginBottom: spacing.lg,
   },
-  modeTab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
+  brand: {
     alignItems: 'center',
-    borderRadius: radius.sm,
   },
-  modeTabActive: {
-    backgroundColor: colors.primaryMuted,
+  eyebrow: {
+    ...typography.eyebrow,
+    color: colors.gold,
+    marginTop: spacing.md,
   },
-  modeTabText: {
-    color: colors.textMuted,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  modeTabTextActive: {
-    color: colors.primary,
+  brandWave: {
+    marginVertical: spacing.lg,
+    opacity: 0.9,
   },
   field: {
     marginBottom: spacing.md,
   },
   fieldLabel: {
-    ...typography.statLabel,
+    ...typography.eyebrow,
+    fontSize: 10,
     color: colors.textMuted,
-    textTransform: 'uppercase',
     marginBottom: spacing.xs,
   },
   input: {
@@ -289,29 +281,9 @@ const styles = StyleSheet.create({
     right: spacing.md,
     padding: spacing.xs,
   },
-  errorBanner: {
-    backgroundColor: '#F3DCD5',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: '#D9A68F',
-    padding: spacing.sm + 2,
-    marginTop: spacing.sm,
-  },
   errorText: {
-    color: '#8A3324',
+    color: colors.dangerText,
     fontSize: 13,
     fontWeight: '600',
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  submitText: {
-    color: colors.background,
-    fontWeight: '700',
-    fontSize: 15,
   },
 });

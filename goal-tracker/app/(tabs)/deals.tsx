@@ -14,6 +14,7 @@ import { cancellationStats, followUpQuestion, pendingFollowUps } from '@/src/lib
 import { BarChart } from '@/src/components/BarChart';
 import { DealEditor } from '@/src/components/DealEditor';
 import { Section } from '@/src/components/Section';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { StatTile } from '@/src/components/StatTile';
 import { StagePillRow } from '@/src/components/StagePill';
 import { colors, radius, spacing, typography } from '@/src/theme';
@@ -301,8 +302,11 @@ export default function DealsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>My Deals</Text>
-        <Text style={styles.subheading}>Private to you — only you and your manager see commission.</Text>
+        <ScreenHeader
+          eyebrow="Your book"
+          title="My Deals"
+          subtitle="Private to you — only you and your manager see commission."
+        />
 
         <View style={styles.grid}>
           <StatTile label="Total commission" value={formatMoney(myCommissionTotals.total)} accent={colors.gold} />
@@ -411,9 +415,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   fieldLabel: {
-    ...typography.statLabel,
+    ...typography.eyebrow,
+    fontSize: 10,
     color: colors.textMuted,
-    textTransform: 'uppercase',
     marginBottom: spacing.xs,
   },
   input: {
@@ -463,9 +467,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   commissionLabel: {
-    ...typography.statLabel,
+    ...typography.eyebrow,
+    fontSize: 10,
     color: colors.textMuted,
-    textTransform: 'uppercase',
   },
   commissionInputWrap: {
     flexDirection: 'row',
@@ -518,10 +522,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.sm,
-    backgroundColor: '#D9A68F',
+    backgroundColor: colors.dangerBorder,
   },
   confirmDeleteButtonText: {
-    color: '#8A3324',
+    color: colors.dangerText,
     fontWeight: '700',
     fontSize: 13,
   },

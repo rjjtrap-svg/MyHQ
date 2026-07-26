@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { updateMyBests } from '@/src/firebase/profile';
 import { PERSONAL_BEST_FIELDS, PersonalBestOverrides } from '@/src/types';
+import { Banner } from '@/src/components/Banner';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
 /**
@@ -79,9 +80,7 @@ export function PersonalBestsEditor({
       ))}
 
       {!!error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{error}</Text>
-        </View>
+        <Banner message={error} />
       )}
 
       <View style={styles.buttons}>
@@ -145,13 +144,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   solidButtonText: { color: colors.background, fontSize: 13, fontWeight: '700' },
-  errorBanner: {
-    backgroundColor: '#F3DCD5',
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: '#D9A68F',
-    padding: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  errorBannerText: { color: '#8A3324', fontSize: 12, fontWeight: '600', textAlign: 'center' },
 });

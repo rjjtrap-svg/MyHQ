@@ -1,17 +1,23 @@
-import { Link, Stack } from 'expo-router';
+import React from 'react';
+import { Stack, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing } from '@/src/theme';
+import { Emblem } from '@/src/components/Emblem';
+import { Button } from '@/src/components/Button';
+import { colors, spacing, typography } from '@/src/theme';
 
 export default function NotFoundScreen() {
+  const router = useRouter();
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
+      <Stack.Screen options={{ title: 'Not found', headerShown: false }} />
       <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn't exist.</Text>
-
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
-        </Link>
+        <Emblem size={76} />
+        <Text style={styles.eyebrow}>Dead end</Text>
+        <Text style={styles.title}>Nothing at this address.</Text>
+        <Text style={styles.body}>
+          That link doesn't lead anywhere. Head back to your dashboard and carry on.
+        </Text>
+        <Button label="Back to Home" onPress={() => router.replace('/')} style={styles.button} />
       </View>
     </>
   );
@@ -25,17 +31,25 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     backgroundColor: colors.background,
   },
+  eyebrow: {
+    ...typography.eyebrow,
+    color: colors.gold,
+    marginTop: spacing.lg,
+  },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...typography.title,
     color: colors.text,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+  body: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    maxWidth: 300,
   },
-  linkText: {
-    fontSize: 14,
-    color: colors.primary,
+  button: {
+    marginTop: spacing.xl,
   },
 });

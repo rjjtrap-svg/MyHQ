@@ -68,11 +68,11 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   pillCancelled: {
-    backgroundColor: '#F3DCD5',
-    borderColor: '#D9A68F',
+    backgroundColor: colors.dangerSurface,
+    borderColor: colors.dangerBorder,
   },
   pillTextCancelled: {
-    color: '#8A3324',
+    color: colors.dangerText,
   },
   pillNext: {
     borderColor: colors.accent,

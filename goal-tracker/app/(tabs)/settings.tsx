@@ -14,6 +14,7 @@ import { getWebPushPermission, isWebPushSupported, requestWebPushPermission } fr
 import { generateId } from '@/src/lib/id';
 import { formatClock } from '@/src/lib/dates';
 import { Section } from '@/src/components/Section';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { firebaseEnabled } from '@/src/firebase/config';
 import { Membership, Role } from '@/src/types';
@@ -302,7 +303,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>Settings</Text>
+        <ScreenHeader eyebrow="Your setup" title="Settings" />
 
         {!firebaseEnabled && (
           <View style={styles.notice}>
@@ -342,7 +343,9 @@ export default function SettingsScreen() {
 
             {isManager && (
               <View style={styles.teamGoalsBlock}>
-                <Text style={styles.fieldLabel}>Team goal (shown on the Team tab)</Text>
+                {/* The three fields below carry their own labels — a group heading in the
+                    same eyebrow style just read as a duplicated label above the first one. */}
+                <Text style={styles.groupNote}>These show on the Team tab for everyone.</Text>
                 <NumberField
                   label="Team sales goal"
                   value={team.salesGoal}
@@ -564,9 +567,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   fieldLabel: {
-    ...typography.statLabel,
+    ...typography.eyebrow,
+    fontSize: 10,
     color: colors.textMuted,
-    textTransform: 'uppercase',
     marginBottom: spacing.xs,
   },
   teamRow: {
@@ -580,10 +583,9 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   teamRole: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    ...typography.eyebrow,
+    fontSize: 10,
+    color: colors.gold,
   },
   inviteRow: {
     flexDirection: 'row',
@@ -622,6 +624,11 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textFaint,
     marginTop: spacing.xs,
+  },
+  groupNote: {
+    ...typography.caption,
+    color: colors.textFaint,
+    marginBottom: spacing.sm,
   },
   teamGoalsBlock: {
     marginTop: spacing.lg,
@@ -784,9 +791,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   overseerLabel: {
-    ...typography.statLabel,
+    ...typography.eyebrow,
+    fontSize: 10,
     color: colors.textFaint,
-    textTransform: 'uppercase',
     marginBottom: spacing.xs,
   },
   overseerChipRow: {

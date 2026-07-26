@@ -9,8 +9,7 @@ import { StreakFlame } from '@/src/components/StreakFlame';
 import { StatTile } from '@/src/components/StatTile';
 import { MilestoneOverlay } from '@/src/components/MilestoneOverlay';
 import { Section } from '@/src/components/Section';
-import { Emblem } from '@/src/components/Emblem';
-import { WaveRule } from '@/src/components/WaveRule';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { PullQuote } from '@/src/components/PullQuote';
 import { colors, spacing, typography } from '@/src/theme';
 import { parseISODate, shortDateLabel, weekdayLabel } from '@/src/lib/dates';
@@ -31,17 +30,10 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>
-              {weekdayLabel(today)} · {shortDateLabel(today)}
-            </Text>
-            <Text style={styles.heading}>Goal Tracker</Text>
-          </View>
-          <Emblem size={44} />
-        </View>
-
-        <WaveRule style={styles.headerWave} color={colors.border} />
+        <ScreenHeader
+          eyebrow={`${weekdayLabel(today)} · ${shortDateLabel(today)}`}
+          title="Goal Tracker"
+        />
 
         <View style={styles.ringWrap}>
           <CircularProgress progress={stats.percentComplete} size={230} strokeWidth={20}>
@@ -113,30 +105,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-  },
-  headerText: {
-    flex: 1,
-  },
-  headerWave: {
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-    opacity: 0.9,
-  },
-  eyebrow: {
-    ...typography.eyebrow,
-    color: colors.gold,
-  },
-  heading: {
-    ...typography.hero,
-    color: colors.text,
-    fontSize: 32,
-    marginTop: 4,
   },
   ringWrap: {
     alignItems: 'center',

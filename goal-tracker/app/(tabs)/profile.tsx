@@ -24,6 +24,7 @@ import { ProfileBody, profileStyles } from '@/src/components/ProfileBody';
 import { PersonalBestsEditor } from '@/src/components/PersonalBestsEditor';
 import { WaveRule } from '@/src/components/WaveRule';
 import { StreakFlame } from '@/src/components/StreakFlame';
+import { Banner } from '@/src/components/Banner';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
 export default function ProfileScreen() {
@@ -170,9 +171,7 @@ export default function ProfileScreen() {
           )}
 
           {error && (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorBannerText}>{error}</Text>
-            </View>
+            <Banner message={error} />
           )}
         </View>
 
@@ -273,13 +272,4 @@ const styles = StyleSheet.create({
   },
   editBestsText: { ...typography.caption, color: colors.accent, fontWeight: '700' },
 
-  errorBanner: {
-    backgroundColor: '#F3DCD5',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: '#D9A68F',
-    padding: spacing.sm + 2,
-    marginTop: spacing.sm,
-  },
-  errorBannerText: { color: '#8A3324', fontSize: 13, fontWeight: '600', textAlign: 'center' },
 });

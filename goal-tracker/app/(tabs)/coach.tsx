@@ -31,6 +31,8 @@ import {
   searchEntries,
 } from '@/src/lib/lockIn';
 import { Section } from '@/src/components/Section';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { Banner } from '@/src/components/Banner';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { ObjectionExchange, PitchSubmission } from '@/src/types';
 
@@ -273,9 +275,7 @@ function GradePitchSection() {
           {busy ? 'Uploading…' : isRecording ? 'Tap to stop' : 'Tap to record'}
         </Text>
         {error && (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerText}>{error}</Text>
-          </View>
+          <Banner message={error} />
         )}
       </View>
 
@@ -341,9 +341,7 @@ function ObjectionsSection() {
           )}
         </Pressable>
         {error && (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerText}>{error}</Text>
-          </View>
+          <Banner message={error} />
         )}
       </View>
 
@@ -614,9 +612,7 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
       )}
 
       {error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{error}</Text>
-        </View>
+        <Banner message={error} />
       )}
 
       <View style={styles.chatInputRow}>
@@ -783,12 +779,15 @@ export default function CoachScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>{isAccountability ? 'Accountability Coach' : 'AI Sales Coach'}</Text>
-        <Text style={styles.subheading}>
-          {isAccountability
-            ? 'Your coach, on call — text, photos, or voice memos, any time of day.'
-            : 'Practice, get objection help, and review the script — all in one place.'}
-        </Text>
+        <ScreenHeader
+          eyebrow="Sharpen up"
+          title={isAccountability ? 'Accountability Coach' : 'AI Sales Coach'}
+          subtitle={
+            isAccountability
+              ? 'Your coach, on call — text, photos, or voice memos, any time of day.'
+              : 'Practice, get objection help, and review the script — all in one place.'
+          }
+        />
 
         <CoachModePicker value={tab} onChange={setTab} />
 
@@ -996,21 +995,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontWeight: '600',
   },
-  errorBanner: {
-    backgroundColor: '#F3DCD5',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: '#D9A68F',
-    padding: spacing.sm + 2,
-    marginTop: spacing.sm,
-    alignSelf: 'stretch',
-  },
-  errorBannerText: {
-    color: '#8A3324',
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
   emptyText: {
     ...typography.body,
     color: colors.textFaint,
@@ -1053,7 +1037,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   gradeText: {
-    ...typography.statValue,
+    ...typography.scoreValue,
     fontSize: 24,
   },
   expandedBlock: {
@@ -1063,9 +1047,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   expandedLabel: {
-    ...typography.statLabel,
+    ...typography.eyebrow,
+    fontSize: 10,
     color: colors.textMuted,
-    textTransform: 'uppercase',
     marginBottom: spacing.xs,
   },
   expandedBullet: {

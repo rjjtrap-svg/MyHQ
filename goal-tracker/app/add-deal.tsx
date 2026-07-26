@@ -22,6 +22,7 @@ import { useTeamStore } from '@/src/store/teamStore';
 import { uploadDealPhoto } from '@/src/firebase/storage';
 import { prepareImageForUpload } from '@/src/lib/image';
 import { generateId } from '@/src/lib/id';
+import { Banner } from '@/src/components/Banner';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { addDays, todayISO, toISODate } from '@/src/lib/dates';
 
@@ -199,9 +200,7 @@ export default function AddDealScreen() {
               )}
 
               {error && (
-                <View style={styles.errorBanner}>
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
+                <Banner message={error} />
               )}
             </>
           ) : (
@@ -282,9 +281,7 @@ export default function AddDealScreen() {
               </Field>
 
               {error && (
-                <View style={styles.errorBanner}>
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
+                <Banner message={error} />
               )}
 
               <Pressable style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={saveDetails} disabled={saving}>
@@ -394,16 +391,8 @@ const styles = StyleSheet.create({
   uploadingText: {
     color: colors.textMuted,
   },
-  errorBanner: {
-    backgroundColor: '#F3DCD5',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: '#D9A68F',
-    padding: spacing.sm + 2,
-    marginTop: spacing.md,
-  },
   errorText: {
-    color: '#8A3324',
+    color: colors.dangerText,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -477,9 +466,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   fieldLabel: {
-    ...typography.statLabel,
+    ...typography.eyebrow,
+    fontSize: 10,
     color: colors.textMuted,
-    textTransform: 'uppercase',
     marginBottom: spacing.xs,
   },
   input: {

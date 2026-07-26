@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useDealsStore, DealDetailsInput } from '@/src/store/dealsStore';
 import { Deal } from '@/src/types';
+import { Banner } from '@/src/components/Banner';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -112,9 +113,7 @@ export function DealEditor({ deal, onDone }: { deal: Deal; onDone: () => void })
       <Field label="Notes" value={notes} onChange={setNotes} placeholder="Gate code, dog, best time to call…" multiline />
 
       {!!error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{error}</Text>
-        </View>
+        <Banner message={error} />
       )}
 
       <View style={styles.buttons}>
@@ -159,8 +158,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   inputMultiline: { minHeight: 64, textAlignVertical: 'top' },
-  inputError: { borderColor: '#D9A68F' },
-  fieldError: { ...typography.caption, fontSize: 11, color: '#8A3324', marginTop: 2 },
+  inputError: { borderColor: colors.dangerBorder },
+  fieldError: { ...typography.caption, fontSize: 11, color: colors.dangerText, marginTop: 2 },
   installHint: {
     ...typography.caption,
     fontSize: 11,
@@ -181,13 +180,4 @@ const styles = StyleSheet.create({
   },
   solidButtonDisabled: { opacity: 0.5 },
   solidButtonText: { color: colors.background, fontSize: 13, fontWeight: '700' },
-  errorBanner: {
-    backgroundColor: '#F3DCD5',
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: '#D9A68F',
-    padding: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  errorBannerText: { color: '#8A3324', fontSize: 12, fontWeight: '600', textAlign: 'center' },
 });

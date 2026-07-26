@@ -12,6 +12,8 @@ import { buildLeaderboard } from '@/src/lib/stats';
 import { parseISODate, shortDateLabel } from '@/src/lib/dates';
 import { CircularProgress } from '@/src/components/CircularProgress';
 import { Section } from '@/src/components/Section';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { SegmentedToggle } from '@/src/components/Button';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { Deal, LeaderboardEntry } from '@/src/types';
 
@@ -196,8 +198,11 @@ export default function TeamScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>{team.name}</Text>
-        <Text style={styles.subheading}>{members.length} Member{members.length === 1 ? '' : 's'}</Text>
+        <ScreenHeader
+          eyebrow="The crew"
+          title={team.name}
+          subtitle={`${members.length} member${members.length === 1 ? '' : 's'}`}
+        />
 
         <View style={styles.ringWrap}>
           <CircularProgress progress={teamProgress} size={190} strokeWidth={16} color={colors.accent}>
@@ -211,20 +216,14 @@ export default function TeamScreen() {
         <Section
           title="Leaderboard"
           right={
-            <View style={styles.rangeToggle}>
-              <Pressable
-                style={[styles.rangeToggleButton, range === 'today' && styles.rangeToggleButtonActive]}
-                onPress={() => setRange('today')}
-              >
-                <Text style={[styles.rangeToggleText, range === 'today' && styles.rangeToggleTextActive]}>Today</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.rangeToggleButton, range === 'week' && styles.rangeToggleButtonActive]}
-                onPress={() => setRange('week')}
-              >
-                <Text style={[styles.rangeToggleText, range === 'week' && styles.rangeToggleTextActive]}>Week</Text>
-              </Pressable>
-            </View>
+            <SegmentedToggle
+              options={[
+                { key: 'today', label: 'Today' },
+                { key: 'week', label: 'Week' },
+              ]}
+              value={range}
+              onChange={setRange}
+            />
           }
         >
           <Text style={styles.rangeLabel}>Tap anyone to see their profile.</Text>
@@ -315,30 +314,6 @@ const styles = StyleSheet.create({
     color: colors.textFaint,
     marginBottom: spacing.sm,
   },
-  rangeToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.round,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 3,
-  },
-  rangeToggleButton: {
-    paddingVertical: 5,
-    paddingHorizontal: spacing.sm + 2,
-    borderRadius: radius.round,
-  },
-  rangeToggleButtonActive: {
-    backgroundColor: colors.primaryMuted,
-  },
-  rangeToggleText: {
-    color: colors.textMuted,
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  rangeToggleTextActive: {
-    color: colors.primary,
-  },
   leaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -396,7 +371,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   leaderCount: {
-    ...typography.statValue,
+    ...typography.scoreValue,
     fontSize: 20,
     color: colors.text,
   },

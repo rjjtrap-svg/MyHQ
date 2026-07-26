@@ -11,6 +11,10 @@ export const colors = {
   accent: '#8C5A2B',
   gold: '#C6862E',
   danger: '#A83A2B',
+  /** Alert surfaces — these were hardcoded in seven different files before. */
+  dangerSurface: '#F3DCD5',
+  dangerBorder: '#D9A68F',
+  dangerText: '#8A3324',
   success: '#4B7A3D',
   ahead: '#4B7A3D',
   onPace: '#5C3A21',
