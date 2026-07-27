@@ -12,7 +12,6 @@ import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
 import { useDealsStore } from '@/src/store/dealsStore';
 import { useCommissionStore } from '@/src/store/commissionStore';
-import { useOverrideStore } from '@/src/store/overrideStore';
 import { useDoorKnocksStore } from '@/src/store/doorKnocksStore';
 import { usePitchCoachStore } from '@/src/store/pitchCoachStore';
 import { useCoachChatStore } from '@/src/store/coachChatStore';
@@ -56,7 +55,6 @@ export default function RootLayout() {
   const teamMembers = useTeamStore((s) => s.members);
   const subscribeDeals = useDealsStore((s) => s.subscribe);
   const subscribeCommissions = useCommissionStore((s) => s.subscribe);
-  const subscribeOverrides = useOverrideStore((s) => s.subscribe);
   const subscribeDoorKnocks = useDoorKnocksStore((s) => s.subscribe);
   const subscribePitchSubs = usePitchCoachStore((s) => s.subscribe);
   const subscribeCoachChat = useCoachChatStore((s) => s.subscribe);
@@ -95,21 +93,6 @@ export default function RootLayout() {
       unsubCoachChat();
     };
   }, [profile?.teamId, profile?.role, firebaseUser?.uid]);
-
-  // Overrides depend on knowing which reps this team_lead oversees, which only becomes
-  // available once the team's member list has loaded — a separate effect so it re-subscribes
-  // whenever that assignment changes, without re-running the subscriptions above.
-  useEffect(() => {
-    if (!profile?.teamId || !firebaseUser) return undefined;
-    if (profile.role === 'manager') {
-      return subscribeOverrides(profile.teamId, 'all');
-    }
-    if (profile.role === 'team_lead') {
-      const overseenUids = teamMembers.filter((m) => m.overseerUid === firebaseUser.uid).map((m) => m.uid);
-      return subscribeOverrides(profile.teamId, overseenUids);
-    }
-    return undefined;
-  }, [profile?.teamId, profile?.role, firebaseUser?.uid, teamMembers]);
 
   // Web push registration is opt-in (see Settings) and only meaningful once we know the
   // user's team; safe to call repeatedly since it's a no-op if permission isn't granted yet.
