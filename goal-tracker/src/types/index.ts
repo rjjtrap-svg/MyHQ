@@ -255,6 +255,39 @@ export interface LockInNote {
 }
 
 /**
+ * A standing override rate: what one leader earns per deal closed by one rep.
+ *
+ * NOT the same thing as `CommissionOverride` below, despite the shared word. That one is a
+ * correction to a single rep's commission on a single deal. This is the leader's own
+ * earnings structure — a rate that applies to every deal that rep closes from now on, and
+ * the thing that rolls up into a team lead's or manager's override total.
+ *
+ * Doc id is `${leaderUid}_${repUid}`, so a rep can carry overrides to more than one leader
+ * at once — the normal case, where a team lead and the manager above them both earn on the
+ * same deal.
+ */
+export interface RepOverrideRate {
+  teamId: string;
+  /** The leader who earns this. */
+  leaderUid: string;
+  leaderName: string;
+  /** The rep whose deals generate it. */
+  repUid: string;
+  repName: string;
+  /** Dollars per closed deal. */
+  amountPerDeal: number;
+  /**
+   * ISO date (yyyy-mm-dd). Deals dated before this don't count. Left unset, the rate
+   * applies to the rep's whole history — which is what you want when first entering an
+   * arrangement that already existed. Set it when a rate genuinely changes, so raising
+   * someone's rate doesn't silently rewrite what you earned last quarter.
+   */
+  effectiveFrom?: string;
+  setByUid: string;
+  updatedAt: string;
+}
+
+/**
  * A manager/team_lead correction to a rep's commission on a specific deal. Deliberately kept
  * in its own collection with its own Firestore rules — NOT readable by the rep it's about,
  * only by that rep's overseeing team_lead and the manager.

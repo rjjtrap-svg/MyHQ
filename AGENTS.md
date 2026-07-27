@@ -106,9 +106,15 @@ same geometry so the app icon and the in-app mark never drift apart.
 ## Domain rules that are easy to get wrong
 
 - **A cancelled deal is not a sale.** `stage === 'cancelled'` is excluded from every stat —
-  goal progress, streaks, close rate, commission totals. Both stats engines
-  (`src/lib/stats.ts`, `src/lib/profileStats.ts`) filter it in their `activeDeals()`. If you
-  add a third place that counts deals, filter it there too.
+  goal progress, streaks, close rate, commission totals, override earnings. Three places
+  count deals and all three filter it: `src/lib/stats.ts` and `src/lib/profileStats.ts` in
+  their `activeDeals()`, and `src/lib/overrideEarnings.ts` in `qualifying()`. If you add a
+  fourth, filter it there too — on the override path this is money leaving the business for
+  a deal that fell through.
+- **Two different things are called "override".** `CommissionOverride` is a manager's
+  correction to one rep's commission on one deal. `RepOverrideRate` is a standing per-deal
+  rate a leader earns on a rep's production. Separate collections, separate rules. Don't
+  merge them.
 - **Commission is private.** Readable only by the rep who earned it and the manager, enforced
   in `firestore.rules`. Teammate profiles pass `showMoney={false}` for this reason — don't
   "fix" that by showing money.

@@ -83,6 +83,20 @@ service cloud.firestore {
           (request.resource.data.repUid == request.auth.uid || isTeamManager(teamId));
       }
 
+      match /overrideRates/{rateId} {
+        // What a leader earns per deal from one rep. Readable by the leader who earns it
+        // and by the manager — NOT by the rep generating it, and not by other leaders.
+        // A rep must query with `leaderUid == self` for a list to be permitted; the
+        // manager's role check holds for any query shape.
+        //
+        // Writes are manager-only, deliberately. Read access alone would let a team_lead
+        // set their own rate to any number they liked, and this is the figure the whole
+        // override rollup multiplies by. Comp structure is the manager's to set.
+        allow read: if isTeamMember(teamId) &&
+          (resource.data.leaderUid == request.auth.uid || isTeamManager(teamId));
+        allow write: if isTeamManager(teamId);
+      }
+
       match /overrides/{dealId} {
         // A manager/team_lead correction to a rep's commission. Deliberately NEVER readable
         // by the rep it's about — only the manager and that rep's assigned team_lead.
