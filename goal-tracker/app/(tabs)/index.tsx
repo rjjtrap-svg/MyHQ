@@ -206,13 +206,6 @@ export default function HomeScreen() {
         <View style={styles.quickRow}>
           <Pressable
             style={({ pressed }) => [styles.quick, pressed && styles.quickPressed]}
-            onPress={() => router.push('/territory')}
-          >
-            <FontAwesome name="map-o" size={14} color={colors.gold} />
-            <Text style={styles.quickLabel}>Territory</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.quick, pressed && styles.quickPressed]}
             onPress={() => router.push('/day')}
           >
             <FontAwesome name="sun-o" size={14} color={colors.gold} />
