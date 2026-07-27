@@ -129,6 +129,15 @@ service cloud.firestore {
       // readable by managers/team_leads: this is meant to be a judgment-free place to ask
       // anything, not a monitored channel. The askCoachAgent Cloud Function uses the admin
       // SDK to write the session id and both sides of every exchange, bypassing these rules.
+      // A rep's private Lock In writing: journal entries, goals, and their why. Readable
+      // and writable ONLY by the rep it belongs to — not the manager, not their team_lead.
+      // A why is usually about money someone doesn't have or a person they're trying to
+      // prove something to, and it only ever gets written honestly if the rep is certain
+      // their boss cannot read it. Do not loosen this to add a manager view.
+      match /lockInNotes/{repUid}/notes/{noteId} {
+        allow read, write: if isTeamMember(teamId) && request.auth.uid == repUid;
+      }
+
       match /coachChats/{repUid} {
         allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
         allow write: if false;

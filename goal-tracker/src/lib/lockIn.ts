@@ -34,7 +34,11 @@ export type TopicId =
   | 'mindset'
   | 'habits'
   | 'money'
-  | 'leadership';
+  | 'leadership'
+  | 'purpose'
+  | 'fear'
+  | 'resilience'
+  | 'consistency';
 
 export const TOPICS: { id: TopicId; label: string; blurb: string }[] = [
   { id: 'discipline', label: 'Discipline', blurb: 'Doing it when you do not feel like it.' },
@@ -44,6 +48,10 @@ export const TOPICS: { id: TopicId; label: string; blurb: string }[] = [
   { id: 'habits', label: 'Habits', blurb: 'The compounding stuff.' },
   { id: 'money', label: 'Money', blurb: 'Value, price and worth.' },
   { id: 'leadership', label: 'Leadership', blurb: 'Carrying other people.' },
+  { id: 'purpose', label: 'Purpose', blurb: 'The reason underneath the work.' },
+  { id: 'fear', label: 'Fear', blurb: 'The door you do not want to knock.' },
+  { id: 'resilience', label: 'Coming back', blurb: 'After the bad day, the bad week.' },
+  { id: 'consistency', label: 'Consistency', blurb: 'Showing up when it stops being new.' },
 ];
 
 export const LOCK_IN_ENTRIES: LockInEntry[] = [
@@ -380,22 +388,233 @@ export const LOCK_IN_ENTRIES: LockInEntry[] = [
     author: 'Naval Ravikant',
     topics: ['money', 'mindset'],
   },
+
+  // --- Stephen R. Covey, The 7 Habits of Highly Effective People ---
+  {
+    id: 'covey-1',
+    kind: 'idea',
+    text: 'Be proactive. Between what happens to you and how you respond there is a gap, and the whole of your freedom lives in that gap. A slammed door is a stimulus; what you carry to the next house is a choice.',
+    author: 'Stephen R. Covey',
+    source: 'The 7 Habits of Highly Effective People',
+    topics: ['mindset', 'rejection', 'resilience'],
+  },
+  {
+    id: 'covey-2',
+    kind: 'idea',
+    text: 'Begin with the end in mind. Decide what you are actually aiming at before you get efficient at moving, or you will get very good at climbing a ladder leaning against the wrong wall.',
+    author: 'Stephen R. Covey',
+    source: 'The 7 Habits of Highly Effective People',
+    topics: ['purpose', 'mindset'],
+  },
+  {
+    id: 'covey-3',
+    kind: 'idea',
+    text: 'Put first things first. Most people spend their day on what is urgent; almost everything that changes a career is important and never urgent. Practising your pitch is never urgent.',
+    author: 'Stephen R. Covey',
+    source: 'The 7 Habits of Highly Effective People',
+    topics: ['discipline', 'habits'],
+  },
+  {
+    id: 'covey-4',
+    kind: 'idea',
+    text: 'Seek first to understand, then to be understood. Most reps listen only long enough to find the gap where their rebuttal fits. That is not listening, and the customer can tell.',
+    author: 'Stephen R. Covey',
+    source: 'The 7 Habits of Highly Effective People',
+    topics: ['sales', 'leadership'],
+  },
+  {
+    id: 'covey-5',
+    kind: 'idea',
+    text: 'Sharpen the saw. The output of a week is set partly by what you did to stay sharp in it — sleep, training, reps on the script. Cutting those to knock more doors is sawing with a blunter blade for longer.',
+    author: 'Stephen R. Covey',
+    source: 'The 7 Habits of Highly Effective People',
+    topics: ['habits', 'consistency', 'discipline'],
+  },
+
+  // --- Viktor E. Frankl ---
+  {
+    id: 'frankl-1',
+    kind: 'idea',
+    text: 'A person who has a reason to endure something can endure almost any version of it. Suffering without meaning breaks people; the same suffering attached to a why is survivable. Frankl worked this out somewhere considerably worse than a bad territory.',
+    author: 'Viktor E. Frankl',
+    source: "Man's Search for Meaning",
+    topics: ['purpose', 'resilience', 'mindset'],
+  },
+  {
+    id: 'frankl-2',
+    kind: 'idea',
+    text: 'Meaning is not something you receive, it is something you are responsible to. Asking what you want from the year is a weaker question than asking what the year is asking of you.',
+    author: 'Viktor E. Frankl',
+    source: "Man's Search for Meaning",
+    topics: ['purpose', 'mindset'],
+  },
+
+  // --- Simon Sinek ---
+  {
+    id: 'sinek-1',
+    kind: 'idea',
+    text: 'People do not commit to what you do, they commit to why you do it. That is true of customers, and it is far more true of yourself at 6pm on a Thursday.',
+    author: 'Simon Sinek',
+    source: 'Start With Why',
+    topics: ['purpose', 'sales'],
+  },
+
+  // --- Ryan Holiday ---
+  {
+    id: 'holiday-1',
+    kind: 'idea',
+    text: 'The obstacle is the way. The thing blocking you is usually also the thing that will teach you the most, and the reason most competitors quit — which is precisely why getting through it is worth so much.',
+    author: 'Ryan Holiday',
+    source: 'The Obstacle Is the Way',
+    topics: ['resilience', 'mindset', 'fear'],
+  },
+  {
+    id: 'holiday-2',
+    kind: 'idea',
+    text: 'Ego is the enemy. The rep who cannot be coached because they already know is the rep who plateaus in month four and blames the territory.',
+    author: 'Ryan Holiday',
+    source: 'Ego Is the Enemy',
+    topics: ['mindset', 'leadership'],
+  },
+
+  // --- Daniel H. Pink ---
+  {
+    id: 'pink-1',
+    kind: 'idea',
+    text: 'Autonomy, mastery and purpose outlast bonuses and leaderboards. External incentives work in bursts and stop the moment nobody is watching — and most of this job happens when nobody is watching.',
+    author: 'Daniel H. Pink',
+    source: 'Drive',
+    topics: ['purpose', 'consistency', 'money'],
+  },
+  {
+    id: 'pink-2',
+    kind: 'idea',
+    text: 'Selling now is less about persuading and more about serving — finding the problem the person did not know how to name, then being useful about it.',
+    author: 'Daniel H. Pink',
+    source: 'To Sell Is Human',
+    topics: ['sales'],
+  },
+
+  // --- Angela Duckworth ---
+  {
+    id: 'duckworth-2',
+    kind: 'idea',
+    text: 'Grit is passion and perseverance pointed at the same thing for an unreasonable length of time. The perseverance half is downstream of the passion half — nobody grinds for years at something they do not care about.',
+    author: 'Angela Duckworth',
+    source: 'Grit',
+    topics: ['purpose', 'consistency', 'discipline'],
+  },
+
+  // --- Kelly McGonigal ---
+  {
+    id: 'mcgonigal-1',
+    kind: 'idea',
+    text: 'How you read stress changes what it does to you. The same racing heart is either a body falling apart or a body getting ready, and which one it becomes depends partly on which one you call it.',
+    author: 'Kelly McGonigal',
+    source: 'The Upside of Stress',
+    topics: ['fear', 'resilience', 'mindset'],
+  },
+
+  // --- Dale Carnegie ---
+  {
+    id: 'carnegie-1',
+    kind: 'idea',
+    text: "A person's own name is the sweetest sound in any language, and genuine interest in someone beats any amount of trying to be interesting. Most doorstep rapport fails because the rep is performing rather than curious.",
+    author: 'Dale Carnegie',
+    source: 'How to Win Friends and Influence People',
+    topics: ['sales', 'leadership'],
+  },
+  {
+    id: 'carnegie-2',
+    kind: 'idea',
+    text: 'You cannot win an argument. Even when you are right, proving a customer wrong costs you the sale — they will concede the point and buy from someone else.',
+    author: 'Dale Carnegie',
+    source: 'How to Win Friends and Influence People',
+    topics: ['sales', 'rejection'],
+  },
+
+  // --- Seth Godin ---
+  {
+    id: 'godin-1',
+    kind: 'idea',
+    text: 'The resistance is loudest right before work that matters. Feeling reluctant at a particular door is information about the door, not a reason to skip it.',
+    author: 'Seth Godin',
+    source: 'The Practice',
+    topics: ['fear', 'discipline', 'consistency'],
+  },
+
+  // --- Carol Dweck ---
+  {
+    id: 'dweck-2',
+    kind: 'idea',
+    text: 'Praise the process, not the person. A rep told they are naturally gifted gets fragile the first bad week; a rep told their preparation showed goes and prepares again.',
+    author: 'Carol Dweck',
+    source: 'Mindset',
+    topics: ['mindset', 'leadership', 'resilience'],
+  },
+
+  // --- James Clear ---
+  {
+    id: 'clear-3',
+    kind: 'idea',
+    text: 'You do not rise to the level of your goals, you fall to the level of your systems. Wanting twenty sales this month changes nothing; changing what happens at 8:30 every morning changes everything.',
+    author: 'James Clear',
+    source: 'Atomic Habits',
+    topics: ['habits', 'consistency', 'discipline'],
+  },
+  {
+    id: 'clear-4',
+    kind: 'idea',
+    text: 'Every action is a vote for the person you are becoming. One knock is not a career, but it is a ballot.',
+    author: 'James Clear',
+    source: 'Atomic Habits',
+    topics: ['habits', 'consistency', 'purpose'],
+  },
 ];
 
 export function entriesForTopic(topic: TopicId): LockInEntry[] {
   return LOCK_IN_ENTRIES.filter((e) => e.topics.includes(topic));
 }
 
-/** Case-insensitive search across text, author and source. */
+/** Case-insensitive search across text, author, source and topic label. */
 export function searchEntries(query: string): LockInEntry[] {
   const q = query.trim().toLowerCase();
   if (!q) return LOCK_IN_ENTRIES;
+  const matchingTopics = TOPICS.filter((t) => t.label.toLowerCase().includes(q)).map((t) => t.id);
   return LOCK_IN_ENTRIES.filter(
     (e) =>
       e.text.toLowerCase().includes(q) ||
       e.author.toLowerCase().includes(q) ||
-      (e.source ?? '').toLowerCase().includes(q)
+      (e.source ?? '').toLowerCase().includes(q) ||
+      e.topics.some((t) => matchingTopics.includes(t))
   );
 }
 
 export const AUTHORS = Array.from(new Set(LOCK_IN_ENTRIES.map((e) => e.author))).sort();
+
+export interface Shelf {
+  source: string;
+  author: string;
+  count: number;
+}
+
+/**
+ * The library browsable by where it came from rather than by topic — closer to how people
+ * actually look for something they half-remember reading. Entries with no established
+ * source (loose attributions floating around the internet) are deliberately left off the
+ * shelf rather than filed under a book we are guessing at.
+ */
+export function shelves(): Shelf[] {
+  const counts = new Map<string, Shelf>();
+  for (const e of LOCK_IN_ENTRIES) {
+    if (!e.source) continue;
+    const existing = counts.get(e.source);
+    if (existing) existing.count += 1;
+    else counts.set(e.source, { source: e.source, author: e.author, count: 1 });
+  }
+  return [...counts.values()].sort((a, b) => a.source.localeCompare(b.source));
+}
+
+export function entriesForSource(source: string): LockInEntry[] {
+  return LOCK_IN_ENTRIES.filter((e) => e.source === source);
+}

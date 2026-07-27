@@ -225,6 +225,36 @@ export interface KnockRecord {
 }
 
 /**
+ * A rep's private writing in Lock In — journal entries, goals, and their why.
+ *
+ * Private means private. Like coach chat, this is NOT readable by managers or team leads,
+ * and the Firestore rules enforce that. A why is usually about money someone doesn't have
+ * or a person they're trying to prove something to; it only gets written honestly if the
+ * rep is certain their boss can't read it. Do not add a manager view over this.
+ */
+export type NoteKind = 'journal' | 'why' | 'goal';
+
+export interface LockInNote {
+  id: string;
+  teamId: string;
+  repUid: string;
+  kind: NoteKind;
+  /** Optional for journal entries; goals and whys generally have one. */
+  title?: string;
+  body: string;
+  /** Set when the entry was started from a Why exercise — the exercise's id. */
+  exerciseId?: string;
+  /** kind 'goal' only. ISO yyyy-mm-dd. */
+  targetDate?: string;
+  /** kind 'goal' only. Set when the rep marks it done. */
+  completedAt?: string;
+  /** The current why floats to the top and shows before the first door. */
+  pinned?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * A manager/team_lead correction to a rep's commission on a specific deal. Deliberately kept
  * in its own collection with its own Firestore rules — NOT readable by the rep it's about,
  * only by that rep's overseeing team_lead and the manager.
