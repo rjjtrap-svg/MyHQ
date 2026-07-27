@@ -40,6 +40,11 @@ Design tokens are shared but single-owner: the engine agent adds tokens to
 agent needs a colour or type style that doesn't exist, it says so rather than
 hardcoding a hex.
 
+**Currently claimed:** `src/components/lockin/**` and the Lock In wiring in
+`app/(tabs)/coach.tsx` are held by the engine agent, not the UI agent — the lane table
+above is the default, not a rule the owner can't override. Check here before starting
+on either.
+
 ### Handing work between agents
 
 An agent that cannot push to `origin` is still expected to produce a reviewable,
