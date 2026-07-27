@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useDealsStore, DealDetailsInput } from '@/src/store/dealsStore';
 import { Deal } from '@/src/types';
 import { Banner } from '@/src/components/Banner';
+import { SaleDateField, isValidSaleDate } from '@/src/components/SaleDateField';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -53,15 +54,17 @@ export function DealEditor({ deal, onDone }: { deal: Deal; onDone: () => void })
   const [lastName, setLastName] = useState(deal.lastName ?? '');
   const [phone, setPhone] = useState(deal.phone ?? '');
   const [address, setAddress] = useState(deal.address ?? '');
+  const [saleDate, setSaleDate] = useState(deal.date);
   const [installDate, setInstallDate] = useState(deal.scheduledInstallDate ?? '');
   const [notes, setNotes] = useState(deal.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const installDateInvalid = installDate.trim() !== '' && !ISO_DATE.test(installDate.trim());
+  const saleDateInvalid = !isValidSaleDate(saleDate);
 
   async function save() {
-    if (installDateInvalid) return;
+    if (installDateInvalid || saleDateInvalid) return;
     setSaving(true);
     setError(null);
     try {
@@ -71,6 +74,11 @@ export function DealEditor({ deal, onDone }: { deal: Deal; onDone: () => void })
         phone,
         address,
         notes,
+        // The date the sale counts against. Editable here because a deal logged days
+        // late was stamped with the day it was typed in, and that single wrong field
+        // throws off today's count, the streak, pace, best day and every override total
+        // downstream. This is how existing records get corrected.
+        date: saleDate,
         scheduledInstallDate: installDate,
       };
       // Keep the display name in step with the parts, so the deal list and the follow-up
@@ -96,6 +104,8 @@ export function DealEditor({ deal, onDone }: { deal: Deal; onDone: () => void })
           <Field label="Last name" value={lastName} onChange={setLastName} placeholder="Doe" />
         </View>
       </View>
+
+      <SaleDateField value={saleDate} onChange={setSaleDate} label="Sale date" />
 
       <Field label="Phone" value={phone} onChange={setPhone} placeholder="(555) 123-4567" keyboardType="phone-pad" />
       <Field label="Address" value={address} onChange={setAddress} placeholder="123 Main St" />
