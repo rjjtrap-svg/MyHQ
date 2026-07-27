@@ -52,8 +52,19 @@ export default function HomeScreen() {
           <StreakFlame streak={stats.currentStreak} />
         </View>
 
-        {/* Territory is a full screen rather than an eighth tab — the bar is already at
-            seven with three either side of Add, and an eighth truncates every label. */}
+        {/* Both are full screens rather than tabs — the bar is already at seven with
+            three either side of Add, and an eighth truncates every label. */}
+        <View style={styles.quickLinks}>
+        <Pressable style={styles.territoryLink} onPress={() => router.push('/day')}>
+          <View style={styles.territoryText}>
+            <Text style={styles.territoryEyebrow}>The day</Text>
+            <Text style={styles.territoryTitle}>
+              {new Date().getHours() < 14 ? 'Roll out' : 'Wrap up'}
+            </Text>
+          </View>
+          <FontAwesome name="chevron-right" size={14} color={colors.accent} />
+        </Pressable>
+
         <Pressable style={styles.territoryLink} onPress={() => router.push('/territory')}>
           <View style={styles.territoryText}>
             <Text style={styles.territoryEyebrow}>The street</Text>
@@ -61,6 +72,7 @@ export default function HomeScreen() {
           </View>
           <FontAwesome name="chevron-right" size={14} color={colors.accent} />
         </Pressable>
+        </View>
 
         <Section title="Today">
           <View style={styles.grid}>
@@ -111,6 +123,9 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  quickLinks: {
+    marginBottom: spacing.xl,
+  },
   territoryLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -120,7 +135,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
   territoryText: {
     flex: 1,
