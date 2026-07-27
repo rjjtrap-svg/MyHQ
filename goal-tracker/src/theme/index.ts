@@ -42,8 +42,6 @@ export const typography = {
   subtitle: { fontSize: 17, fontWeight: '600' as const },
   body: { fontSize: 15, fontWeight: '400' as const },
   caption: { fontSize: 13, fontWeight: '500' as const },
-  statValue: { fontSize: 22, fontWeight: '800' as const },
-  statLabel: { fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.4 },
 
   /** Patch lettering: small, uppercase, widely tracked. Section headers and eyebrows. */
   eyebrow: {
@@ -59,6 +57,39 @@ export const typography = {
     fontSize: 34,
     fontWeight: '700' as const,
     letterSpacing: -1,
+  },
+  /**
+   * The one number a screen is actually about — today's sales, the goal percentage.
+   * Bigger than scoreValue on purpose: hierarchy should come from size and weight, not
+   * from painting things different colours.
+   */
+  metricHero: {
+    fontFamily: fonts.display,
+    fontSize: 56,
+    fontWeight: '700' as const,
+    letterSpacing: -2,
+  },
+  /** Card headings. Sits between subtitle and body — a card title is not a section title. */
+  cardTitle: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    fontWeight: '700' as const,
+    letterSpacing: -0.2,
+  },
+  /** Status pills. Tighter tracking than eyebrow because badges are short and boxed. */
+  badge: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    fontWeight: '800' as const,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase' as const,
+  },
+  /** Button labels, so every button agrees without each one restating it. */
+  button: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    fontWeight: '700' as const,
+    letterSpacing: -0.1,
   },
   /** Serif italic, for the rotating floor mottos. */
   quote: {

@@ -36,7 +36,7 @@ export function PullQuote({ seed }: { seed?: string }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brandSurface,
     borderRadius: radius.lg,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   line: {
     ...typography.quote,
-    color: colors.background,
+    color: colors.onPrimary,
     paddingRight: spacing.xl,
   },
   attribution: {

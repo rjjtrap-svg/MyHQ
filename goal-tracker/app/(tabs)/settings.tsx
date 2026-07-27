@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useRouter } from 'expo-router';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { useDealsStore } from '@/src/store/dealsStore';
 import { useAuthStore } from '@/src/store/authStore';
@@ -179,6 +180,7 @@ export default function SettingsScreen() {
   const deals = useDealsStore((s) => s.deals);
   const profile = useAuthStore((s) => s.profile);
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
+  const router = useRouter();
   const isManager = profile?.role === 'manager';
   const team = useTeamStore((s) => s.team);
   const members = useTeamStore((s) => s.members);
@@ -387,6 +389,24 @@ export default function SettingsScreen() {
           </Section>
         )}
 
+        {/* A team_lead can see their own book but not set rates — the rules make writes
+            manager-only, so showing them an editor they can't use would just fail. */}
+        {(isManager || profile?.role === 'team_lead') && team && (
+          <Section title="Overrides">
+            <Pressable style={styles.overrideLink} onPress={() => router.push('/overrides')}>
+              <View style={styles.overrideText}>
+                <Text style={styles.overrideTitle}>Override earnings</Text>
+                <Text style={styles.overrideHint}>
+                  {isManager
+                    ? 'Set what each rep earns you per deal'
+                    : 'What your reps earn you per deal'}
+                </Text>
+              </View>
+              <FontAwesome name="chevron-right" size={14} color={colors.accent} />
+            </Pressable>
+          </Section>
+        )}
+
         {isManager && team && (
           <Section title="Team Members">
             {members.map((member) => (
@@ -532,6 +552,18 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  overrideLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+  },
+  overrideText: { flex: 1 },
+  overrideTitle: { ...typography.subtitle, color: colors.text },
+  overrideHint: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
   safe: {
     flex: 1,
     backgroundColor: colors.background,

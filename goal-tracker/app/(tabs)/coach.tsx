@@ -23,13 +23,7 @@ import {
 } from '@/src/firebase/coachChat';
 import { generateId } from '@/src/lib/id';
 import { CLOSING_TIPS, OBJECTIONS, PITCH_SCRIPT } from '@/src/lib/fiberScript';
-import {
-  LOCK_IN_ENTRIES,
-  LockInEntry,
-  TOPICS,
-  TopicId,
-  searchEntries,
-} from '@/src/lib/lockIn';
+import { LockInTab } from '@/src/components/lockin/LockInTab';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { Banner } from '@/src/components/Banner';
@@ -651,90 +645,6 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
   );
 }
 
-function LockInCard({ entry }: { entry: LockInEntry }) {
-  const isQuote = entry.kind === 'quote';
-  return (
-    <View style={styles.lockInCard}>
-      <Text style={isQuote ? styles.lockInQuote : styles.lockInIdea}>
-        {isQuote ? `“${entry.text}”` : entry.text}
-      </Text>
-      <View style={styles.lockInMetaRow}>
-        <Text style={styles.lockInAuthor}>{entry.author}</Text>
-        {!!entry.source && <Text style={styles.lockInSource}>· {entry.source}</Text>}
-        {!isQuote && <Text style={styles.lockInTag}>idea</Text>}
-      </View>
-    </View>
-  );
-}
-
-/**
- * A static shelf of quotes and frameworks. No AI, no network — just a reference the rep can
- * open before a shift. Direct quotes are rendered in quotation marks; summaries of
- * someone's framework are tagged "idea" so nobody mistakes a paraphrase for their words.
- */
-function LockInSection() {
-  const [query, setQuery] = useState('');
-  const [topic, setTopic] = useState<TopicId | 'all'>('all');
-
-  const results = useMemo(() => {
-    const base = query.trim() ? searchEntries(query) : LOCK_IN_ENTRIES;
-    return topic === 'all' ? base : base.filter((e) => e.topics.includes(topic));
-  }, [query, topic]);
-
-  const activeTopic = TOPICS.find((t) => t.id === topic);
-
-  return (
-    <>
-      <View style={styles.recordCard}>
-        <Text style={styles.recordHint}>
-          Lines and frameworks worth keeping in your pocket. Quotation marks mean they said
-          it; anything tagged "idea" is their framework in our words.
-        </Text>
-        <TextInput
-          style={styles.lockInSearch}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search a name, book, or word…"
-          placeholderTextColor={colors.textFaint}
-          autoCorrect={false}
-        />
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.topicRow}
-      >
-        {(['all', ...TOPICS.map((t) => t.id)] as (TopicId | 'all')[]).map((t) => {
-          const active = topic === t;
-          const label = t === 'all' ? 'All' : TOPICS.find((x) => x.id === t)!.label;
-          return (
-            <Pressable
-              key={t}
-              onPress={() => setTopic(t)}
-              style={[styles.topicChip, active && styles.topicChipActive]}
-            >
-              <Text style={[styles.topicChipText, active && styles.topicChipTextActive]}>{label}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {!!activeTopic && <Text style={styles.topicBlurb}>{activeTopic.blurb}</Text>}
-
-      <Text style={styles.lockInCount}>
-        {results.length} {results.length === 1 ? 'entry' : 'entries'}
-      </Text>
-
-      {results.length === 0 ? (
-        <Text style={styles.emptyText}>Nothing matches that. Try a different word or clear the search.</Text>
-      ) : (
-        results.map((e) => <LockInCard key={e.id} entry={e} />)
-      )}
-    </>
-  );
-}
-
 function TrainingSection() {
   return (
     <>
@@ -795,7 +705,7 @@ export default function CoachScreen() {
         {tab === 'pitch' && <GradePitchSection />}
         {tab === 'objections' && <ObjectionsSection />}
         {tab === 'training' && <TrainingSection />}
-        {tab === 'lockin' && <LockInSection />}
+        {tab === 'lockin' && <LockInTab />}
       </ScrollView>
     </SafeAreaView>
   );
@@ -850,7 +760,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   modeLabelActive: {
-    color: colors.background,
+    color: colors.onPrimary,
   },
   modeHint: {
     ...typography.caption,
@@ -859,101 +769,6 @@ const styles = StyleSheet.create({
   },
   modeHintActive: {
     color: colors.primaryMuted,
-  },
-  lockInSearch: {
-    alignSelf: 'stretch',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    color: colors.text,
-    fontSize: 15,
-  },
-  topicRow: {
-    gap: spacing.sm,
-    paddingBottom: spacing.sm,
-  },
-  topicChip: {
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.round,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  topicChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  topicChipText: {
-    ...typography.eyebrow,
-    fontSize: 10,
-    color: colors.textMuted,
-  },
-  topicChipTextActive: {
-    color: colors.background,
-  },
-  topicBlurb: {
-    ...typography.caption,
-    color: colors.textFaint,
-    fontStyle: 'italic',
-    marginBottom: spacing.sm,
-  },
-  lockInCount: {
-    ...typography.eyebrow,
-    fontSize: 10,
-    color: colors.textFaint,
-    marginBottom: spacing.md,
-  },
-  lockInCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.gold,
-    padding: spacing.md,
-    marginBottom: spacing.sm + 2,
-    gap: spacing.sm,
-  },
-  lockInQuote: {
-    ...typography.quote,
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.text,
-  },
-  lockInIdea: {
-    ...typography.body,
-    color: colors.text,
-    lineHeight: 22,
-  },
-  lockInMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  lockInAuthor: {
-    ...typography.eyebrow,
-    fontSize: 10,
-    color: colors.accent,
-  },
-  lockInSource: {
-    ...typography.caption,
-    fontSize: 11,
-    color: colors.textFaint,
-  },
-  lockInTag: {
-    ...typography.eyebrow,
-    fontSize: 8,
-    color: colors.textFaint,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.round,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 1,
   },
   submissionDeleteButton: {
     position: 'absolute',
@@ -1083,7 +898,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   askButtonText: {
-    color: colors.background,
+    color: colors.onPrimary,
     fontWeight: '700',
     fontSize: 15,
   },
@@ -1163,7 +978,7 @@ const styles = StyleSheet.create({
   },
   chatBubbleUserText: {
     ...typography.body,
-    color: colors.background,
+    color: colors.onPrimary,
   },
   chatBubbleAgentText: {
     ...typography.body,
@@ -1277,7 +1092,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resetConfirmButtonText: {
-    color: colors.background,
+    color: colors.onPrimary,
     fontSize: 13,
     fontWeight: '700',
   },

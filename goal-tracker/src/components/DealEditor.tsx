@@ -179,5 +179,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   solidButtonDisabled: { opacity: 0.5 },
-  solidButtonText: { color: colors.background, fontSize: 13, fontWeight: '700' },
+  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '700' },
 });

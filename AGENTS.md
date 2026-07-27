@@ -25,6 +25,44 @@ More than one agent may be working here at once. To avoid trampling each other:
 4. **Small, complete commits.** A commit that leaves `npx tsc --noEmit` failing blocks
    everyone else.
 
+### Lanes
+
+Two agents work this repo, and they own different halves. Stay in your lane and the
+merge is trivial; cross lanes and every handoff becomes a hand-reconciliation.
+
+| Lane | Owns | Does not touch |
+|---|---|---|
+| **Feature/UI agent** | `app/**` (screens, routing), `src/components/**` (new components) | `src/theme/*`, `src/lib/*`, `functions/*`, `*.rules` |
+| **Engine/review agent** | `src/lib/**`, `src/store/**`, `src/theme/**`, `functions/**`, `firestore.rules`, `storage.rules`, `tools/**` | `app/(tabs)/*.tsx` while the other agent holds them |
+
+Design tokens are shared but single-owner: the engine agent adds tokens to
+`src/theme/*`; the UI agent consumes them and never edits that directory. If the UI
+agent needs a colour or type style that doesn't exist, it says so rather than
+hardcoding a hex.
+
+**Currently claimed:** `src/components/lockin/**` and the Lock In wiring in
+`app/(tabs)/coach.tsx` are held by the engine agent, not the UI agent — the lane table
+above is the default, not a rule the owner can't override. Check here before starting
+on either.
+
+### Handing work between agents
+
+An agent that cannot push to `origin` is still expected to produce a reviewable,
+replayable patch — not a description of what it did:
+
+```bash
+git format-patch <base>..HEAD --stdout --binary
+```
+
+`format-patch` preserves commit boundaries, messages and authorship, and `--binary`
+survives asset changes; a pasted `git diff` silently corrupts binary files. The
+receiving agent applies it with `git am` onto a fresh branch, never on top of
+existing unpushed work.
+
+**Report only what a command actually printed.** A SHA that exists solely in a
+sandbox is not pushed, and describing it as pushed has already cost this project a
+full round of wasted work twice. If `git push` did not run, say it did not run.
+
 ## Before you commit — always
 
 ```bash
@@ -68,9 +106,15 @@ same geometry so the app icon and the in-app mark never drift apart.
 ## Domain rules that are easy to get wrong
 
 - **A cancelled deal is not a sale.** `stage === 'cancelled'` is excluded from every stat —
-  goal progress, streaks, close rate, commission totals. Both stats engines
-  (`src/lib/stats.ts`, `src/lib/profileStats.ts`) filter it in their `activeDeals()`. If you
-  add a third place that counts deals, filter it there too.
+  goal progress, streaks, close rate, commission totals, override earnings. Three places
+  count deals and all three filter it: `src/lib/stats.ts` and `src/lib/profileStats.ts` in
+  their `activeDeals()`, and `src/lib/overrideEarnings.ts` in `qualifying()`. If you add a
+  fourth, filter it there too — on the override path this is money leaving the business for
+  a deal that fell through.
+- **Two different things are called "override".** `CommissionOverride` is a manager's
+  correction to one rep's commission on one deal. `RepOverrideRate` is a standing per-deal
+  rate a leader earns on a rep's production. Separate collections, separate rules. Don't
+  merge them.
 - **Commission is private.** Readable only by the rep who earned it and the manager, enforced
   in `firestore.rules`. Teammate profiles pass `showMoney={false}` for this reason — don't
   "fix" that by showing money.

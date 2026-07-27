@@ -174,6 +174,120 @@ export interface DoorKnockEntry {
 }
 
 /**
+ * What happened at one door. `DoorKnockEntry` above is the daily total a rep types in;
+ * this is the per-address record behind it. Both exist on purpose — a rep who doesn't want
+ * to log every door individually can still enter a count and keep their close rate honest.
+ */
+export type KnockDisposition =
+  | 'not_home'
+  | 'not_interested'
+  | 'callback'
+  | 'sold'
+  | 'do_not_knock';
+
+/** Dispositions in the order they should be offered — most common first. */
+export const KNOCK_DISPOSITIONS: KnockDisposition[] = [
+  'not_home',
+  'not_interested',
+  'callback',
+  'sold',
+  'do_not_knock',
+];
+
+export const KNOCK_DISPOSITION_LABELS: Record<KnockDisposition, string> = {
+  not_home: 'Not home',
+  not_interested: 'Not interested',
+  callback: 'Come back',
+  sold: 'Sold',
+  do_not_knock: 'Do not knock',
+};
+
+export interface KnockRecord {
+  id: string;
+  teamId: string;
+  repUid: string;
+  repName: string;
+  /** ISO date (yyyy-mm-dd) the knock counts against. */
+  date: string;
+  /** Free-text as the rep typed it. `street` is derived from this for grouping. */
+  address: string;
+  /** Street portion of `address`, lowercased — the grouping key. Derived, never typed. */
+  street: string;
+  disposition: KnockDisposition;
+  notes?: string;
+  /** Only meaningful when disposition === 'callback': ISO date to come back on. */
+  callbackDate?: string;
+  /** Set when disposition === 'sold' and the rep logged the deal from this door. */
+  dealId?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+/**
+ * A rep's private writing in Lock In — journal entries, goals, and their why.
+ *
+ * Private means private. Like coach chat, this is NOT readable by managers or team leads,
+ * and the Firestore rules enforce that. A why is usually about money someone doesn't have
+ * or a person they're trying to prove something to; it only gets written honestly if the
+ * rep is certain their boss can't read it. Do not add a manager view over this.
+ */
+export type NoteKind = 'journal' | 'why' | 'goal';
+
+export interface LockInNote {
+  id: string;
+  teamId: string;
+  repUid: string;
+  kind: NoteKind;
+  /** Optional for journal entries; goals and whys generally have one. */
+  title?: string;
+  body: string;
+  /** Set when the entry was started from a Why exercise — the exercise's id. */
+  exerciseId?: string;
+  /** kind 'goal' only. ISO yyyy-mm-dd. */
+  targetDate?: string;
+  /** kind 'goal' only. Set when the rep marks it done. */
+  completedAt?: string;
+  /** The current why floats to the top and shows before the first door. */
+  pinned?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * A standing override rate: what one leader earns per deal closed by one rep.
+ *
+ * NOT the same thing as `CommissionOverride` below, despite the shared word. That one is a
+ * correction to a single rep's commission on a single deal. This is the leader's own
+ * earnings structure — a rate that applies to every deal that rep closes from now on, and
+ * the thing that rolls up into a team lead's or manager's override total.
+ *
+ * Doc id is `${leaderUid}_${repUid}`, so a rep can carry overrides to more than one leader
+ * at once — the normal case, where a team lead and the manager above them both earn on the
+ * same deal.
+ */
+export interface RepOverrideRate {
+  teamId: string;
+  /** The leader who earns this. */
+  leaderUid: string;
+  leaderName: string;
+  /** The rep whose deals generate it. */
+  repUid: string;
+  repName: string;
+  /** Dollars per closed deal. */
+  amountPerDeal: number;
+  /**
+   * ISO date (yyyy-mm-dd). Deals dated before this don't count. Left unset, the rate
+   * applies to the rep's whole history — which is what you want when first entering an
+   * arrangement that already existed. Set it when a rate genuinely changes, so raising
+   * someone's rate doesn't silently rewrite what you earned last quarter.
+   */
+  effectiveFrom?: string;
+  setByUid: string;
+  updatedAt: string;
+}
+
+/**
  * A manager/team_lead correction to a rep's commission on a specific deal. Deliberately kept
  * in its own collection with its own Firestore rules — NOT readable by the rep it's about,
  * only by that rep's overseeing team_lead and the manager.

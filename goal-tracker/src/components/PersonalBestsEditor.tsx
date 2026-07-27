@@ -143,5 +143,5 @@ const styles = StyleSheet.create({
     minWidth: 84,
     alignItems: 'center',
   },
-  solidButtonText: { color: colors.background, fontSize: 13, fontWeight: '700' },
+  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '700' },
 });

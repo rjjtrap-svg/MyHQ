@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   actionButtonText: {
-    color: colors.background,
+    color: colors.onPrimary,
     fontWeight: '700',
     fontSize: 15,
   },

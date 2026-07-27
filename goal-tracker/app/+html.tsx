@@ -23,7 +23,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         {/* Makes "Add to Home Screen" open in its own standalone window (no Safari chrome)
             with a real name/icon instead of a plain bookmark. */}
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#F7F1E6" />
+        <meta name="theme-color" content="#0E1014" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Goal Tracker" />
@@ -57,5 +57,5 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
 const responsiveBackground = `
 body {
-  background-color: #F7F1E6;
+  background-color: #0E1014;
 }`;

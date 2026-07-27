@@ -35,7 +35,7 @@ export function Button({
       style={[styles.base, sizes[size], variants[variant], inactive && styles.inactive, style]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={variant === 'ghost' ? colors.textMuted : colors.background} />
+        <ActivityIndicator size="small" color={variant === 'ghost' ? colors.textMuted : colors.onPrimary} />
       ) : (
         <Text style={[styles.label, labelSizes[size], labelVariants[variant]]}>{label}</Text>
       )}
@@ -68,7 +68,7 @@ const variants = StyleSheet.create({
 });
 
 const labelVariants = StyleSheet.create({
-  solid: { color: colors.background },
+  solid: { color: colors.onPrimary },
   ghost: { color: colors.textMuted },
   danger: { color: colors.dangerText },
 });
@@ -118,5 +118,5 @@ const segStyles = StyleSheet.create({
   tabStretch: { flex: 1 },
   tabActive: { backgroundColor: colors.primary },
   text: { ...typography.eyebrow, fontSize: 10, color: colors.textMuted },
-  textActive: { color: colors.background },
+  textActive: { color: colors.onPrimary },
 });

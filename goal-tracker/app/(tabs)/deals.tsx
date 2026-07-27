@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   followUpYesText: {
-    color: colors.background,
+    color: colors.onPrimary,
     fontSize: 13,
     fontWeight: '700',
   },
