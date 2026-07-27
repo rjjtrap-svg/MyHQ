@@ -174,6 +174,57 @@ export interface DoorKnockEntry {
 }
 
 /**
+ * What happened at one door. `DoorKnockEntry` above is the daily total a rep types in;
+ * this is the per-address record behind it. Both exist on purpose — a rep who doesn't want
+ * to log every door individually can still enter a count and keep their close rate honest.
+ */
+export type KnockDisposition =
+  | 'not_home'
+  | 'not_interested'
+  | 'callback'
+  | 'sold'
+  | 'do_not_knock';
+
+/** Dispositions in the order they should be offered — most common first. */
+export const KNOCK_DISPOSITIONS: KnockDisposition[] = [
+  'not_home',
+  'not_interested',
+  'callback',
+  'sold',
+  'do_not_knock',
+];
+
+export const KNOCK_DISPOSITION_LABELS: Record<KnockDisposition, string> = {
+  not_home: 'Not home',
+  not_interested: 'Not interested',
+  callback: 'Come back',
+  sold: 'Sold',
+  do_not_knock: 'Do not knock',
+};
+
+export interface KnockRecord {
+  id: string;
+  teamId: string;
+  repUid: string;
+  repName: string;
+  /** ISO date (yyyy-mm-dd) the knock counts against. */
+  date: string;
+  /** Free-text as the rep typed it. `street` is derived from this for grouping. */
+  address: string;
+  /** Street portion of `address`, lowercased — the grouping key. Derived, never typed. */
+  street: string;
+  disposition: KnockDisposition;
+  notes?: string;
+  /** Only meaningful when disposition === 'callback': ISO date to come back on. */
+  callbackDate?: string;
+  /** Set when disposition === 'sold' and the rep logged the deal from this door. */
+  dealId?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+/**
  * A manager/team_lead correction to a rep's commission on a specific deal. Deliberately kept
  * in its own collection with its own Firestore rules — NOT readable by the rep it's about,
  * only by that rep's overseeing team_lead and the manager.

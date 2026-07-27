@@ -20,6 +20,16 @@ export const colors = {
   onPace: '#5C3A21',
   behind: '#B5692E',
   fire: '#B5692E',
+  /**
+   * Knock dispositions. Deliberately not the danger/success pair — a "not interested" is a
+   * normal outcome at a door, not an error state, and colouring it like one makes a good
+   * day's work look like a screen full of failures.
+   */
+  knockNotHome: '#9C8768',
+  knockNotInterested: '#8C5A2B',
+  knockCallback: '#C6862E',
+  knockSold: '#4B7A3D',
+  knockDoNotKnock: '#A83A2B',
   gradientPrimary: ['#5C3A21', '#8C5A2B'] as const,
   gradientGold: ['#C6862E', '#B5692E'] as const,
   track: '#E1D2AC',

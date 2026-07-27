@@ -100,6 +100,19 @@ service cloud.firestore {
         allow write: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
       }
 
+      match /knocks/{knockId} {
+        // Per-address knock records. Readable by the whole team on purpose: the point of
+        // logging a door is that the next rep down the street knows it's been worked, and
+        // that a 'do_not_knock' is honoured by everyone rather than only the rep who took
+        // it. No money lives here — commission stays in /commissions. Writes are owner-only
+        // so nobody can rewrite someone else's territory history.
+        allow read: if isTeamMember(teamId);
+        allow create: if isTeamMember(teamId) && request.resource.data.repUid == request.auth.uid;
+        allow update: if isTeamMember(teamId) &&
+          (resource.data.repUid == request.auth.uid || isTeamManager(teamId));
+        allow delete: if isTeamManager(teamId) || resource.data.repUid == request.auth.uid;
+      }
+
       match /pitchSubmissions/{submissionId} {
         // A rep's own AI-graded practice pitch. Visible to the rep, the manager, and their
         // overseeing team_lead (coaching purposes) — the Cloud Function that fills in the
