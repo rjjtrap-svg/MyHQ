@@ -25,6 +25,39 @@ More than one agent may be working here at once. To avoid trampling each other:
 4. **Small, complete commits.** A commit that leaves `npx tsc --noEmit` failing blocks
    everyone else.
 
+### Lanes
+
+Two agents work this repo, and they own different halves. Stay in your lane and the
+merge is trivial; cross lanes and every handoff becomes a hand-reconciliation.
+
+| Lane | Owns | Does not touch |
+|---|---|---|
+| **Feature/UI agent** | `app/**` (screens, routing), `src/components/**` (new components) | `src/theme/*`, `src/lib/*`, `functions/*`, `*.rules` |
+| **Engine/review agent** | `src/lib/**`, `src/store/**`, `src/theme/**`, `functions/**`, `firestore.rules`, `storage.rules`, `tools/**` | `app/(tabs)/*.tsx` while the other agent holds them |
+
+Design tokens are shared but single-owner: the engine agent adds tokens to
+`src/theme/*`; the UI agent consumes them and never edits that directory. If the UI
+agent needs a colour or type style that doesn't exist, it says so rather than
+hardcoding a hex.
+
+### Handing work between agents
+
+An agent that cannot push to `origin` is still expected to produce a reviewable,
+replayable patch — not a description of what it did:
+
+```bash
+git format-patch <base>..HEAD --stdout --binary
+```
+
+`format-patch` preserves commit boundaries, messages and authorship, and `--binary`
+survives asset changes; a pasted `git diff` silently corrupts binary files. The
+receiving agent applies it with `git am` onto a fresh branch, never on top of
+existing unpushed work.
+
+**Report only what a command actually printed.** A SHA that exists solely in a
+sandbox is not pushed, and describing it as pushed has already cost this project a
+full round of wasted work twice. If `git push` did not run, say it did not run.
+
 ## Before you commit — always
 
 ```bash
