@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   modeLabelActive: {
-    color: colors.background,
+    color: colors.onPrimary,
   },
   modeHint: {
     ...typography.caption,
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   askButtonText: {
-    color: colors.background,
+    color: colors.onPrimary,
     fontWeight: '700',
     fontSize: 15,
   },
@@ -978,7 +978,7 @@ const styles = StyleSheet.create({
   },
   chatBubbleUserText: {
     ...typography.body,
-    color: colors.background,
+    color: colors.onPrimary,
   },
   chatBubbleAgentText: {
     ...typography.body,
@@ -1092,7 +1092,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resetConfirmButtonText: {
-    color: colors.background,
+    color: colors.onPrimary,
     fontSize: 13,
     fontWeight: '700',
   },

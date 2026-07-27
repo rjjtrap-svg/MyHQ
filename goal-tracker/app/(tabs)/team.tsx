@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   rankBadgeTextTop: {
-    color: colors.background,
+    color: colors.onPrimary,
   },
   leaderName: {
     ...typography.body,

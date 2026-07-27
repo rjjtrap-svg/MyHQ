@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brandSurface,
     borderWidth: 2,
     borderColor: colors.surface,
     alignItems: 'center',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     minWidth: 76,
     alignItems: 'center',
   },
-  solidButtonText: { color: colors.background, fontSize: 13, fontWeight: '700' },
+  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '700' },
 
   editBestsRow: {
     flexDirection: 'row',

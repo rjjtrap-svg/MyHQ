@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   chipTextActive: {
-    color: colors.background,
+    color: colors.onPrimary,
   },
   blurb: {
     ...typography.caption,

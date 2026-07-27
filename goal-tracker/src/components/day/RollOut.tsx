@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   targetSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   targetValue: { ...typography.scoreValue, fontSize: 25, color: colors.text },
-  targetValueSelected: { color: colors.background },
+  targetValueSelected: { color: colors.onPrimary },
   targetLabel: { ...typography.eyebrow, fontSize: 9, color: colors.textMuted },
   targetLabelSelected: { color: colors.primaryMuted },
 });

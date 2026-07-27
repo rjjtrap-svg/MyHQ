@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   repChipTextActive: {
-    color: colors.background,
+    color: colors.onPrimary,
   },
   amountRow: {
     flexDirection: 'row',

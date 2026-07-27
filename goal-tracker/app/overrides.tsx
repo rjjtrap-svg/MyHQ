@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl },
   hero: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brandSurface,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.xl,
@@ -230,22 +230,22 @@ const styles = StyleSheet.create({
   heroValue: {
     ...typography.scoreValue,
     fontSize: 46,
-    color: colors.background,
+    color: colors.onPrimary,
     marginTop: spacing.xs,
   },
   heroSplit: {
     flexDirection: 'row',
     alignItems: 'stretch',
     borderTopWidth: 1,
-    borderTopColor: colors.accent,
+    borderTopColor: colors.border,
     marginTop: spacing.lg,
     paddingTop: spacing.md,
   },
   heroPart: { flex: 1 },
-  heroDivider: { width: 1, backgroundColor: colors.accent, marginHorizontal: spacing.md },
+  heroDivider: { width: 1, backgroundColor: colors.border, marginHorizontal: spacing.md },
   heroPartValue: {
     ...typography.subtitle,
-    color: colors.background,
+    color: colors.onPrimary,
   },
   heroPartLabel: {
     ...typography.eyebrow,

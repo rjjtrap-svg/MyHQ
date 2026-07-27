@@ -50,7 +50,7 @@ export function WhyCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brandSurface,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.xl,
@@ -75,11 +75,11 @@ const styles = StyleSheet.create({
     ...typography.quote,
     fontSize: 22,
     lineHeight: 32,
-    color: colors.background,
+    color: colors.onPrimary,
   },
   rule: {
     height: 1,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.border,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },

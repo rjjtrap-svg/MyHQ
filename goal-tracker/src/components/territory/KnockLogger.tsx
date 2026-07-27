@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   dispositionLabelActive: {
-    color: colors.background,
+    color: colors.onPrimary,
   },
   row: {
     flexDirection: 'row',

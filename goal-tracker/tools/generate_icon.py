@@ -14,13 +14,18 @@ from PIL import Image, ImageDraw
 import math
 import os
 
-BG = (247, 241, 230, 255)
-PRIMARY = (92, 58, 33, 255)     # body base
-ACCENT = (140, 90, 43, 255)     # scale highlights, head
-GOLD = (198, 134, 46, 255)      # horns, whiskers, claws
-DEEP = (46, 32, 19, 255)        # all linework
-LIGHT = (225, 203, 163, 255)    # belly plates
-MID = (116, 74, 42, 255)        # mid-tone for scale shading
+# Dark-first palette. The dragon stays warm gold so the mark is still recognisably the
+# same drawing, and gold-on-charcoal is what keeps this reading as a premium performance
+# app rather than a generic dark dashboard. Linework stays near-black: inside the body it
+# separates the scale plates, and at the silhouette edge it simply vanishes into the
+# background, which lets the mark float.
+BG = (14, 16, 20, 255)          # #0E1014, matches colors.background
+PRIMARY = (176, 128, 52, 255)   # body base
+ACCENT = (224, 169, 59, 255)    # scale highlights, head — colors.gold
+GOLD = (255, 199, 94, 255)      # horns, whiskers, claws
+DEEP = (10, 11, 14, 255)        # all linework
+LIGHT = (245, 226, 178, 255)    # belly plates
+MID = (140, 100, 42, 255)       # mid-tone for scale shading
 
 SS = 4
 OUT = os.path.dirname(os.path.abspath(__file__))

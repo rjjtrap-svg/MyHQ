@@ -300,14 +300,14 @@ const styles = StyleSheet.create({
   scoreSub: { ...typography.caption, fontSize: 11, color: colors.textFaint, marginTop: 2 },
 
   projectionCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brandSurface,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginTop: spacing.xs,
   },
   projectionEyebrow: { ...typography.eyebrow, color: colors.gold },
-  projectionValue: { ...typography.scoreValue, fontSize: 42, color: colors.background, marginTop: spacing.xs },
-  projectionSub: { ...typography.caption, color: colors.primaryMuted, marginTop: spacing.xs },
+  projectionValue: { ...typography.scoreValue, fontSize: 42, color: colors.onPrimary, marginTop: spacing.xs },
+  projectionSub: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
 
   hairline: { height: 1, backgroundColor: colors.border },
   trendRow: { paddingVertical: spacing.sm + 2, gap: 2 },

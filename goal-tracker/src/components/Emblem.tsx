@@ -47,19 +47,23 @@ const HORN =
   '36.9,7.0 31.6,9.8 20.6,1.4';
 
 export function Emblem({ size = 32 }: { size?: number }) {
-  const stroke = colors.text;
+  // Linework is the page background, not `text`. In the generated icon the linework is
+  // near-black: inside the body it separates the scale plates, and at the silhouette it
+  // disappears into the background so the mark floats. Using `text` here would outline the
+  // whole dragon in near-white and stop it matching the app icon.
+  const stroke = colors.background;
   const sw = 0.9;
 
   return (
     <Svg width={size} height={size} viewBox="4.1 -0.1 87.8 87.8">
       {FINS.map((p, i) => (
-        <Polygon key={i} points={p} fill={colors.accent} stroke={stroke} strokeWidth={sw} />
+        <Polygon key={i} points={p} fill={colors.gold} stroke={stroke} strokeWidth={sw} />
       ))}
-      <Polygon points={BODY} fill={colors.primary} stroke={stroke} strokeWidth={sw} />
-      <Polygon points={HEAD} fill={colors.accent} stroke={stroke} strokeWidth={sw} />
-      <Polygon points={HORN} fill={colors.gold} stroke={stroke} strokeWidth={sw} />
+      <Polygon points={BODY} fill={colors.markBody} stroke={stroke} strokeWidth={sw} />
+      <Polygon points={HEAD} fill={colors.gold} stroke={stroke} strokeWidth={sw} />
+      <Polygon points={HORN} fill={colors.markHighlight} stroke={stroke} strokeWidth={sw} />
       <Ellipse cx={42.3} cy={15.1} rx={2.4} ry={1.9} fill={colors.background} stroke={stroke} strokeWidth={sw} />
-      <Circle cx={42.3} cy={15.1} r={1.2} fill={colors.gold} stroke={stroke} strokeWidth={0.5} />
+      <Circle cx={42.3} cy={15.1} r={1.2} fill={colors.markHighlight} stroke={stroke} strokeWidth={0.5} />
     </Svg>
   );
 }
