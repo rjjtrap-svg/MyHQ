@@ -42,8 +42,6 @@ export const typography = {
   subtitle: { fontSize: 17, fontWeight: '600' as const },
   body: { fontSize: 15, fontWeight: '400' as const },
   caption: { fontSize: 13, fontWeight: '500' as const },
-  statValue: { fontSize: 22, fontWeight: '800' as const },
-  statLabel: { fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.4 },
 
   /** Patch lettering: small, uppercase, widely tracked. Section headers and eyebrows. */
   eyebrow: {
