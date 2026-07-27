@@ -24,7 +24,8 @@ import { prepareImageForUpload } from '@/src/lib/image';
 import { generateId } from '@/src/lib/id';
 import { Banner } from '@/src/components/Banner';
 import { colors, radius, spacing, typography } from '@/src/theme';
-import { addDays, todayISO, toISODate } from '@/src/lib/dates';
+import { todayISO } from '@/src/lib/dates';
+import { SaleDateField, isValidSaleDate } from '@/src/components/SaleDateField';
 
 export default function AddDealScreen() {
   const router = useRouter();
@@ -51,7 +52,6 @@ export default function AddDealScreen() {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const yesterday = toISODate(addDays(new Date(), -1));
   const liveDeal = savedDealId ? liveDeals.find((d) => d.id === savedDealId) : undefined;
 
   // Auto-fills once from the Cloud Function's best guess, rather than making the rep tap
@@ -88,7 +88,7 @@ export default function AddDealScreen() {
       setUploadStage('Uploading photo…');
       const photoUrl = await uploadDealPhoto(teamId, id, prepared);
       setUploadStage('Saving deal…');
-      await addDeal(repUid, repName, { date: todayISO(), photoUrl }, id);
+      await addDeal(repUid, repName, { date, photoUrl }, id);
       setPhotoUri(uri);
       setSavedDealId(id);
       haptic('success');
@@ -244,10 +244,7 @@ export default function AddDealScreen() {
                 )}
               </View>
 
-              <View style={styles.dateRow}>
-                <DateChip label="Today" active={date === todayISO()} onPress={() => setDate(todayISO())} />
-                <DateChip label="Yesterday" active={date === yesterday} onPress={() => setDate(yesterday)} />
-              </View>
+              <SaleDateField value={date} onChange={setDate} />
 
               <Field label="Customer name">
                 <TextInput
@@ -301,14 +298,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Text style={styles.fieldLabel}>{label}</Text>
       {children}
     </View>
-  );
-}
-
-function DateChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -436,31 +425,6 @@ const styles = StyleSheet.create({
   ocrLabelSuccess: {
     ...typography.caption,
     color: colors.success,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  chip: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.round,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  chipActive: {
-    backgroundColor: colors.primaryMuted,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    color: colors.textMuted,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  chipTextActive: {
-    color: colors.primary,
   },
   field: {
     marginBottom: spacing.md,
