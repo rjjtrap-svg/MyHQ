@@ -5,6 +5,7 @@
 *.key
 secrets
 secrets/
+
+# Python bytecode from tools/
 __pycache__/
 *.pyc
-.venv/
