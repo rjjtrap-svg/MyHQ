@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
@@ -27,15 +36,15 @@ const COPY: Record<
   { title: string; subtitle: string; action: string; prompt: string; switchTo: string }
 > = {
   'sign-in': {
-    title: 'Sign in',
-    subtitle: 'Your board is where you left it.',
+    title: 'Welcome back',
+    subtitle: 'Continue the work.',
     action: 'Sign in',
     prompt: 'No account yet?',
     switchTo: 'Create one',
   },
   'sign-up': {
-    title: 'Create your account',
-    subtitle: "You'll need your team's invite code to finish.",
+    title: 'Build your HQ',
+    subtitle: 'Start with today.',
     action: 'Create account',
     prompt: 'Already have an account?',
     switchTo: 'Sign in',
@@ -43,6 +52,8 @@ const COPY: Record<
 };
 
 export default function AuthScreen() {
+  const { width } = useWindowDimensions();
+  const narrow = width < 430;
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const profile = useAuthStore((s) => s.profile);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
@@ -121,14 +132,14 @@ export default function AuthScreen() {
       <View style={styles.landing}>
         <ImageBackground
           source={COVER}
-          resizeMode="cover"
+          resizeMode={narrow ? 'contain' : 'cover'}
           style={styles.cover}
-          imageStyle={styles.coverImage}
+          imageStyle={[styles.coverImage, narrow && styles.coverImageNarrow]}
         >
-          <View style={styles.coolWash} pointerEvents="none" />
+          <View style={[styles.coolWash, narrow && styles.coolWashNarrow]} pointerEvents="none" />
           <LinearGradient
             colors={['transparent', colors.overlay, colors.background]}
-            locations={[0.48, 0.8, 1]}
+            locations={[0.36, 0.74, 1]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -184,20 +195,37 @@ export default function AuthScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.content}>
-          {/* The mark alone. The product name doesn't need saying on the one screen where
-              nobody is confused about which app they opened. */}
-          <Pressable
-            style={styles.lockup}
-            onPress={() => setMode('landing')}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-          >
-            <Mark size={44} />
-          </Pressable>
+    <ImageBackground
+      source={COVER}
+      resizeMode="cover"
+      style={styles.formBackdrop}
+      imageStyle={styles.formImage}
+    >
+      <View style={styles.formWash} pointerEvents="none" />
+      <LinearGradient
+        colors={[colors.overlay, colors.overlay, colors.background]}
+        locations={[0, 0.52, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <SafeAreaView style={styles.formSafe}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <View style={styles.content}>
+            <Pressable
+              style={styles.back}
+              onPress={() => setMode('landing')}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+            >
+              <FontAwesome name="arrow-left" size={13} color={colors.textSecondary} />
+              <Text style={styles.backLabel}>Back</Text>
+            </Pressable>
+
+            <Mark size={36} />
+            <Text style={styles.formEyebrow}>
+              {mode === 'sign-in' ? 'Return to your standard' : 'Set your standard'}
+            </Text>
 
           <Text style={styles.title}>{copy.title}</Text>
           <Text style={styles.subtitle}>{copy.subtitle}</Text>
@@ -301,9 +329,10 @@ export default function AuthScreen() {
               <Text style={styles.switchAction}>{copy.switchTo}</Text>
             </Pressable>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
@@ -330,6 +359,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  formBackdrop: { flex: 1, backgroundColor: colors.background },
+  formImage: { opacity: 0.38 },
+  formWash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.infoSurface,
+    opacity: 0.5,
+  },
+  formSafe: { flex: 1 },
   // flexGrow lets the form sit centred on a tall screen and scroll normally on a short one
   // once the keyboard is up.
   scroll: {
@@ -350,19 +387,30 @@ const styles = StyleSheet.create({
     padding: layout.screenGutter,
   },
 
-  lockup: {
-    alignItems: 'flex-start',
+  back: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     marginBottom: spacing.xl,
+  },
+  backLabel: { ...typography.eyebrow, color: colors.textSecondary, fontSize: 10 },
+  formEyebrow: {
+    ...typography.eyebrow,
+    color: colors.gold,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
 
   landing: { flex: 1, backgroundColor: colors.background },
   cover: { flex: 1 },
   coverImage: { alignSelf: 'center' },
+  coverImageNarrow: { opacity: 0.9 },
   coolWash: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.background,
-    opacity: 0.3,
+    opacity: 0.46,
   },
+  coolWashNarrow: { opacity: 0.34 },
   landingSafe: {
     flex: 1,
     width: '100%',
