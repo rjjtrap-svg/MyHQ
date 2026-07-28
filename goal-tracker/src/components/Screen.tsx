@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Edge } from 'react-native-safe-area-context';
 import { colors, layout, spacing } from '@/src/theme';
@@ -20,7 +20,10 @@ export function Screen({
   contentStyle,
   testID,
 }: ScreenProps) {
-  const content = <View style={[styles.content, contentStyle]}>{children}</View>;
+  const { width } = useWindowDimensions();
+  const content = (
+    <View style={[styles.content, width >= 768 && styles.contentWide, contentStyle]}>{children}</View>
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={edges} testID={testID}>
@@ -48,5 +51,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: layout.screenGutter,
     paddingBottom: spacing.xxxl,
+  },
+  contentWide: {
+    paddingHorizontal: layout.screenGutterWide,
   },
 });
