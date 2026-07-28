@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -14,6 +14,7 @@ import { syncDailyReminder } from '@/src/lib/notifications';
 import { getWebPushPermission, isWebPushSupported, requestWebPushPermission } from '@/src/lib/push';
 import { generateId } from '@/src/lib/id';
 import { formatClock } from '@/src/lib/dates';
+import { confirmAction, notify } from '@/src/lib/dialogs';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { colors, layout, radius, spacing, typography } from '@/src/theme';
@@ -73,7 +74,7 @@ function DateField({ label, value, onChange }: { label: string; value: string; o
             onChange(text);
           } else {
             setText(value);
-            Alert.alert('Invalid date', 'Use the format YYYY-MM-DD.');
+            notify('Invalid date', 'Use the format YYYY-MM-DD.');
           }
         }}
       />
@@ -199,7 +200,7 @@ export default function SettingsScreen() {
     try {
       await updateMemberRole(team.id, uid, role);
     } catch (err: any) {
-      Alert.alert('Couldn’t change role', err?.message ?? 'Try again.');
+      notify('Couldn’t change role', err?.message ?? 'Try again.');
     } finally {
       setMemberBusyUid(null);
     }
@@ -211,7 +212,7 @@ export default function SettingsScreen() {
     try {
       await assignOverseer(team.id, uid, overseerUid);
     } catch (err: any) {
-      Alert.alert('Couldn’t assign team lead', err?.message ?? 'Try again.');
+      notify('Couldn’t assign team lead', err?.message ?? 'Try again.');
     } finally {
       setMemberBusyUid(null);
     }
@@ -224,7 +225,7 @@ export default function SettingsScreen() {
       const granted = await requestWebPushPermission(firebaseUser.uid, team.id);
       setPushPermission(getWebPushPermission());
       if (!granted) {
-        Alert.alert(
+        notify(
           'Notifications not enabled',
           "Your browser didn't grant permission. On iPhone/iPad, this only works if you've added the app to your Home Screen first."
         );
@@ -237,7 +238,7 @@ export default function SettingsScreen() {
   async function copyInviteCode() {
     if (!team) return;
     await Clipboard.setStringAsync(team.inviteCode);
-    Alert.alert('Copied', `Invite code ${team.inviteCode} copied to clipboard.`);
+    notify('Copied', `Invite code ${team.inviteCode} copied to clipboard.`);
   }
 
   async function handleRegenerateCode() {
@@ -245,17 +246,18 @@ export default function SettingsScreen() {
     try {
       await regenerateCode();
     } catch (err: any) {
-      Alert.alert('Couldn’t regenerate code', err?.message ?? 'Try again.');
+      notify('Couldn’t regenerate code', err?.message ?? 'Try again.');
     } finally {
       setRegenerating(false);
     }
   }
 
-  function handleSignOut() {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => signOutUser() },
-    ]);
+  async function handleSignOut() {
+    // Was Alert.alert, which renders nothing on web — the confirm never appeared, so the
+    // sign-out callback never ran and the button looked broken.
+    if (await confirmAction('Sign out', 'Are you sure you want to sign out?', 'Sign out')) {
+      await signOutUser();
+    }
   }
 
   function addNotificationTime() {
