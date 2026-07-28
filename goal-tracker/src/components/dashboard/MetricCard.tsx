@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { colors, radius, shadows, spacing, typography } from '@/src/theme';
+import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 
 export type Trend = 'up' | 'down' | 'flat';
 
@@ -74,7 +74,6 @@ export function MetricCard({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${label}: ${value}${sublabel ? `. ${sublabel}` : ''}`}
-      accessibilityHint="Opens more details"
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed, style]}
     >
       {body}
@@ -84,14 +83,14 @@ export function MetricCard({
 
 const styles = StyleSheet.create({
   card: {
-    ...shadows.card,
+    ...elevation.card,
     flexBasis: '48%',
     flexGrow: 1,
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: colors.borderSubtle,
+    padding: layout.cardPadding,
     marginBottom: spacing.sm,
   },
   cardPressed: {
@@ -105,15 +104,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   label: {
-    ...typography.eyebrow,
-    fontSize: 9,
+    ...typography.label,
     color: colors.textMuted,
     flex: 1,
     marginRight: spacing.xs,
   },
   value: {
-    ...typography.scoreValue,
-    fontSize: 30,
+    ...typography.metric,
+    fontSize: 32,
     color: colors.text,
   },
   footer: {

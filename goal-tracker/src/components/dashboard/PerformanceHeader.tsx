@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PaceStatus } from '@/src/types';
 import { Emblem } from '@/src/components/Emblem';
 import { StatusBadge, BadgeTone } from './StatusBadge';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, spacing, typography } from '@/src/theme';
 
 function greeting(hour: number): string {
   if (hour < 12) return 'Morning';
@@ -102,9 +102,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   headline: {
-    ...typography.title,
-    fontSize: 26,
-    lineHeight: 32,
+    ...typography.pageTitle,
     color: colors.text,
   },
   badges: {
@@ -112,11 +110,5 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.md,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.divider,
-    marginTop: spacing.lg,
-    borderRadius: radius.round,
   },
 });

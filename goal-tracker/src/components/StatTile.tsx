@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, layout, radius, spacing, typography } from '@/src/theme';
 
 interface StatTileProps {
   label: string;
@@ -27,26 +27,24 @@ export function StatTile({ label, value, sublabel, accent }: StatTileProps) {
 const styles = StyleSheet.create({
   tile: {
     flexBasis: '48%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    borderColor: colors.borderSubtle,
+    padding: layout.cardPadding,
     marginBottom: spacing.md,
   },
   value: {
-    ...typography.scoreValue,
+    ...typography.metric,
     color: colors.text,
   },
   rule: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderSubtle,
     marginVertical: spacing.sm,
   },
   label: {
-    ...typography.eyebrow,
-    fontSize: 10,
+    ...typography.label,
     color: colors.textMuted,
   },
   sublabel: {

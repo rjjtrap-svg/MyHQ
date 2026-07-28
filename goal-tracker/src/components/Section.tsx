@@ -18,7 +18,6 @@ export function Section({ title, right, children, style, ...rest }: SectionProps
   return (
     <View style={[styles.container, style]} {...rest}>
       <View style={styles.header}>
-        <View style={styles.tick} />
         <Text style={styles.title}>{title}</Text>
         <View style={styles.rule} />
         {right}
@@ -35,22 +34,16 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     marginBottom: spacing.md,
   },
-  tick: {
-    width: 3,
-    height: 14,
-    borderRadius: 2,
-    backgroundColor: colors.gold,
-  },
   title: {
-    ...typography.eyebrow,
+    ...typography.sectionTitle,
     color: colors.text,
   },
   rule: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderSubtle,
   },
 });

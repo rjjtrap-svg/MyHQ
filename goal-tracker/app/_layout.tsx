@@ -136,8 +136,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navigationTheme}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
+      <StatusBar style="light" backgroundColor={colors.background} />
+      <Stack
+        screenOptions={{
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'fade_from_bottom',
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="add-deal" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />

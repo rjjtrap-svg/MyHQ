@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Emblem } from './Emblem';
-import { WaveRule } from './WaveRule';
 import { colors, spacing, typography } from '@/src/theme';
 
 /**
@@ -36,7 +35,7 @@ export function ScreenHeader({
         {right ?? (emblem ? <Emblem size={44} /> : null)}
       </View>
       {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      <WaveRule style={styles.wave} color={colors.border} />
+      <View style={styles.rule} />
     </>
   );
 }
@@ -46,7 +45,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     gap: spacing.md,
   },
   text: { flex: 1 },
@@ -55,19 +54,21 @@ const styles = StyleSheet.create({
     color: colors.gold,
   },
   title: {
-    ...typography.hero,
+    ...typography.pageTitle,
     color: colors.text,
-    fontSize: 30,
     marginTop: 4,
   },
   subtitle: {
-    ...typography.caption,
-    color: colors.textMuted,
+    ...typography.body,
+    color: colors.textSecondary,
+    lineHeight: 21,
     marginTop: spacing.sm,
+    maxWidth: 560,
   },
-  wave: {
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-    opacity: 0.9,
+  rule: {
+    height: 1,
+    backgroundColor: colors.borderSubtle,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
   },
 });

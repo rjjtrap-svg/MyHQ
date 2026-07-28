@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { CircularProgress } from '@/src/components/CircularProgress';
-import { colors, radius, shadows, spacing, typography } from '@/src/theme';
+import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 
 /**
  * The goal, as a ring with the numbers that make it actionable sitting beside it.
@@ -34,7 +34,7 @@ export function GoalProgressCard({
       style={styles.card}
       accessible
       accessibilityRole="summary"
-      accessibilityLabel={`${Math.round(percent * 100)} percent of goal complete. ${total} of ${goal} sales. ${perDay} needed per day with ${daysRemaining} days left.`}
+      accessibilityLabel={`${Math.round(percent * 100)} percent complete. ${total} of ${goal} sales. ${perDay} needed per day, with ${daysRemaining} days left.`}
     >
       <View style={[styles.accent, { backgroundColor: ringColor }]} />
       <View style={styles.ringWrap}>
@@ -75,30 +75,29 @@ export function GoalProgressCard({
 
 const styles = StyleSheet.create({
   card: {
-    ...shadows.raised,
+    ...elevation.raised,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: colors.borderStrong,
+    padding: layout.cardPadding,
     marginBottom: spacing.xl,
   },
   accent: {
     position: 'absolute',
     top: 0,
-    right: spacing.lg,
     left: spacing.lg,
+    right: spacing.lg,
     height: 2,
-    borderBottomLeftRadius: radius.round,
-    borderBottomRightRadius: radius.round,
+    borderRadius: radius.round,
   },
   ringWrap: {
     marginRight: spacing.md,
   },
   percent: {
-    ...typography.scoreValue,
+    ...typography.metric,
     fontSize: 30,
     color: colors.text,
   },
@@ -111,8 +110,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   fraction: {
-    ...typography.scoreValue,
-    fontSize: 34,
+    ...typography.metric,
     color: colors.text,
     marginTop: 2,
   },

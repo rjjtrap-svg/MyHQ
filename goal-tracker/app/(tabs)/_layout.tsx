@@ -3,10 +3,14 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Redirect, Tabs, useRouter } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useAuthStore } from '@/src/store/authStore';
-import { colors } from '@/src/theme';
+import { colors, elevation, radius, typography } from '@/src/theme';
 
-function TabIcon({ name, color }: { name: React.ComponentProps<typeof FontAwesome>['name']; color: string }) {
-  return <FontAwesome name={name} size={19} color={color} />;
+function TabIcon({ name, color, focused }: { name: React.ComponentProps<typeof FontAwesome>['name']; color: string; focused: boolean }) {
+  return (
+    <View style={[styles.iconWell, focused && styles.iconWellActive]}>
+      <FontAwesome name={name} size={18} color={color} />
+    </View>
+  );
 }
 
 // Purely visual — the tab bar's own touchable handles the press (see the
@@ -49,21 +53,21 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <TabIcon name="user" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="user" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="home" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="deals"
         options={{
           title: 'Deals',
-          tabBarIcon: ({ color }) => <TabIcon name="briefcase" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="briefcase" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -83,21 +87,21 @@ export default function TabLayout() {
         name="team"
         options={{
           title: 'Team',
-          tabBarIcon: ({ color }) => <TabIcon name="users" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="users" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="coach"
         options={{
           title: 'Coach',
-          tabBarIcon: ({ color }) => <TabIcon name="graduation-cap" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="graduation-cap" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <TabIcon name="gear" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="gear" color={color} focused={focused} />,
         }}
       />
     </Tabs>
@@ -106,17 +110,18 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
-    height: Platform.select({ ios: 88, default: 64 }),
-    paddingTop: 8,
+    ...elevation.raised,
+    backgroundColor: colors.surfaceElevated,
+    borderTopColor: colors.borderSubtle,
+    height: Platform.select({ ios: 92, default: 70 }),
+    paddingTop: 7,
   },
   // Seven destinations across a phone-width bar, so labels are set small and tight —
   // any larger and "Settings"/"Profile" start truncating on narrow devices.
   tabLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    ...typography.badge,
+    fontSize: 8,
+    letterSpacing: 0.35,
   },
   tabItem: {
     paddingHorizontal: 0,
@@ -133,10 +138,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
+    ...elevation.raised,
+    borderWidth: 3,
+    borderColor: colors.background,
+  },
+  iconWell: {
+    width: 34,
+    height: 28,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWellActive: {
+    backgroundColor: colors.surfaceRaised,
   },
 });

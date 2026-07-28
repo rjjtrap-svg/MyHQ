@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { FontAwesome } from '@expo/vector-icons';
 import { DAILY_SALE_ALERTS } from '@/src/types';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, elevation, radius, spacing, typography } from '@/src/theme';
 
 type DailyAlert = (typeof DAILY_SALE_ALERTS)[number];
 
@@ -43,7 +43,13 @@ export function MilestoneOverlay({ milestone, dailyAlert, salesGoal, onDismiss }
         fadeOut
         fallSpeed={2600}
       />
-      <Pressable style={styles.backdrop} onPress={onDismiss}>
+      <Pressable
+        style={styles.backdrop}
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel={`${title}. ${subtitle}`}
+        accessibilityHint="Dismisses this celebration"
+      >
         <View style={styles.card}>
           <View style={styles.iconWrap}>
             <FontAwesome name={icon} size={32} color={colors.gold} />
@@ -60,18 +66,19 @@ export function MilestoneOverlay({ milestone, dailyAlert, salesGoal, onDismiss }
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(6,7,10,0.72)',
+    backgroundColor: colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
   },
   card: {
+    ...elevation.modal,
     width: '100%',
     maxWidth: 340,
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
@@ -80,7 +87,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#C6862E22',
+    backgroundColor: colors.goldSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,

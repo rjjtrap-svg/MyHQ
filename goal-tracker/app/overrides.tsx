@@ -13,7 +13,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { Section } from '@/src/components/Section';
 import { Banner } from '@/src/components/Banner';
 import { Button } from '@/src/components/Button';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, layout, radius, spacing, typography } from '@/src/theme';
 
 export default function OverridesScreen() {
   const router = useRouter();
@@ -216,7 +216,7 @@ export default function OverridesScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center', padding: spacing.lg, paddingBottom: spacing.xxl },
   hero: {
     backgroundColor: colors.brandSurface,
     borderRadius: radius.lg,

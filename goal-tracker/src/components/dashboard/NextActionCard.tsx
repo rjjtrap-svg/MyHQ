@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { colors, radius, shadows, spacing, typography } from '@/src/theme';
+import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 
 /**
  * One action, chosen for you.
@@ -54,14 +54,14 @@ export function NextActionCard({
 
 const styles = StyleSheet.create({
   card: {
-    ...shadows.raised,
+    ...elevation.raised,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: colors.borderStrong,
+    padding: layout.cardPadding,
     marginBottom: spacing.xl,
   },
   pressed: {
@@ -69,8 +69,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
   iconWrap: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
