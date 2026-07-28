@@ -115,6 +115,13 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderSubtle,
     height: Platform.select({ ios: 92, default: 70 }),
     paddingTop: 7,
+    width: '100%',
+    maxWidth: 820,
+    alignSelf: 'center',
+    borderLeftWidth: Platform.OS === 'web' ? 1 : 0,
+    borderRightWidth: Platform.OS === 'web' ? 1 : 0,
+    borderLeftColor: colors.borderSubtle,
+    borderRightColor: colors.borderSubtle,
   },
   // Seven destinations across a phone-width bar, so labels are set small and tight —
   // any larger and "Settings"/"Profile" start truncating on narrow devices.
