@@ -50,9 +50,12 @@ function Field({
 export function DealEditor({ deal, onDone }: { deal: Deal; onDone: () => void }) {
   const updateDealDetails = useDealsStore((s) => s.updateDealDetails);
 
-  const [firstName, setFirstName] = useState(deal.firstName ?? '');
-  const [lastName, setLastName] = useState(deal.lastName ?? '');
-  const [phone, setPhone] = useState(deal.phone ?? '');
+  // Fall back to what OCR read off the paperwork. The rep's own entry always wins; these
+  // only fill a field that is otherwise blank, and they're editable like anything else —
+  // a parsed value is a starting point, not an assertion.
+  const [firstName, setFirstName] = useState(deal.firstName ?? deal.ocrGuessedFirstName ?? '');
+  const [lastName, setLastName] = useState(deal.lastName ?? deal.ocrGuessedLastName ?? '');
+  const [phone, setPhone] = useState(deal.phone ?? deal.ocrGuessedPhone ?? '');
   const [address, setAddress] = useState(deal.address ?? '');
   const [saleDate, setSaleDate] = useState(deal.date);
   const [installDate, setInstallDate] = useState(deal.scheduledInstallDate ?? '');

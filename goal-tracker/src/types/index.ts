@@ -35,6 +35,10 @@ export interface Deal {
   /** Best-guess name/address the Cloud Function picked out of ocrLines via heuristics. */
   ocrGuessedName?: string;
   ocrGuessedAddress?: string;
+  /** Parsed from labelled fields on the screenshot — "First Name:", "Phone:" and friends. */
+  ocrGuessedFirstName?: string;
+  ocrGuessedLastName?: string;
+  ocrGuessedPhone?: string;
 
   /** Optional customer details — nice to have, never required to log a sale. */
   firstName?: string;
