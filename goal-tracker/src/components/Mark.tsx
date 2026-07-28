@@ -1,39 +1,46 @@
 import React from 'react';
-import Svg, { Circle, Rect } from 'react-native-svg';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { colors } from '@/src/theme';
 
 /**
- * The app mark: a door, abstracted.
+ * The app mark: a modern house, black and white.
  *
- * This replaces the ouroboros dragon, which was an illustration — a few hundred hand-drawn
- * polygons that read as a cartoon at every size it was actually used at, and carried no
- * meaning for the people using the app.
+ * A single-slope shed roof with a deep eave, not a symmetrical gable — a gable is the
+ * pictogram every "home" button in every app already uses, and this needs to read as a
+ * house someone knocks on rather than as a nav icon. The asymmetry is the whole tell.
  *
- * A door is the one object every rep touches a hundred times a day, so the mark now says
- * what the product is about. It's built from three primitives on purpose: a frame, a handle,
- * and a strip of light through the gap. Geometry stays legible at 20px in a header and at
- * 92px on the sign-in screen, where linework at that scale would fall apart.
+ * The door is the only filled element, because the door is the job.
  *
- * Gold is the frame because gold is the brand thread everywhere else in the app; the light
- * is `primary` because that's the colour of everything you're meant to act on.
+ * Monochrome on purpose. Colour in this app means something — gold is achievement, blue is
+ * the action, amber is behind pace — and a mark that borrows any of them competes with the
+ * data. White on the background borrows nothing.
  */
 export function Mark({ size = 28 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Tall and narrow. A square frame reads as a card or a battery, not a door. */}
-      <Rect
-        x={5.4}
-        y={1.7}
-        width={13.2}
-        height={20.6}
-        rx={2.2}
-        fill={colors.brandSurface}
-        stroke={colors.gold}
-        strokeWidth={1.8}
+      {/* Walls. Open at the top so the roof line reads as a separate plane sitting on them. */}
+      <Path
+        d="M3.4 12.6 V21 H20.6 V6.9"
+        stroke={colors.text}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      {/* The gap. An open door is the whole job. Kept thin so it reads as light, not a bar. */}
-      <Rect x={7.7} y={4.3} width={1.5} height={15.4} rx={0.75} fill={colors.primary} />
-      <Circle cx={15.7} cy={12} r={1.25} fill={colors.gold} />
+      {/* The roof, overhanging both walls. The cantilever is what makes it modern. */}
+      <Path
+        d="M1.8 13.2 L22.2 6.3"
+        stroke={colors.text}
+        strokeWidth={1.9}
+        strokeLinecap="round"
+      />
+      {/* Ground line, so the house sits on something instead of floating. */}
+      <Path
+        d="M2.2 21 H21.8"
+        stroke={colors.text}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+      <Rect x={6.6} y={14.7} width={4.3} height={6.3} rx={0.5} fill={colors.text} />
     </Svg>
   );
 }

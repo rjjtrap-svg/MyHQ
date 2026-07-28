@@ -120,9 +120,10 @@ export default function AuthScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
+          {/* The mark alone. The product name doesn't need saying on the one screen where
+              nobody is confused about which app they opened. */}
           <View style={styles.lockup}>
-            <Mark size={26} />
-            <Text style={styles.wordmark}>Goal Tracker</Text>
+            <Mark size={44} />
           </View>
 
           <Text style={styles.title}>{copy.title}</Text>
@@ -180,7 +181,7 @@ export default function AuthScreen() {
                 <FontAwesome
                   name={showPassword ? 'eye-slash' : 'eye'}
                   size={17}
-                  color={focused === 'password' ? colors.primary : colors.textMuted}
+                  color={focused === 'password' ? colors.text : colors.textMuted}
                 />
               </Pressable>
             </View>
@@ -277,16 +278,8 @@ const styles = StyleSheet.create({
   },
 
   lockup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 2,
+    alignItems: 'flex-start',
     marginBottom: spacing.xl,
-  },
-  wordmark: {
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-    color: colors.text,
   },
 
   title: {
@@ -335,7 +328,7 @@ const styles = StyleSheet.create({
   // The only state change on the form. A focus ring is the one affordance a dark form needs
   // and the old screen had none — you could not tell which field you were typing into.
   inputFocused: {
-    borderColor: colors.primary,
+    borderColor: colors.glassBorderStrong,
     backgroundColor: colors.surfaceElevated,
   },
   codeInput: {
@@ -373,7 +366,8 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontSize: 13,
     fontWeight: '700',
-    color: colors.primaryMuted,
+    color: colors.text,
+    textDecorationLine: 'underline',
   },
 
   setupTitle: {

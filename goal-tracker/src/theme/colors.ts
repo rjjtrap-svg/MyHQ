@@ -67,6 +67,20 @@ export const colors = {
   disabledSurface: '#1A1E26',
   disabledText: '#59616E',
 
+  /**
+   * Glass. Buttons and active segments are lit tints of the background rather than a solid
+   * fill, so an action reads as raised out of the surface instead of painted on top of it.
+   *
+   * These are deliberately rgba and not flat hexes: they have to sit on `surface`,
+   * `surfaceElevated` and plain `background` and pick up whatever is underneath. A hex
+   * would be right on exactly one of those and wrong on the other two.
+   */
+  glass: 'rgba(255, 255, 255, 0.07)',
+  glassPressed: 'rgba(255, 255, 255, 0.14)',
+  glassBorder: 'rgba(255, 255, 255, 0.16)',
+  /** The primary action's edge — the one thing allowed to be brighter than its neighbours. */
+  glassBorderStrong: 'rgba(255, 255, 255, 0.30)',
+
   /** Pace states. Green ahead, amber behind — never red, being behind is not a failure. */
   ahead: '#34C77B',
   onPace: '#5B8CFF',
