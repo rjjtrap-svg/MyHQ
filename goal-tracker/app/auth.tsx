@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
@@ -10,13 +10,28 @@ import { firebaseEnabled } from '@/src/firebase/config';
 import { Banner } from '@/src/components/Banner';
 import { Mark } from '@/src/components/Mark';
 import { Button } from '@/src/components/Button';
+import { LinearGradient } from 'expo-linear-gradient';
 import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 
-type Mode = 'sign-in' | 'sign-up';
+/**
+ * `landing` is the door. No fields, no chrome — one image, one word per beat of the job,
+ * and one button. The form only appears once someone has decided to come in.
+ *
+ * Drop a JPEG at assets/images/auth-cover.jpg and flip HAS_COVER to true; the gradient is
+ * the stand-in until then, not the intent.
+ */
+const HAS_COVER = false;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const COVER = HAS_COVER ? require('../assets/images/auth-cover.jpg') : undefined;
+
+/** The loop of the job, spread across the image the way GOAT spreads past/present/future. */
+const BEATS = ['KNOCK', 'CLOSE', 'REPEAT'];
+
+type Mode = 'landing' | 'sign-in' | 'sign-up';
 type FieldName = 'name' | 'email' | 'password' | 'code';
 
 const COPY: Record<
-  Mode,
+  Exclude<Mode, 'landing'>,
   { title: string; subtitle: string; action: string; prompt: string; switchTo: string }
 > = {
   'sign-in': {
@@ -40,7 +55,7 @@ export default function AuthScreen() {
   const profile = useAuthStore((s) => s.profile);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
 
-  const [mode, setMode] = useState<Mode>('sign-in');
+  const [mode, setMode] = useState<Mode>('landing');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -109,6 +124,66 @@ export default function AuthScreen() {
     }
   }
 
+  if (mode === 'landing') {
+    const Backdrop: any = HAS_COVER ? ImageBackground : LinearGradient;
+    const backdropProps: any = HAS_COVER
+      ? { source: COVER, resizeMode: 'cover' }
+      : { colors: colors.gradientDusk, start: { x: 0.2, y: 0 }, end: { x: 0.8, y: 1 } };
+
+    return (
+      <View style={styles.landing}>
+        <Backdrop {...backdropProps} style={styles.cover}>
+          {/* Scrim. A photograph will not reliably keep white type legible along its bottom
+              edge, and the button and links both live there. */}
+          <LinearGradient
+            colors={['transparent', colors.overlay, colors.background]}
+            locations={[0.45, 0.78, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+
+          <SafeAreaView style={styles.landingSafe} edges={['top', 'bottom']}>
+            <View style={styles.landingTop}>
+              <Mark size={30} />
+            </View>
+
+            <View style={styles.beats}>
+              {BEATS.map((beat) => (
+                <Text key={beat} style={styles.beat}>
+                  {beat}
+                </Text>
+              ))}
+            </View>
+
+            <View style={styles.landingBottom}>
+              <Text style={styles.landingNote}>Built for the doors, not the desk.</Text>
+              <Button
+                label="Sign up"
+                onPress={() => {
+                  setError(null);
+                  setMode('sign-up');
+                }}
+                variant="hero"
+                size="xl"
+                style={styles.landingCta}
+              />
+              <Pressable
+                onPress={() => {
+                  setError(null);
+                  setMode('sign-in');
+                }}
+                hitSlop={12}
+                accessibilityRole="link"
+              >
+                <Text style={styles.landingLink}>Log in</Text>
+              </Pressable>
+            </View>
+          </SafeAreaView>
+        </Backdrop>
+      </View>
+    );
+  }
+
   const copy = COPY[mode];
   const inputStyle = (name: FieldName) => [styles.input, focused === name && styles.inputFocused];
   const bind = (name: FieldName) => ({
@@ -122,9 +197,15 @@ export default function AuthScreen() {
         <View style={styles.content}>
           {/* The mark alone. The product name doesn't need saying on the one screen where
               nobody is confused about which app they opened. */}
-          <View style={styles.lockup}>
+          <Pressable
+            style={styles.lockup}
+            onPress={() => setMode('landing')}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
             <Mark size={44} />
-          </View>
+          </Pressable>
 
           <Text style={styles.title}>{copy.title}</Text>
           <Text style={styles.subtitle}>{copy.subtitle}</Text>
@@ -280,6 +361,40 @@ const styles = StyleSheet.create({
   lockup: {
     alignItems: 'flex-start',
     marginBottom: spacing.xl,
+  },
+
+  landing: { flex: 1, backgroundColor: colors.background },
+  cover: { flex: 1 },
+  landingSafe: { flex: 1, justifyContent: 'space-between', paddingHorizontal: layout.screenGutter },
+  landingTop: { paddingTop: spacing.lg },
+  /** The three beats sit on the optical centre of the image, spread edge to edge. */
+  beats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xxl,
+  },
+  beat: {
+    ...typography.badge,
+    fontSize: 13,
+    letterSpacing: 1.2,
+    color: colors.text,
+  },
+  landingBottom: { paddingBottom: spacing.lg, gap: spacing.md, alignItems: 'center' },
+  landingNote: {
+    ...typography.caption,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  // Square, not a pill. The reference's button is a hard rectangle and that squared edge is
+  // most of why it reads as a brand rather than as a form control.
+  landingCta: { borderRadius: 0, width: '100%' },
+  landingLink: {
+    ...typography.caption,
+    fontSize: 13,
+    fontFamily: fonts.sansBold,
+    color: colors.text,
+    textDecorationLine: 'underline',
   },
 
   title: {
