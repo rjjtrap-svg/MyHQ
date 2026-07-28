@@ -19,7 +19,7 @@ import { Section } from '@/src/components/Section';
 import { StatTile } from '@/src/components/StatTile';
 import { Banner } from '@/src/components/Banner';
 import { Button } from '@/src/components/Button';
-import { colors, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 
 const BAR_COLOR: Record<KnockDisposition, string> = {
   not_home: colors.knockNotHome,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   callbackAddress: {
     ...typography.body,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.text,
   },
   callbackNotes: {

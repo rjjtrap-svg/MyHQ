@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { updateMyBests } from '@/src/firebase/profile';
 import { PERSONAL_BEST_FIELDS, PersonalBestOverrides } from '@/src/types';
 import { Banner } from '@/src/components/Banner';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, radius, spacing, typography } from '@/src/theme';
 
 /**
  * Lets a rep type in what they did before this app existed. The profile shows whichever is
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   input: { color: colors.text, fontSize: 15, paddingVertical: 8, paddingLeft: 2, minWidth: 72, textAlign: 'right' },
   buttons: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.md },
   ghostButton: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
-  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontWeight: '700' },
+  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontFamily: fonts.sansBold },
   solidButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.sm,
@@ -143,5 +143,5 @@ const styles = StyleSheet.create({
     minWidth: 84,
     alignItems: 'center',
   },
-  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '700' },
+  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.sansBold },
 });

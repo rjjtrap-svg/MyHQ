@@ -67,6 +67,20 @@ export const colors = {
   disabledSurface: '#1A1E26',
   disabledText: '#59616E',
 
+  /**
+   * Glass. Buttons and active segments are lit tints of the background rather than a solid
+   * fill, so an action reads as raised out of the surface instead of painted on top of it.
+   *
+   * These are deliberately rgba and not flat hexes: they have to sit on `surface`,
+   * `surfaceElevated` and plain `background` and pick up whatever is underneath. A hex
+   * would be right on exactly one of those and wrong on the other two.
+   */
+  glass: 'rgba(255, 255, 255, 0.07)',
+  glassPressed: 'rgba(255, 255, 255, 0.14)',
+  glassBorder: 'rgba(255, 255, 255, 0.16)',
+  /** The primary action's edge — the one thing allowed to be brighter than its neighbours. */
+  glassBorderStrong: 'rgba(255, 255, 255, 0.30)',
+
   /** Pace states. Green ahead, amber behind — never red, being behind is not a failure. */
   ahead: '#34C77B',
   onPace: '#5B8CFF',
@@ -91,15 +105,31 @@ export const colors = {
   knockDoNotKnock: '#E5484D',
 
   /**
-   * The brand mark's own colours. These exist so `Emblem.tsx` never hardcodes a hex and
-   * never drifts from the generated icon — they mirror PRIMARY and GOLD in
-   * tools/generate_icon.py exactly. Change one, change both, and re-run generate_assets.py.
+   * The launcher icon's own colours — they mirror PRIMARY and GOLD in
+   * tools/generate_icon.py exactly. Unused by app code since the in-app mark became
+   * `Mark.tsx` (a door, drawn from `gold` and `primary`); kept because the generated
+   * icon/splash/favicon set still uses these values, so deleting them here would leave the
+   * generator's palette undocumented.
+   *
+   * NOTE: the launcher icon is still the old ouroboros and no longer matches `Mark.tsx`.
+   * Re-cutting the icon from the door geometry is a separate job — see AGENTS.md.
    */
   markBody: '#B08034',
   markHighlight: '#FFC75E',
 
   gradientPrimary: ['#5B8CFF', '#7C6BFF'] as const,
   gradientGold: ['#E0A93B', '#FF7A45'] as const,
+
+  /**
+   * Time-of-day surfaces. These are the one place colour is allowed to be atmosphere rather
+   * than information, because they carry a real signal: whether you are heading out or
+   * closing down. A rep opening this at 7am and at 9pm should not see the same screen.
+   *
+   * Both land on `background` at the bottom so a gradient panel dissolves into the page
+   * instead of ending on a hard edge.
+   */
+  gradientDawn: ['#4A2E1C', '#1A1410', '#0E1014'] as const,
+  gradientDusk: ['#1B2440', '#101624', '#0E1014'] as const,
 
   /** Trough behind any progress bar or ring. */
   track: '#252A35',

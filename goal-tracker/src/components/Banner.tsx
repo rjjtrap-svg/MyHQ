@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, radius, spacing, typography } from '@/src/theme';
 
 /**
  * An inline message. The error variant was previously copy-pasted into seven files with
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.infoSurface,
     borderColor: colors.infoBorder,
   },
-  text: { ...typography.caption, fontWeight: '600' },
+  text: { ...typography.caption, fontFamily: fonts.sansSemiBold },
   errorText: { color: colors.dangerText },
   infoText: { color: colors.textSecondary },
 });

@@ -16,15 +16,25 @@ export function rateId(leaderUid: string, repUid: string): string {
 export function subscribeOverrideRates(
   teamId: string,
   leaderUid: string | 'all',
-  callback: (rates: RepOverrideRate[]) => void
+  callback: (rates: RepOverrideRate[]) => void,
+  onError?: (message: string) => void
 ): () => void {
   if (!db) return () => {};
   const ref = collection(db, 'teams', teamId, 'overrideRates');
   const q = leaderUid === 'all' ? query(ref) : query(ref, where('leaderUid', '==', leaderUid));
   return onSnapshot(
     q,
-    (snap) => callback(snap.docs.map((d) => d.data() as RepOverrideRate)),
-    () => callback([])
+    (snap) => {
+      onError?.('');
+      callback(snap.docs.map((d) => d.data() as RepOverrideRate));
+    },
+    // A denied read used to fall through to an empty list, which renders identically to
+    // "no overrides set yet". That made a permissions failure invisible and sent us
+    // looking at the write path for a problem that could be on either side.
+    (err) => {
+      onError?.(err?.message ?? 'Could not read overrides.');
+      callback([]);
+    }
   );
 }
 

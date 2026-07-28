@@ -27,6 +27,7 @@ export default function OverridesScreen() {
   const subscribe = useOverrideRateStore((s) => s.subscribe);
   const saveRate = useOverrideRateStore((s) => s.save);
   const removeRate = useOverrideRateStore((s) => s.remove);
+  const readError = useOverrideRateStore((s) => s.readError);
 
   const [editing, setEditing] = useState<RepOverrideRate | 'new' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -132,7 +133,12 @@ export default function OverridesScreen() {
           </View>
         </View>
 
-        {!!error && <Banner message={error} />}
+        {/* Read and write failures are reported separately: they have different causes
+            and, until now, a denied read was invisible because it rendered as an empty
+            list. Knowing which one failed is the difference between a five-minute fix
+            and an afternoon. */}
+        {!!readError && <Banner message={`Reading overrides failed — ${readError}`} />}
+        {!!error && <Banner message={`Saving failed — ${error}`} />}
 
         {editing === 'new' && (
           <OverrideRateEditor

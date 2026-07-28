@@ -9,7 +9,7 @@ import {
   searchEntries,
   shelves,
 } from '@/src/lib/lockIn';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, radius, spacing, typography } from '@/src/theme';
 
 type Browse = 'topic' | 'shelf';
 
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   },
   shelfTitle: {
     ...typography.body,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.text,
   },
   shelfTitleActive: {

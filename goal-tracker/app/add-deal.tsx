@@ -23,7 +23,7 @@ import { uploadDealPhoto } from '@/src/firebase/storage';
 import { prepareImageForUpload } from '@/src/lib/image';
 import { generateId } from '@/src/lib/id';
 import { Banner } from '@/src/components/Banner';
-import { colors, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 import { todayISO } from '@/src/lib/dates';
 import { SaleDateField, isValidSaleDate } from '@/src/components/SaleDateField';
 
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     color: colors.onPrimary,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
     fontSize: 15,
   },
   actionButtonSecondary: {
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   actionButtonSecondaryText: {
     color: colors.primary,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
     fontSize: 15,
   },
   uploadingRow: {
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.dangerText,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   photoPreviewRow: {
     flexDirection: 'row',
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   savedText: {
     ...typography.body,
     color: colors.success,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
   hint: {
     ...typography.caption,
@@ -463,6 +463,6 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: colors.primary,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
 });

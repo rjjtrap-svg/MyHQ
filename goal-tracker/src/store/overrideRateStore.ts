@@ -20,6 +20,8 @@ export interface SaveRateInput {
 interface OverrideRateState {
   rates: RepOverrideRate[];
   loading: boolean;
+  /** Non-empty when the subscription itself was rejected, e.g. by security rules. */
+  readError: string;
   subscribe: (teamId: string, leaderUid: string | 'all') => () => void;
   save: (input: SaveRateInput) => Promise<void>;
   remove: (teamId: string, leaderUid: string, repUid: string) => Promise<void>;
@@ -28,10 +30,16 @@ interface OverrideRateState {
 export const useOverrideRateStore = create<OverrideRateState>((set) => ({
   rates: [],
   loading: true,
+  readError: '',
 
   subscribe: (teamId, leaderUid) => {
-    set({ rates: [], loading: true });
-    return subscribeOverrideRates(teamId, leaderUid, (rates) => set({ rates, loading: false }));
+    set({ rates: [], loading: true, readError: '' });
+    return subscribeOverrideRates(
+      teamId,
+      leaderUid,
+      (rates) => set({ rates, loading: false }),
+      (readError) => set({ readError, loading: false })
+    );
   },
 
   save: async (input) => {

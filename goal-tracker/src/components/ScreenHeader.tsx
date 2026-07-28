@@ -1,13 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Emblem } from './Emblem';
+import { Mark } from './Mark';
 import { colors, spacing, typography } from '@/src/theme';
 
 /**
- * Every top-level screen opens the same way: a gold eyebrow, a serif-weight title, the
- * mark on the right, and a seigaiha rule underneath. Before this existed, only Home had
- * the treatment and the other four screens opened with a bare title, which made them read
- * like a different app.
+ * Every top-level screen opens the same way: a gold eyebrow, a heavy title, the mark on the
+ * right, and a hairline rule underneath. Before this existed, only Home had the treatment
+ * and the other four screens opened with a bare title, which made them read like a
+ * different app.
  *
  * `emblem={false}` for stacked/detail screens, where repeating the mark under a back link
  * is noise rather than branding.
@@ -32,7 +32,7 @@ export function ScreenHeader({
           <Text style={styles.eyebrow}>{eyebrow}</Text>
           <Text style={styles.title}>{title}</Text>
         </View>
-        {right ?? (emblem ? <Emblem size={44} /> : null)}
+        {right ?? (emblem ? <Mark size={28} /> : null)}
       </View>
       {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
       <View style={styles.rule} />

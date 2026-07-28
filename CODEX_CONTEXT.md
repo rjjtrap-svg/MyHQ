@@ -1,202 +1,246 @@
-# Context brief for an agent without repo access
+# Screen brief for an agent without repo access
 
 Codex's sandbox cannot reach GitHub (`CONNECT tunnel failed, response 403`), so it can't
-clone this repo. This file is the contract it works against instead: the design tokens, the
-component APIs and the domain types it needs to write screens that compile here.
+clone this repo. This file is the contract it works against instead.
 
-Paste this whole file into that agent once, at the start of a session. Regenerate it from
-source whenever `src/theme/*`, the shared components or `src/types/index.ts` change — a
-stale contract is worse than none, because code written against it will look right and fail
-to build.
+Paste this whole file into Codex, then add the screen name and the current file at the end.
+Regenerate this file whenever `src/theme/*` or the shared components change — **a stale
+contract is worse than none**, because code written against it looks right and fails to
+build. This file has already caused that once, by documenting two components after they
+were deleted.
 
 ---
 
 ## What you're working on
 
-An Expo SDK 52 app (React Native Web, deployed as a PWA) for a door-to-door fiber sales
-team. It is **complete, deployed and in use** — you are modifying working software, not
-starting a new project. Read https://docs.expo.dev/versions/v52.0.0/ before writing Expo
-code; do not rely on recalled API shapes.
+`goal-tracker/` — an **Expo SDK 52** app for a door-to-door fiber sales team, shipped as a
+PWA. Reps open it on a phone between knocks. It is **deployed and in use**: you are
+modifying working software, not starting a project. Read
+https://docs.expo.dev/versions/v52.0.0/ before writing Expo code rather than relying on
+recalled API shapes.
 
-Visual identity: cream and brown, a deliberate "pro shop / scorecard" feel. Not a generic
-SaaS dashboard.
+**This is React Native, not a website.** There is no HTML and no CSS anywhere in it.
 
-## Your lane
+- Components are `View`, `Text`, `Pressable`, `ScrollView`, `TextInput` from `react-native`
+- Styling is `StyleSheet.create({...})` and a `style={}` prop
+- There is **no** `div`, no `className`, no CSS file, no Tailwind, no styled-components
+- Layout is flexbox only. No CSS grid, no `position: fixed`, no media queries
+- `Alert.alert` does nothing on web — use `confirmAction` / `notify` from `@/src/lib/dialogs`
 
-You own **`app/**`** (screens and routing) and **`src/components/**`** (new components).
-
-You do **not** touch `src/theme/*`, `src/lib/*`, `src/store/*`, `functions/*` or any
-`.rules` file. Those belong to the reviewing agent. If you need a colour or a type style
-that doesn't exist below, **say so** — do not hardcode a hex and do not add a token
-yourself.
-
-## How to deliver work
-
-You cannot push. Output complete file contents in fenced code blocks, each preceded by its
-full repo-relative path:
-
-````
-### goal-tracker/app/(tabs)/deals.tsx
-```tsx
-...entire file...
-```
-````
-
-Whole files, not diffs or fragments — the reviewing agent needs to apply them exactly. Say
-which files you changed and which you created. If you couldn't finish something, say that
-too; do not report work you didn't do, and never report a commit or a push, because you
-cannot make one.
+Output that uses HTML or CSS is unusable and gets thrown away.
 
 ---
 
-## Design tokens
+## Hard rules
 
-Import from `@/src/theme`. Never write a raw hex in a component.
+1. **One screen file per task.** Touch nothing else. If the screen needs something that
+   doesn't exist, say so in prose — do not create it.
+2. **Never invent an import.** Every import must appear in the lists below. If you're about
+   to write `@/src/components/SomethingNew` or `@/src/lib/somethingNew`, stop.
+3. **Never hardcode a colour.** No hex, no `rgba(...)`, no `'white'`. Only tokens from
+   `@/src/theme`. If a colour you need doesn't exist, say so — do not approximate.
+4. **Never change** `src/theme/*`, `src/lib/*`, `src/store/*`, `functions/*`, `*.rules`,
+   `app/_layout.tsx`, `app/(tabs)/_layout.tsx`, `package.json`, or any env/config file.
+5. **Keep every existing behaviour.** Same data, same handlers, same navigation, same
+   conditionals. This is a visual redesign — if a screen filters cancelled deals, the
+   redesigned screen still filters cancelled deals.
+6. **Output the complete file**, top to bottom, in one code block. Not a diff, not a
+   snippet, never "…rest unchanged".
 
-```ts
-export const colors = {
-  background: '#F7F1E6',
-  surface: '#EFE4CF',
-  surfaceElevated: '#E6D6B8',
-  border: '#D3BD95',
-  text: '#2E2013',
-  textMuted: '#6B5642',
-  textFaint: '#9C8768',
-  primary: '#5C3A21',
-  primaryMuted: '#E1CBA3',
-  accent: '#8C5A2B',
-  gold: '#C6862E',
-  danger: '#A83A2B',
-  dangerSurface: '#F3DCD5',   // alert backgrounds
-  dangerBorder: '#D9A68F',
-  dangerText: '#8A3324',
-  success: '#4B7A3D',
-  ahead: '#4B7A3D',           // pace indicators
-  onPace: '#5C3A21',
-  behind: '#B5692E',
-  fire: '#B5692E',            // streaks / hot states
-  gradientPrimary: ['#5C3A21', '#8C5A2B'] as const,
-  gradientGold: ['#C6862E', '#B5692E'] as const,
-  track: '#E1D2AC',           // progress bar trough
-} as const;
+---
 
-export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
-export const radius = { sm: 10, md: 16, lg: 24, xl: 32, round: 999 } as const;
+## Design direction
+
+Dark, monochrome, restrained. Premium the way Linear and Apple Health are premium: hierarchy
+comes from size, weight and spacing, not from painting things different colours.
+
+- **Colour means something here.** Gold is achievement, green is ahead of pace, amber is
+  behind, red is danger. Don't use them decoratively — a gold border on a card that isn't
+  about achievement makes the ones that are mean less.
+- **Buttons are glass** — a translucent tint plus a brighter edge, never a saturated fill.
+  Use the `Button` component; don't hand-roll one.
+- **No ornament.** An ouroboros mark and a wavy seigaiha divider were both removed for
+  reading as cartoon decoration. Don't add flourishes, decorative gradients, emoji, or icons
+  that carry no information. Brand is the palette, the type scale and the spacing.
+- **One loud thing per screen, maximum.** If two elements are both large and both
+  high-contrast, they compete and the screen has no focus.
+- Serif (`typography.metric`, `scoreValue`, `metricHero`, `quote`) is for **numbers that
+  matter and pull quotes only**. Everywhere else is sans. Keeping the serif rare is what
+  makes it read as deliberate rather than as a magazine template.
+
+---
+
+## Tokens — `import { colors, spacing, radius, layout, typography, elevation } from '@/src/theme'`
+
+### colors
+
+```
+background surface surfaceElevated surfaceRaised surfacePressed brandSurface
+border borderSubtle borderStrong divider
+text textPrimary textSecondary textMuted textFaint onPrimary
+primary primaryPressed primaryMuted accent gold
+danger dangerSurface dangerBorder dangerText
+success warning info infoSurface infoBorder premium
+disabledSurface disabledText
+glass glassPressed glassBorder glassBorderStrong
+ahead onPace behind fire fireSurface fireBorder
+overlay goldSurface track
+knockNotHome knockNotInterested knockCallback knockSold knockDoNotKnock
+gradientPrimary gradientGold   (readonly [string, string])
 ```
 
-Two typefaces on purpose. `display` is a serif used **only** for numbers that matter and
-for pull quotes — keeping it rare is what makes it read as deliberate. `sans` is everything
-else.
+`glass*` are the translucent button and active-state tints. `track` is the trough behind any
+progress bar or ring.
 
-```ts
-export const typography = {
-  hero:     { fontSize: 44, fontWeight: '800', letterSpacing: -0.5 },
-  title:    { fontSize: 24, fontWeight: '700' },
-  subtitle: { fontSize: 17, fontWeight: '600' },
-  body:     { fontSize: 15, fontWeight: '400' },
-  caption:  { fontSize: 13, fontWeight: '500' },
+### spacing / radius / layout
 
-  /** Small caps, wide tracking. ALL labels and section eyebrows.
-   *  Already sets textTransform: 'uppercase' — do not set it again at the call site. */
-  eyebrow:    { fontFamily: fonts.sans, fontSize: 11, fontWeight: '700',
-                letterSpacing: 1.6, textTransform: 'uppercase' },
-  /** Serif numerals. ALL stat and metric numbers. */
-  scoreValue: { fontFamily: fonts.display, fontSize: 34, fontWeight: '700',
-                letterSpacing: -1 },
-  /** Serif italic. Pull quotes only. */
-  quote:      { fontFamily: fonts.display, fontSize: 18, fontStyle: 'italic',
-                lineHeight: 26 },
-};
+```
+spacing  xs 4 · sm 8 · md 16 · lg 24 · xl 32 · xxl 48 · xxxl 64
+radius   xs 6 · sm 10 · md 16 · lg 24 · xl 32 · round 999
+layout   screenGutter 20 · screenGutterWide 32 · contentMaxWidth 760
+         formMaxWidth 420 · sectionGap 32 · cardPadding 18 · minTouchTarget 44
+elevation  flat · card · raised · modal      (spread into a style: ...elevation.card)
 ```
 
-`typography.statValue` and `typography.statLabel` **no longer exist**. Do not use them.
+### typography — spread these, don't restate their properties
 
-## Shared components
+```
+hero title subtitle body caption
+pageTitle sectionTitle label
+metric scoreValue metricHero        serif numerals
+eyebrow badge                       already uppercase — never set textTransform again
+cardTitle button quote
+```
 
-Import from `@/src/components/<Name>`. Use these rather than hand-rolling equivalents —
-there were once 23 different primary-button styles in this app and the point of these is
-that there is now one of each.
+`statLabel` and `statValue` were deleted. Don't reintroduce them.
 
-```ts
+---
+
+## Shared components — use these, don't rebuild them
+
+```tsx
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 ScreenHeader({ eyebrow: string; title: string; subtitle?: string;
                emblem?: boolean; right?: React.ReactNode })
-// Every top-level screen opens with this. Renders eyebrow, title, brand mark, wave rule.
+// Every top-level screen opens with this. `right` REPLACES the mark, it doesn't sit beside it.
 
-Button({ label: string; onPress: () => void;
-         variant?: 'solid' | 'ghost' | 'danger';
-         size?: 'sm' | 'md' | 'lg';
-         busy?: boolean; disabled?: boolean; style?: ViewStyle })
+import { Button, SegmentedToggle } from '@/src/components/Button';
+Button({ label: string; onPress: () => void; variant?: 'solid'|'ghost'|'danger';
+         size?: 'sm'|'md'|'lg'; busy?: boolean; disabled?: boolean; style?: ViewStyle })
+// size 'lg' is full-width (alignSelf: stretch).
+SegmentedToggle({ options: {key,label}[]; value; onChange; stretch?: boolean })
 
-SegmentedToggle({ options: { key: T; label: string }[]; value: T;
-                  onChange: (v: T) => void; stretch?: boolean })
-// stretch = equal-width tabs filling the container.
+import { Banner } from '@/src/components/Banner';
+Banner({ message: string; tone?: 'error'|'info'; align?: 'center'|'left' })
+// ALL inline errors and notices. Never hand-roll an error row.
 
-Banner({ message: string; tone?: 'error' | 'info'; align?: 'center' | 'left' })
-// All inline error and info messages.
-
+import { Section } from '@/src/components/Section';
 Section({ title: string; right?: React.ReactNode; children; style? })
-// Section heading — gold tick, hairline rule.
 
-StatTile({ label: string; value: string | number; sublabel?: string; accent?: string })
-// Metric tiles. flexBasis 48%, so two per row in a wrapping flex container.
+import { StatTile } from '@/src/components/StatTile';
+StatTile({ label: string; value: string|number; sublabel?: string; accent?: string })
+// flexBasis 48% — always use an EVEN count or the last tile strands.
 
-Emblem({ size?: number })          // brand mark (ouroboros dragon), inline SVG
-WaveRule({ height?: number; color?: string; scaleWidth?: number; style? })
-PullQuote({ seed?: string })       // rotating floor motto, serif italic
-BadgePatch({ badge: BadgeDef; progress: number })
+import { Mark } from '@/src/components/Mark';
+Mark({ size?: number })          // the brand mark: a modern house, monochrome
+
+import { StreakFlame } from '@/src/components/StreakFlame';
+StreakFlame({ streak: number })  // renders nothing when streak <= 0
+
+import { PullQuote } from '@/src/components/PullQuote';
+PullQuote({ seed?: string })
+
+import { Screen } from '@/src/components/Screen';
+Screen({ children; scroll?: boolean; edges?: Edge[]; contentStyle?: ViewStyle; testID?: string })
+// The page canvas — safe area, max width, gutters, scroll. Wrap the WHOLE screen in it.
+// Don't add your own SafeAreaView or ScrollView around it; it already does both.
+
+import { Surface } from '@/src/components/Surface';
+Surface({ level?: SurfaceLevel; onPress?: () => void; accessibilityLabel?: string; style? })
+// The card vocabulary. Prefer this over hand-rolling another bordered View.
+
+import { EmptyState } from '@/src/components/EmptyState';
+EmptyState({ icon?: FontAwesomeName; title: string; body: string;
+             actionLabel?: string; onAction?: () => void })
+
+import { LoadingState } from '@/src/components/LoadingState';
+LoadingState({ label?: string })
+
+import { BarChart } from '@/src/components/BarChart';
+BarChart({ data: {label: string; value: number}[]; height?: number;
+           color?: string; highlightLastBar?: boolean })
+
+import { StagePillRow } from '@/src/components/StagePill';
+StagePillRow({ stage: DealStage; onAdvance: (stage: DealStage) => void })
+// The deal pipeline control. Behaviour lives here — never reimplement stage advancement.
+
+import { DealEditor } from '@/src/components/DealEditor';
+DealEditor({ deal: Deal; onDone: () => void })
+
+// Dashboard-only, already used by app/(tabs)/index.tsx:
+import { MetricCard } from '@/src/components/dashboard/MetricCard';
+import { GoalProgressCard } from '@/src/components/dashboard/GoalProgressCard';
+import { NextActionCard } from '@/src/components/dashboard/NextActionCard';
+import { PerformanceHeader } from '@/src/components/dashboard/PerformanceHeader';
+import { StatusBadge } from '@/src/components/dashboard/StatusBadge';
 ```
 
-## Domain types
+Icons: `import { FontAwesome } from '@expo/vector-icons'` — FontAwesome 5 free names only.
+Navigation: `import { useRouter } from 'expo-router'`, then `router.push('/deals')`.
 
-```ts
-type DealStage = 'sold' | 'installed' | 'paid' | 'cancelled';
-const DEAL_STAGES: DealStage[] = ['sold', 'installed', 'paid'];  // 'cancelled' excluded
+**These no longer exist. Importing them breaks the build:** `Emblem`, `WaveRule`,
+`statLabel`, `statValue`.
 
-interface Deal {
-  id: string;
-  date: string;              // ISO yyyy-mm-dd the deal counts against
-  createdAt: string; updatedAt: string;
-  customerName?: string; address?: string; notes?: string;
-  firstName?: string; lastName?: string; phone?: string;
-  scheduledInstallDate?: string;   // drives follow-up reminders
-  synced: boolean; deletedAt?: string;
-  teamId: string; repUid: string; repName: string;
-  photoUrl?: string;
-  ocrStatus: 'none' | 'pending' | 'done' | 'error';
-  ocrLines?: string[]; ocrGuessedName?: string; ocrGuessedAddress?: string;
-  stage: DealStage;
-  soldAt: string; installedAt?: string; paidAt?: string;
-  cancelledAt?: string; cancelReason?: string;
-  installPromptSentAt?: string; payPromptSentAt?: string;
-}
-
-interface Commission {
-  dealId: string; teamId: string; repUid: string; amount: number; updatedAt: string;
-}
-
-type Role = 'manager' | 'team_lead' | 'rep';
-```
+---
 
 ## Domain rules you must not break
 
 - **A cancelled deal is not a sale.** `stage === 'cancelled'` is excluded from every stat —
-  goal progress, streaks, close rate, commission totals. If you write anything that counts
-  deals, filter it.
-- **Commission is private.** Readable only by the rep who earned it and their manager,
-  enforced in Firestore rules. Teammate profile screens pass `showMoney={false}` on purpose
-  — do not "fix" that by showing money.
-- **Coach chat is not visible to managers.** It's meant to be judgment-free. Don't surface
-  it anywhere team-facing.
-- **Never invent a quote.** The Lock In library separates `kind: 'quote'` (real, sourced
-  words, shown in quotation marks) from `kind: 'idea'` (a framework summarised in our own
-  words, tagged "idea"). If you are not certain of exact wording, it is an `idea`. Putting
-  invented words in a real person's mouth is the one thing that must never happen here.
+  goal progress, streaks, close rate, commission, override earnings. If the screen you're
+  editing filters it, keep the filter.
+- **Soft deletes.** `deletedAt` set means the record is gone. Keep those filters too.
+- **Commission is private** to the rep who earned it and the manager. Teammate profiles pass
+  `showMoney={false}`. Never "fix" that by showing money.
+- **Coach chat is deliberately invisible to managers.** Don't surface it anywhere.
+- Two different things are called "override" — a manager's correction to one rep's
+  commission on one deal, and a standing per-deal rate a leader earns on a rep's production.
+  Separate collections, separate rules. Don't merge them.
 
-## Before you report anything as done
+---
 
-```bash
-cd goal-tracker
-npx tsc --noEmit      # must be clean
-```
+## How to deliver
 
-Paste the actual output. There is no test suite; the type-check is the gate.
+Reply with:
+
+1. **One paragraph** on what was wrong with the screen and what you changed. Not a feature
+   list.
+2. **The complete file** in a single ```tsx code block.
+3. **Anything you needed that doesn't exist**, in prose, as a request — a missing colour
+   token, a missing component. Do not create it yourself.
+
+Do not write shell scripts. Do not write `git` commands. Do not describe file operations.
+Someone else applies, type-checks, builds and pushes your output — your job is the file.
+
+---
+
+## Definition of done
+
+Check your own output before replying:
+
+- Every `import` appears in the lists above
+- No hex, no `rgba(`, no colour-name string anywhere
+- No `div`, `className`, or web-only API
+- Every handler, filter and conditional from the original still present
+- `typography.eyebrow` / `badge` used without re-setting `textTransform`
+- `StatTile` counts are even
+
+---
+
+## The task
+
+> Redesign **`goal-tracker/app/(tabs)/<SCREEN>.tsx`**.
+>
+> Keep every behaviour; change how it looks and how it's organised. Follow the design
+> direction above — dark, monochrome, one loud thing, no ornament.
+>
+> --- CURRENT FILE BELOW ---

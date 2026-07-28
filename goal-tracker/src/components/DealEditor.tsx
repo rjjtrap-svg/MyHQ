@@ -4,7 +4,7 @@ import { useDealsStore, DealDetailsInput } from '@/src/store/dealsStore';
 import { Deal } from '@/src/types';
 import { Banner } from '@/src/components/Banner';
 import { SaleDateField, isValidSaleDate } from '@/src/components/SaleDateField';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, radius, spacing, typography } from '@/src/theme';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -50,9 +50,12 @@ function Field({
 export function DealEditor({ deal, onDone }: { deal: Deal; onDone: () => void }) {
   const updateDealDetails = useDealsStore((s) => s.updateDealDetails);
 
-  const [firstName, setFirstName] = useState(deal.firstName ?? '');
-  const [lastName, setLastName] = useState(deal.lastName ?? '');
-  const [phone, setPhone] = useState(deal.phone ?? '');
+  // Fall back to what OCR read off the paperwork. The rep's own entry always wins; these
+  // only fill a field that is otherwise blank, and they're editable like anything else —
+  // a parsed value is a starting point, not an assertion.
+  const [firstName, setFirstName] = useState(deal.firstName ?? deal.ocrGuessedFirstName ?? '');
+  const [lastName, setLastName] = useState(deal.lastName ?? deal.ocrGuessedLastName ?? '');
+  const [phone, setPhone] = useState(deal.phone ?? deal.ocrGuessedPhone ?? '');
   const [address, setAddress] = useState(deal.address ?? '');
   const [saleDate, setSaleDate] = useState(deal.date);
   const [installDate, setInstallDate] = useState(deal.scheduledInstallDate ?? '');
@@ -179,7 +182,7 @@ const styles = StyleSheet.create({
   },
   buttons: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.xs },
   ghostButton: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
-  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontWeight: '700' },
+  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontFamily: fonts.sansBold },
   solidButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.sm,
@@ -189,5 +192,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   solidButtonDisabled: { opacity: 0.5 },
-  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '700' },
+  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.sansBold },
 });

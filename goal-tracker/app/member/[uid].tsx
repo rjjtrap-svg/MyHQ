@@ -9,9 +9,8 @@ import { useDealsStore } from '@/src/store/dealsStore';
 import { computeGoalStats } from '@/src/lib/stats';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { ProfileBody, profileStyles } from '@/src/components/ProfileBody';
-import { WaveRule } from '@/src/components/WaveRule';
 import { StreakFlame } from '@/src/components/StreakFlame';
-import { colors, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 
 /**
  * A teammate's profile card. Deliberately hides commission — the Firestore rules don't let
@@ -84,7 +83,7 @@ export default function MemberProfileScreen() {
             </View>
           </View>
 
-          <WaveRule style={styles.cardWave} color={colors.border} />
+          <View style={styles.cardDivider} />
 
           <Text style={member.bio ? styles.bio : styles.bioEmpty}>
             {member.bio || 'No bio yet.'}
@@ -110,7 +109,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, paddingTop: spacing.md },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md },
-  backText: { ...typography.caption, color: colors.accent, fontWeight: '700' },
+  backText: { ...typography.caption, color: colors.accent, fontFamily: fonts.sansBold },
   missing: { ...typography.body, color: colors.textFaint },
   card: {
     backgroundColor: colors.surface,
@@ -125,7 +124,7 @@ const styles = StyleSheet.create({
   roleTag: { ...typography.eyebrow, color: colors.gold },
   name: { ...typography.title, fontSize: 26, color: colors.text },
   identityMeta: { flexDirection: 'row', marginTop: spacing.xs },
-  cardWave: { marginVertical: spacing.md, opacity: 0.8 },
+  cardDivider: { height: 1, backgroundColor: colors.borderSubtle, marginVertical: spacing.md },
   bio: { ...typography.body, color: colors.textMuted, lineHeight: 21 },
   bioEmpty: { ...typography.body, color: colors.textFaint, fontStyle: 'italic' },
 });

@@ -1,9 +1,10 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
-type Variant = 'solid' | 'ghost' | 'danger';
-type Size = 'sm' | 'md' | 'lg';
+type Variant = 'hero' | 'solid' | 'ghost' | 'danger';
+type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 /**
  * One button. There were 23 hand-rolled primary-button styles across the app, each with
@@ -28,9 +29,20 @@ export function Button({
   style?: ViewStyle;
 }) {
   const inactive = disabled || busy;
+
+  // A press you can feel. Haptics are the cheapest way to make an app seem responsive, and
+  // this app is used one-handed on a doorstep where the screen is often barely glanceable.
+  // Web has no equivalent, so it's skipped rather than polyfilled into something worse.
+  function handlePress() {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
+    onPress();
+  }
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={inactive}
       accessibilityRole="button"
       accessibilityState={{ disabled: inactive, busy }}
@@ -45,7 +57,7 @@ export function Button({
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={variant === 'ghost' ? colors.textMuted : colors.onPrimary} />
+        <ActivityIndicator size="small" color={variant === 'hero' ? colors.background : variant === 'ghost' ? colors.textMuted : colors.text} />
       ) : (
         <Text style={[styles.label, labelSizes[size], labelVariants[variant]]}>{label}</Text>
       )}
@@ -68,28 +80,52 @@ const sizes = StyleSheet.create({
   sm: { paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.md, minWidth: 72 },
   md: { paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.lg, minWidth: 88 },
   lg: { paddingVertical: spacing.md, paddingHorizontal: spacing.lg, alignSelf: 'stretch' },
+  // The one action on a screen. Deliberately oversized and fully round — at this size it
+  // stops being a control in a list of controls and becomes the thing you came to do.
+  xl: {
+    paddingVertical: spacing.md + 4,
+    paddingHorizontal: spacing.xl,
+    alignSelf: 'stretch',
+    borderRadius: radius.round,
+    minHeight: 58,
+  },
 });
 
 const labelSizes = StyleSheet.create({
   sm: { fontSize: 13 },
   md: { fontSize: 14 },
   lg: { fontSize: 15 },
+  xl: { fontSize: 16 },
 });
 
+/**
+ * `solid` is glass, not a colour fill. A saturated blue slab is the loudest thing on a dark
+ * screen and it was winning against the content it sat under. A lit tint of the background
+ * with a brighter edge still reads as the one thing to press, because it is the only element
+ * on the screen with that edge — hierarchy from light rather than from hue.
+ *
+ * `ghost` keeps the dimmer border so the two are still distinguishable side by side.
+ */
 const variants = StyleSheet.create({
-  solid: { backgroundColor: colors.primary },
+  // The one loud thing. White on a dark screen is the only fill that outranks glass without
+  // introducing a hue, which is what keeps the palette monochrome while still having a
+  // clear primary. Use it once per screen — twice and neither is primary.
+  hero: { backgroundColor: colors.text },
+  solid: { backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorderStrong },
   ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
   danger: { backgroundColor: colors.dangerSurface, borderWidth: 1, borderColor: colors.dangerBorder },
 });
 
 const pressedVariants = StyleSheet.create({
-  solid: { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.985 }] },
-  ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.985 }] },
-  danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.985 }] },
+  hero: { backgroundColor: colors.textSecondary, transform: [{ scale: 0.97 }] },
+  solid: { backgroundColor: colors.glassPressed, transform: [{ scale: 0.97 }] },
+  ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.97 }] },
+  danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.97 }] },
 });
 
 const labelVariants = StyleSheet.create({
-  solid: { color: colors.onPrimary },
+  hero: { color: colors.background },
+  solid: { color: colors.text },
   ghost: { color: colors.textMuted },
   danger: { color: colors.dangerText },
 });
@@ -151,8 +187,10 @@ const segStyles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   tabStretch: { flex: 1 },
-  tabActive: { backgroundColor: colors.primary },
+  // Same glass treatment as the solid button, so "selected" and "the action" speak one
+  // visual language instead of two shades of blue.
+  tabActive: { backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorder },
   tabPressed: { backgroundColor: colors.surfacePressed },
   text: { ...typography.eyebrow, fontSize: 10, color: colors.textMuted },
-  textActive: { color: colors.onPrimary },
+  textActive: { color: colors.text },
 });

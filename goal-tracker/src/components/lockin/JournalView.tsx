@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LockInNote } from '@/src/types';
 import { Section } from '@/src/components/Section';
+import { confirmAction } from '@/src/lib/dialogs';
 import { NoteComposer } from './NoteComposer';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
@@ -13,18 +14,6 @@ function dayLabel(iso: string): string {
   if (same(d, today)) return 'Today';
   if (same(d, yesterday)) return 'Yesterday';
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-}
-
-async function confirm(message: string): Promise<boolean> {
-  // Alert.alert renders nothing on web, so a delete would silently no-op in the PWA —
-  // which is where most of this app is actually used.
-  if (Platform.OS === 'web') return window.confirm(message);
-  return new Promise((resolve) => {
-    Alert.alert('Delete entry', message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
-    ]);
-  });
 }
 
 export function JournalView({
@@ -60,7 +49,7 @@ export function JournalView({
   }, [entries]);
 
   async function remove(id: string) {
-    if (!(await confirm('Delete this entry? It cannot be recovered.'))) return;
+    if (!(await confirmAction('Delete entry', 'Delete this entry? It cannot be recovered.', 'Delete'))) return;
     setDeletingId(id);
     try {
       await onDelete(id);

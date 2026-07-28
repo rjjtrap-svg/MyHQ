@@ -91,17 +91,26 @@ colour is missing, add a token. Alert colours are `dangerSurface` / `dangerBorde
 - `statLabel` / `statValue` are **gone**. Don't reintroduce them.
 
 **Shared components** — use these instead of hand-rolling:
-- `ScreenHeader` — every top-level screen opens with it (eyebrow, title, mark, wave rule).
+- `ScreenHeader` — every top-level screen opens with it (eyebrow, title, mark, hairline rule).
 - `Button` / `SegmentedToggle` — all buttons and tab switches.
 - `Banner` — all inline error/info messages.
 - `Section` — section headings (gold tick + hairline).
 - `StatTile` — metric tiles.
-- `Emblem`, `WaveRule` — the brand marks.
+- `Mark` — the brand mark.
 
-**The logo** is generated, not hand-drawn. `tools/generate_icon.py` is the source of truth;
-`tools/generate_assets.py` writes every icon/splash/favicon/OG file from it. If you change
-the mark, run both and regenerate the inline SVG in `src/components/Emblem.tsx` from the
-same geometry so the app icon and the in-app mark never drift apart.
+**The mark** is `src/components/Mark.tsx`: a door, built from a gold frame, a handle and a
+strip of `primary` light through the gap. Three primitives, so it stays legible at 20px in a
+header and at 48px on a full-page state. It replaced `Emblem` (an ouroboros dragon of a few
+hundred hand-drawn polygons) and `WaveRule` (a seigaiha squiggle band) — both were removed
+for reading as cartoon ornament rather than as a product. **Don't reintroduce either, and
+don't add decorative flourishes to carry brand.** Brand here is the palette, the type scale
+and the spacing.
+
+**The launcher icon has not been re-cut yet and still shows the old dragon.** So the icon on
+the home screen no longer matches the mark inside the app. `tools/generate_icon.py` is the
+source of truth for the icon and `tools/generate_assets.py` writes every
+icon/splash/favicon/OG file from it; re-cutting both from the door geometry is an open job.
+Until it's done, expect the mismatch — don't "fix" it by putting the dragon back.
 
 ## Domain rules that are easy to get wrong
 
