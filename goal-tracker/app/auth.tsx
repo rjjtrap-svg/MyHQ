@@ -13,16 +13,8 @@ import { Button } from '@/src/components/Button';
 import { LinearGradient } from 'expo-linear-gradient';
 import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 
-/**
- * `landing` is the door. No fields, no chrome — one image, one word per beat of the job,
- * and one button. The form only appears once someone has decided to come in.
- *
- * Drop a JPEG at assets/images/auth-cover.jpg and flip HAS_COVER to true; the gradient is
- * the stand-in until then, not the intent.
- */
-const HAS_COVER = false;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const COVER = HAS_COVER ? require('../assets/images/auth-cover.jpg') : undefined;
+const COVER = require('../assets/images/auth-cover-final.jpg');
 
 /** The loop of the job, spread across the image the way GOAT spreads past/present/future. */
 const BEATS = ['KNOCK', 'CLOSE', 'REPEAT'];
@@ -125,19 +117,18 @@ export default function AuthScreen() {
   }
 
   if (mode === 'landing') {
-    const Backdrop: any = HAS_COVER ? ImageBackground : LinearGradient;
-    const backdropProps: any = HAS_COVER
-      ? { source: COVER, resizeMode: 'cover' }
-      : { colors: colors.gradientDusk, start: { x: 0.2, y: 0 }, end: { x: 0.8, y: 1 } };
-
     return (
       <View style={styles.landing}>
-        <Backdrop {...backdropProps} style={styles.cover}>
-          {/* Scrim. A photograph will not reliably keep white type legible along its bottom
-              edge, and the button and links both live there. */}
+        <ImageBackground
+          source={COVER}
+          resizeMode="cover"
+          style={styles.cover}
+          imageStyle={styles.coverImage}
+        >
+          <View style={styles.coolWash} pointerEvents="none" />
           <LinearGradient
             colors={['transparent', colors.overlay, colors.background]}
-            locations={[0.45, 0.78, 1]}
+            locations={[0.48, 0.8, 1]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -145,6 +136,7 @@ export default function AuthScreen() {
           <SafeAreaView style={styles.landingSafe} edges={['top', 'bottom']}>
             <View style={styles.landingTop}>
               <Mark size={30} />
+              <Text style={styles.wordmark}>MYHQ</Text>
             </View>
 
             <View style={styles.beats}>
@@ -179,7 +171,7 @@ export default function AuthScreen() {
               </Pressable>
             </View>
           </SafeAreaView>
-        </Backdrop>
+        </ImageBackground>
       </View>
     );
   }
@@ -365,8 +357,32 @@ const styles = StyleSheet.create({
 
   landing: { flex: 1, backgroundColor: colors.background },
   cover: { flex: 1 },
-  landingSafe: { flex: 1, justifyContent: 'space-between', paddingHorizontal: layout.screenGutter },
-  landingTop: { paddingTop: spacing.lg },
+  coverImage: { alignSelf: 'center' },
+  coolWash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.background,
+    opacity: 0.3,
+  },
+  landingSafe: {
+    flex: 1,
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: layout.screenGutter,
+  },
+  landingTop: {
+    paddingTop: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  wordmark: {
+    ...typography.eyebrow,
+    color: colors.text,
+    fontSize: 12,
+    letterSpacing: 2.4,
+  },
   /** The three beats sit on the optical centre of the image, spread edge to edge. */
   beats: {
     flexDirection: 'row',
