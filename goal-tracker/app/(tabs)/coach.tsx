@@ -27,7 +27,7 @@ import { LockInTab } from '@/src/components/lockin/LockInTab';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { Banner } from '@/src/components/Banner';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, radius, spacing, typography } from '@/src/theme';
 import { ObjectionExchange, PitchSubmission } from '@/src/types';
 
 type CoachTab = 'accountability' | 'pitch' | 'objections' | 'training' | 'lockin';
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
   recordLabel: {
     ...typography.caption,
     color: colors.textMuted,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   emptyText: {
     ...typography.body,
@@ -899,7 +899,7 @@ const styles = StyleSheet.create({
   },
   askButtonText: {
     color: colors.onPrimary,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
     fontSize: 15,
   },
   exchangeCard: {
@@ -1041,7 +1041,7 @@ const styles = StyleSheet.create({
   audioBubbleLabel: {
     ...typography.caption,
     color: colors.accent,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   newConversationRow: {
     flexDirection: 'row',
@@ -1053,7 +1053,7 @@ const styles = StyleSheet.create({
   newConversationText: {
     ...typography.caption,
     color: colors.textFaint,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   resetConfirmCard: {
     backgroundColor: colors.surface,
@@ -1081,7 +1081,7 @@ const styles = StyleSheet.create({
   resetCancelText: {
     ...typography.caption,
     color: colors.textMuted,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   resetConfirmButton: {
     backgroundColor: colors.danger,
@@ -1094,7 +1094,7 @@ const styles = StyleSheet.create({
   resetConfirmButtonText: {
     color: colors.onPrimary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
   deleteConfirmRow: {
     flexDirection: 'row',

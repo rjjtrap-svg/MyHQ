@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Membership, RepOverrideRate } from '@/src/types';
 import { Banner } from '@/src/components/Banner';
 import { Button } from '@/src/components/Button';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, radius, spacing, typography } from '@/src/theme';
 
 export interface RateDraft {
   repUid: string;
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   },
   repChipText: {
     ...typography.caption,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     color: colors.textMuted,
   },
   repChipTextActive: {

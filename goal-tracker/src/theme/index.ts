@@ -76,72 +76,74 @@ export const motion = {
 } as const;
 
 /**
- * Two voices, on purpose. `display` is a serif used only for numbers that matter and for
- * pull quotes — it's the pro-shop/scorecard voice. `sans` is everything else. Keeping the
- * serif rare is what makes it read as a deliberate accent instead of a magazine template.
+ * Two voices, on purpose.
+ *
+ * `display` is **Archivo semi-expanded** — wide, heavy, athletic. It's the scoreboard voice,
+ * and it's reserved for numbers that matter. It replaced Georgia, which was borrowed
+ * newspaper gravitas: a serif says "broadsheet", and this is a scoreboard for someone who
+ * knocks doors for a living.
+ *
+ * `sans` is **Manrope** for everything else — geometric, open, and legible at 11px on a
+ * phone held at arm's length in daylight. Deliberately not Inter: Inter has become the
+ * default of every dark dashboard, so it reads as no choice at all.
+ *
+ * Every weight is its own family. React Native won't synthesise weights from one family the
+ * way a browser will — you get one weight on native and faux-bold on web. Set `fontFamily`
+ * and leave `fontWeight` alone.
  */
 export const fonts = {
-  display: Platform.select({
-    ios: 'Georgia',
-    android: 'serif',
-    default: 'Georgia, "Times New Roman", serif',
-  }) as string,
-  sans: Platform.select({
-    ios: 'System',
-    android: 'sans-serif',
-    default: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-  }) as string,
+  display: 'Archivo-ExpandedBold',
+  displayHeavy: 'Archivo-ExpandedBlack',
+  sans: 'Manrope-Regular',
+  sansMedium: 'Manrope-Medium',
+  sansSemiBold: 'Manrope-SemiBold',
+  sansBold: 'Manrope-Bold',
+  sansHeavy: 'Manrope-ExtraBold',
 };
 
 export const typography = {
-  hero: { fontSize: 44, fontWeight: '800' as const, letterSpacing: -0.5 },
-  title: { fontSize: 24, fontWeight: '700' as const },
-  subtitle: { fontSize: 17, fontWeight: '600' as const },
-  body: { fontSize: 15, fontWeight: '400' as const },
-  caption: { fontSize: 13, fontWeight: '500' as const },
+  hero: { fontFamily: fonts.sansHeavy, fontSize: 44, letterSpacing: -0.5 },
+  title: { fontFamily: fonts.sansBold, fontSize: 24, letterSpacing: -0.3 },
+  subtitle: { fontFamily: fonts.sansBold, fontSize: 17, letterSpacing: -0.2 },
+  body: { fontFamily: fonts.sans, fontSize: 15 },
+  caption: { fontFamily: fonts.sansMedium, fontSize: 13 },
   pageTitle: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sansHeavy,
     fontSize: 30,
     lineHeight: 36,
-    fontWeight: '800' as const,
     letterSpacing: -0.8,
   },
   sectionTitle: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sansBold,
     fontSize: 17,
     lineHeight: 22,
-    fontWeight: '700' as const,
     letterSpacing: -0.25,
   },
   metric: {
     fontFamily: fonts.display,
-    fontSize: 36,
-    lineHeight: 42,
-    fontWeight: '700' as const,
-    letterSpacing: -1.2,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.8,
   },
   label: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sansBold,
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '700' as const,
     letterSpacing: 0.3,
   },
 
   /** Patch lettering: small, uppercase, widely tracked. Section headers and eyebrows. */
   eyebrow: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sansBold,
     fontSize: 11,
-    fontWeight: '700' as const,
     letterSpacing: 1.6,
     textTransform: 'uppercase' as const,
   },
-  /** Scoreboard numerals — serif, tight, oversized. */
+  /** Scoreboard numerals — wide, tight, oversized. */
   scoreValue: {
     fontFamily: fonts.display,
-    fontSize: 34,
-    fontWeight: '700' as const,
-    letterSpacing: -1,
+    fontSize: 32,
+    letterSpacing: -0.6,
   },
   /**
    * The one number a screen is actually about — today's sales, the goal percentage.
@@ -149,39 +151,34 @@ export const typography = {
    * from painting things different colours.
    */
   metricHero: {
-    fontFamily: fonts.display,
-    fontSize: 56,
-    fontWeight: '700' as const,
-    letterSpacing: -2,
+    fontFamily: fonts.displayHeavy,
+    fontSize: 52,
+    letterSpacing: -1.4,
   },
   /** Card headings. Sits between subtitle and body — a card title is not a section title. */
   cardTitle: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sansBold,
     fontSize: 15,
-    fontWeight: '700' as const,
     letterSpacing: -0.2,
   },
   /** Status pills. Tighter tracking than eyebrow because badges are short and boxed. */
   badge: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sansHeavy,
     fontSize: 10,
-    fontWeight: '800' as const,
     letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
   },
   /** Button labels, so every button agrees without each one restating it. */
   button: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sansBold,
     fontSize: 15,
-    fontWeight: '700' as const,
     letterSpacing: -0.1,
   },
-  /** Serif italic, for the rotating floor mottos. */
+  /** The rotating floor mottos. Italic is gone with the serif — weight carries it now. */
   quote: {
-    fontFamily: fonts.display,
+    fontFamily: fonts.sansMedium,
     fontSize: 18,
-    fontStyle: 'italic' as const,
-    lineHeight: 26,
+    lineHeight: 27,
   },
 };
 

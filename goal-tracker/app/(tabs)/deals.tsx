@@ -18,7 +18,7 @@ import { StatTile } from '@/src/components/StatTile';
 import { StagePillRow } from '@/src/components/StagePill';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Screen } from '@/src/components/Screen';
-import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 import { Deal, DealStage } from '@/src/types';
 
 function formatPercent(numerator: number, denominator: number): string {
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   },
   confirmCancelText: {
     color: colors.textMuted,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     fontSize: 13,
   },
   confirmDeleteButton: {
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   },
   confirmDeleteButtonText: {
     color: colors.dangerText,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
     fontSize: 13,
   },
   rowAction: {
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontSize: 12,
     color: colors.textFaint,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   cancelBlock: {
     gap: spacing.sm,
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontSize: 12,
     color: colors.accent,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
   followUpCard: {
     backgroundColor: colors.surfaceElevated,
@@ -607,6 +607,6 @@ const styles = StyleSheet.create({
   followUpYesText: {
     color: colors.onPrimary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
 });

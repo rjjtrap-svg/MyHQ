@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors, radius, spacing, typography } from '@/src/theme';
 
 type Variant = 'solid' | 'ghost' | 'danger';
@@ -28,9 +29,20 @@ export function Button({
   style?: ViewStyle;
 }) {
   const inactive = disabled || busy;
+
+  // A press you can feel. Haptics are the cheapest way to make an app seem responsive, and
+  // this app is used one-handed on a doorstep where the screen is often barely glanceable.
+  // Web has no equivalent, so it's skipped rather than polyfilled into something worse.
+  function handlePress() {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
+    onPress();
+  }
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={inactive}
       accessibilityRole="button"
       accessibilityState={{ disabled: inactive, busy }}
@@ -91,9 +103,9 @@ const variants = StyleSheet.create({
 });
 
 const pressedVariants = StyleSheet.create({
-  solid: { backgroundColor: colors.glassPressed, transform: [{ scale: 0.985 }] },
-  ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.985 }] },
-  danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.985 }] },
+  solid: { backgroundColor: colors.glassPressed, transform: [{ scale: 0.97 }] },
+  ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.97 }] },
+  danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.97 }] },
 });
 
 const labelVariants = StyleSheet.create({

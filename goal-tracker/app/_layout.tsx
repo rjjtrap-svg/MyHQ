@@ -41,7 +41,18 @@ const navigationTheme = {
 };
 
 export default function RootLayout() {
+  // Each weight is registered under its own family name rather than relying on fontWeight.
+  // React Native does not synthesise weights from a single family the way a browser does —
+  // on native you get one weight and silently lose the rest, and on web you get faux-bold.
+  // Explicit families are the only thing that renders identically in the PWA and the app.
   const [fontsLoaded, fontError] = useFonts({
+    'Manrope-Regular': require('../assets/fonts/Manrope-Regular.ttf'),
+    'Manrope-Medium': require('../assets/fonts/Manrope-Medium.ttf'),
+    'Manrope-SemiBold': require('../assets/fonts/Manrope-SemiBold.ttf'),
+    'Manrope-Bold': require('../assets/fonts/Manrope-Bold.ttf'),
+    'Manrope-ExtraBold': require('../assets/fonts/Manrope-ExtraBold.ttf'),
+    'Archivo-ExpandedBold': require('../assets/fonts/Archivo-ExpandedBold.ttf'),
+    'Archivo-ExpandedBlack': require('../assets/fonts/Archivo-ExpandedBlack.ttf'),
     ...FontAwesome.font,
   });
   const [personalDataReady, setPersonalDataReady] = useState(false);

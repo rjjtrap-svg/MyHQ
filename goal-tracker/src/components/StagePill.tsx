@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DealStage } from '@/src/types';
-import { colors, radius, spacing } from '@/src/theme';
+import { fonts, colors, radius, spacing } from '@/src/theme';
 
 const STAGE_LABELS: Record<DealStage, string> = {
   sold: 'Sold',
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
     color: colors.textFaint,
   },
   pillTextDone: {

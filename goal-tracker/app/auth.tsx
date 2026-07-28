@@ -10,7 +10,7 @@ import { firebaseEnabled } from '@/src/firebase/config';
 import { Banner } from '@/src/components/Banner';
 import { Mark } from '@/src/components/Mark';
 import { Button } from '@/src/components/Button';
-import { colors, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 
 type Mode = 'sign-in' | 'sign-up';
 type FieldName = 'name' | 'email' | 'password' | 'code';
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   codeInput: {
     letterSpacing: 3,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
   passwordRow: {
     position: 'relative',
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   switchAction: {
     ...typography.caption,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
     color: colors.text,
     textDecorationLine: 'underline',
   },

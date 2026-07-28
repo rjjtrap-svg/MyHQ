@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PaceStatus } from '@/src/types';
-import { colors, radius, spacing } from '@/src/theme';
+import { fonts, colors, radius, spacing } from '@/src/theme';
 
 const PACE_COPY: Record<PaceStatus, { label: string; color: string }> = {
   ahead: { label: 'Ahead of pace', color: colors.ahead },
@@ -37,6 +37,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
 });
