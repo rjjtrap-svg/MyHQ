@@ -9,7 +9,6 @@ import { useDealsStore } from '@/src/store/dealsStore';
 import { computeGoalStats } from '@/src/lib/stats';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { ProfileBody, profileStyles } from '@/src/components/ProfileBody';
-import { WaveRule } from '@/src/components/WaveRule';
 import { StreakFlame } from '@/src/components/StreakFlame';
 import { colors, layout, radius, spacing, typography } from '@/src/theme';
 
@@ -84,7 +83,7 @@ export default function MemberProfileScreen() {
             </View>
           </View>
 
-          <WaveRule style={styles.cardWave} color={colors.border} />
+          <View style={styles.cardDivider} />
 
           <Text style={member.bio ? styles.bio : styles.bioEmpty}>
             {member.bio || 'No bio yet.'}
@@ -125,7 +124,7 @@ const styles = StyleSheet.create({
   roleTag: { ...typography.eyebrow, color: colors.gold },
   name: { ...typography.title, fontSize: 26, color: colors.text },
   identityMeta: { flexDirection: 'row', marginTop: spacing.xs },
-  cardWave: { marginVertical: spacing.md, opacity: 0.8 },
+  cardDivider: { height: 1, backgroundColor: colors.borderSubtle, marginVertical: spacing.md },
   bio: { ...typography.body, color: colors.textMuted, lineHeight: 21 },
   bioEmpty: { ...typography.body, color: colors.textFaint, fontStyle: 'italic' },
 });

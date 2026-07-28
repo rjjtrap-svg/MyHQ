@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PaceStatus } from '@/src/types';
-import { Emblem } from '@/src/components/Emblem';
+import { Mark } from '@/src/components/Mark';
 import { StatusBadge, BadgeTone } from './StatusBadge';
 import { colors, spacing, typography } from '@/src/theme';
 
@@ -67,7 +67,7 @@ export function PerformanceHeader({
           </Text>
           <Text style={styles.headline}>{line}</Text>
         </View>
-        <Emblem size={40} />
+        <Mark size={30} />
       </View>
 
       <View style={styles.badges}>

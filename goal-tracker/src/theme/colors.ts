@@ -91,9 +91,14 @@ export const colors = {
   knockDoNotKnock: '#E5484D',
 
   /**
-   * The brand mark's own colours. These exist so `Emblem.tsx` never hardcodes a hex and
-   * never drifts from the generated icon — they mirror PRIMARY and GOLD in
-   * tools/generate_icon.py exactly. Change one, change both, and re-run generate_assets.py.
+   * The launcher icon's own colours — they mirror PRIMARY and GOLD in
+   * tools/generate_icon.py exactly. Unused by app code since the in-app mark became
+   * `Mark.tsx` (a door, drawn from `gold` and `primary`); kept because the generated
+   * icon/splash/favicon set still uses these values, so deleting them here would leave the
+   * generator's palette undocumented.
+   *
+   * NOTE: the launcher icon is still the old ouroboros and no longer matches `Mark.tsx`.
+   * Re-cutting the icon from the door geometry is a separate job — see AGENTS.md.
    */
   markBody: '#B08034',
   markHighlight: '#FFC75E',

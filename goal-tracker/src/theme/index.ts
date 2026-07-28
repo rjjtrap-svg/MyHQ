@@ -16,6 +16,8 @@ export const layout = {
   screenGutter: 20,
   screenGutterWide: 32,
   contentMaxWidth: 760,
+  /** Single-column forms. A sign-in field stretched to 760px reads as a broken layout. */
+  formMaxWidth: 420,
   sectionGap: 32,
   cardPadding: 18,
   minTouchTarget: 44,
