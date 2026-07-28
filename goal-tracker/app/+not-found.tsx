@@ -1,7 +1,7 @@
 import React from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { Emblem } from '@/src/components/Emblem';
+import { Mark } from '@/src/components/Mark';
 import { Button } from '@/src/components/Button';
 import { colors, spacing, typography } from '@/src/theme';
 
@@ -11,7 +11,7 @@ export default function NotFoundScreen() {
     <>
       <Stack.Screen options={{ title: 'Not found', headerShown: false }} />
       <View style={styles.container}>
-        <Emblem size={76} />
+        <Mark size={48} />
         <Text style={styles.eyebrow}>Dead end</Text>
         <Text style={styles.title}>Nothing at this address.</Text>
         <Text style={styles.body}>

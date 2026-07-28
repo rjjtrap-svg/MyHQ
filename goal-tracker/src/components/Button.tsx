@@ -45,7 +45,7 @@ export function Button({
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={variant === 'ghost' ? colors.textMuted : colors.onPrimary} />
+        <ActivityIndicator size="small" color={variant === 'ghost' ? colors.textMuted : colors.text} />
       ) : (
         <Text style={[styles.label, labelSizes[size], labelVariants[variant]]}>{label}</Text>
       )}
@@ -76,20 +76,28 @@ const labelSizes = StyleSheet.create({
   lg: { fontSize: 15 },
 });
 
+/**
+ * `solid` is glass, not a colour fill. A saturated blue slab is the loudest thing on a dark
+ * screen and it was winning against the content it sat under. A lit tint of the background
+ * with a brighter edge still reads as the one thing to press, because it is the only element
+ * on the screen with that edge — hierarchy from light rather than from hue.
+ *
+ * `ghost` keeps the dimmer border so the two are still distinguishable side by side.
+ */
 const variants = StyleSheet.create({
-  solid: { backgroundColor: colors.primary },
+  solid: { backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorderStrong },
   ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
   danger: { backgroundColor: colors.dangerSurface, borderWidth: 1, borderColor: colors.dangerBorder },
 });
 
 const pressedVariants = StyleSheet.create({
-  solid: { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.985 }] },
+  solid: { backgroundColor: colors.glassPressed, transform: [{ scale: 0.985 }] },
   ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.985 }] },
   danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.985 }] },
 });
 
 const labelVariants = StyleSheet.create({
-  solid: { color: colors.onPrimary },
+  solid: { color: colors.text },
   ghost: { color: colors.textMuted },
   danger: { color: colors.dangerText },
 });
@@ -151,8 +159,10 @@ const segStyles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   tabStretch: { flex: 1 },
-  tabActive: { backgroundColor: colors.primary },
+  // Same glass treatment as the solid button, so "selected" and "the action" speak one
+  // visual language instead of two shades of blue.
+  tabActive: { backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorder },
   tabPressed: { backgroundColor: colors.surfacePressed },
   text: { ...typography.eyebrow, fontSize: 10, color: colors.textMuted },
-  textActive: { color: colors.onPrimary },
+  textActive: { color: colors.text },
 });

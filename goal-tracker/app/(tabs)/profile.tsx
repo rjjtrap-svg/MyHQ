@@ -20,7 +20,6 @@ import { useGoalStats } from '@/src/hooks/useGoalStats';
 import { MAX_BIO_LENGTH, updateMyProfile, uploadProfilePhoto } from '@/src/firebase/profile';
 import { ProfileBody, profileStyles } from '@/src/components/ProfileBody';
 import { PersonalBestsEditor } from '@/src/components/PersonalBestsEditor';
-import { WaveRule } from '@/src/components/WaveRule';
 import { StreakFlame } from '@/src/components/StreakFlame';
 import { Banner } from '@/src/components/Banner';
 import { Screen } from '@/src/components/Screen';
@@ -128,7 +127,7 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <WaveRule style={styles.cardWave} color={colors.border} />
+          <View style={styles.cardDivider} />
 
           {editingBio ? (
             <View style={styles.bioEditor}>
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   roleTag: { ...typography.eyebrow, color: colors.gold },
   name: { ...typography.pageTitle, fontSize: 26, color: colors.text },
   identityMeta: { flexDirection: 'row', marginTop: spacing.xs },
-  cardWave: { marginVertical: spacing.md, opacity: 0.8 },
+  cardDivider: { height: 1, backgroundColor: colors.borderSubtle, marginVertical: spacing.md },
   bio: { ...typography.body, color: colors.textMuted, lineHeight: 21 },
   bioEmpty: { ...typography.body, color: colors.textFaint, fontStyle: 'italic', lineHeight: 21 },
   bioEditor: { gap: spacing.sm },
