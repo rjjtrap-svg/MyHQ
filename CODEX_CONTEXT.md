@@ -150,6 +150,33 @@ StreakFlame({ streak: number })  // renders nothing when streak <= 0
 import { PullQuote } from '@/src/components/PullQuote';
 PullQuote({ seed?: string })
 
+import { Screen } from '@/src/components/Screen';
+Screen({ children; scroll?: boolean; edges?: Edge[]; contentStyle?: ViewStyle; testID?: string })
+// The page canvas — safe area, max width, gutters, scroll. Wrap the WHOLE screen in it.
+// Don't add your own SafeAreaView or ScrollView around it; it already does both.
+
+import { Surface } from '@/src/components/Surface';
+Surface({ level?: SurfaceLevel; onPress?: () => void; accessibilityLabel?: string; style? })
+// The card vocabulary. Prefer this over hand-rolling another bordered View.
+
+import { EmptyState } from '@/src/components/EmptyState';
+EmptyState({ icon?: FontAwesomeName; title: string; body: string;
+             actionLabel?: string; onAction?: () => void })
+
+import { LoadingState } from '@/src/components/LoadingState';
+LoadingState({ label?: string })
+
+import { BarChart } from '@/src/components/BarChart';
+BarChart({ data: {label: string; value: number}[]; height?: number;
+           color?: string; highlightLastBar?: boolean })
+
+import { StagePillRow } from '@/src/components/StagePill';
+StagePillRow({ stage: DealStage; onAdvance: (stage: DealStage) => void })
+// The deal pipeline control. Behaviour lives here — never reimplement stage advancement.
+
+import { DealEditor } from '@/src/components/DealEditor';
+DealEditor({ deal: Deal; onDone: () => void })
+
 // Dashboard-only, already used by app/(tabs)/index.tsx:
 import { MetricCard } from '@/src/components/dashboard/MetricCard';
 import { GoalProgressCard } from '@/src/components/dashboard/GoalProgressCard';
