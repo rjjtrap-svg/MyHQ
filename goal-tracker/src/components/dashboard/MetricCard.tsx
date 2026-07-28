@@ -72,6 +72,9 @@ export function MetricCard({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}${sublabel ? `. ${sublabel}` : ''}`}
+      accessibilityHint="Opens more details"
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed, style]}
     >
       {body}
@@ -93,6 +96,7 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     backgroundColor: colors.surfacePressed,
+    transform: [{ scale: 0.985 }],
   },
   head: {
     flexDirection: 'row',

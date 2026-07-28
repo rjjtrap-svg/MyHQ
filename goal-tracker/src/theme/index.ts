@@ -31,12 +31,21 @@ export const layout = {
  */
 export const shadows = {
   card: Platform.select<ViewStyle>({
-    android: { elevation: 2 },
+    android: { elevation: 1 },
     default: {
       shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.22,
-      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 5 },
+      shadowOpacity: 0.14,
+      shadowRadius: 12,
+    },
+  }) ?? {},
+  raised: Platform.select<ViewStyle>({
+    android: { elevation: 3 },
+    default: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.24,
+      shadowRadius: 20,
     },
   }) ?? {},
 } as const;

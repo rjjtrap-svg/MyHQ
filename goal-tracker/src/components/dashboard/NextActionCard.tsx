@@ -33,7 +33,8 @@ export function NextActionCard({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${headline}. ${detail ?? ''}`}
+      accessibilityLabel={detail ? `${headline}. ${detail}` : headline}
+      accessibilityHint="Opens the recommended next step"
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={[styles.iconWrap, { backgroundColor: accent }]}>
@@ -53,7 +54,7 @@ export function NextActionCard({
 
 const styles = StyleSheet.create({
   card: {
-    ...shadows.card,
+    ...shadows.raised,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceElevated,
@@ -65,6 +66,7 @@ const styles = StyleSheet.create({
   },
   pressed: {
     backgroundColor: colors.surfacePressed,
+    transform: [{ scale: 0.99 }],
   },
   iconWrap: {
     width: 38,

@@ -32,6 +32,8 @@ export function GoalProgressCard({
   return (
     <View
       style={styles.card}
+      accessible
+      accessibilityRole="summary"
       accessibilityLabel={`${Math.round(percent * 100)} percent of goal complete. ${total} of ${goal} sales. ${perDay} needed per day with ${daysRemaining} days left.`}
     >
       <View style={[styles.accent, { backgroundColor: ringColor }]} />
@@ -73,7 +75,7 @@ export function GoalProgressCard({
 
 const styles = StyleSheet.create({
   card: {
-    ...shadows.card,
+    ...shadows.raised,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceElevated,
