@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SegmentedToggle } from '@/src/components/Button';
+import { Button } from '@/src/components/Button';
+import { DayStrip } from '@/src/components/DayStrip';
+import { HeroPanel } from '@/src/components/HeroPanel';
 import { PullQuote } from '@/src/components/PullQuote';
 import { RollOut } from '@/src/components/day/RollOut';
 import { getDoorTarget, hydrateDoorTarget, rememberDoorTarget } from '@/src/components/day/targetMemory';
 import { WrapUp } from '@/src/components/day/WrapUp';
-import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
+import { parseISODate, startOfWeek } from '@/src/lib/dates';
 import { callbacksDue, knocksOnDate, summariseStreets, territoryStats } from '@/src/lib/territory';
 import { useAuthStore } from '@/src/store/authStore';
 import { useKnocksStore } from '@/src/store/knocksStore';
@@ -35,7 +37,7 @@ export default function DayScreen() {
   const notes = useLockInNotesStore((state) => state.notes);
   const subscribeNotes = useLockInNotesStore((state) => state.subscribe);
   const createNote = useLockInNotesStore((state) => state.create);
-  const { stats } = useGoalStats();
+  const { deals, stats } = useGoalStats();
   const todayISO = localISODate();
   const [mode, setMode] = useState<DayMode>(defaultMode);
   const [doorTarget, setDoorTarget] = useState<number | null>(() => getDoorTarget(todayISO));
@@ -81,6 +83,24 @@ export default function DayScreen() {
     return first && first.openCallbacks > 0 ? first.label : undefined;
   }, [mine]);
 
+  // Seven counts, Monday first, to match startOfWeek. Cancelled and deleted deals are
+  // excluded here for the same reason they're excluded from every other count in the app —
+  // a fallen-through deal was never a sale.
+  const weekStart = useMemo(() => startOfWeek(new Date()), []);
+  const weekCounts = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    for (const deal of deals) {
+      if (deal.deletedAt || deal.stage === 'cancelled') continue;
+      const offset = Math.floor(
+        (parseISODate(deal.date).getTime() - weekStart.getTime()) / 86400000
+      );
+      if (offset >= 0 && offset < 7) counts[offset] += 1;
+    }
+    return counts;
+  }, [deals, weekStart]);
+  const todayIndex = Math.floor((new Date().setHours(0, 0, 0, 0) - weekStart.getTime()) / 86400000);
+  const shortfall = Math.max(Math.ceil(stats.requiredPerDay) - stats.todaySales, 0);
+
   function chooseTarget(target: number) {
     rememberDoorTarget(todayISO, target);
     setDoorTarget(target);
@@ -100,25 +120,38 @@ export default function DayScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <ScreenHeader
-          eyebrow="The day"
-          title={mode === 'roll_out' ? 'Roll Out' : 'Wrap Up'}
-        />
+        {/* The two halves of the day are now signalled by the surface itself — warm going
+            out, cool coming back — rather than by two identical tabs. A rep opening this at
+            7am and at 9pm should not be looking at the same screen. */}
+        <HeroPanel
+          tone={mode === 'roll_out' ? 'dawn' : 'dusk'}
+          eyebrow={mode === 'roll_out' ? 'Roll out' : 'Wrap up'}
+          title={
+            mode === 'roll_out'
+              ? shortfall > 0
+                ? `${shortfall} to go`
+                : "Today's number is done"
+              : `${todayTerritory.sales} today`
+          }
+          detail={
+            mode === 'roll_out'
+              ? doorTarget
+                ? `${doorTarget} doors is the plan.`
+                : 'Set a door target and get out there.'
+              : `${todayTerritory.knocks} doors, ${todayTerritory.contacts} conversations.`
+          }
+        >
+          <View style={styles.heroCta}>
+            <Button
+              label={mode === 'roll_out' ? 'Wrap up instead' : 'Back to roll out'}
+              onPress={() => setMode(mode === 'roll_out' ? 'wrap_up' : 'roll_out')}
+              variant="hero"
+              size="xl"
+            />
+          </View>
+        </HeroPanel>
 
-        {/* Below the header, not in its `right` slot: that slot replaces the brand
-            emblem and is sized for a 44px mark, so a two-option toggle squeezed the
-            title on narrow phones. */}
-        <View style={styles.modeRow}>
-          <SegmentedToggle
-            options={[
-              { key: 'roll_out', label: 'Roll Out' },
-              { key: 'wrap_up', label: 'Wrap Up' },
-            ]}
-            value={mode}
-            onChange={setMode}
-            stretch
-          />
-        </View>
+        <DayStrip counts={weekCounts} todayIndex={todayIndex} />
 
         {mode === 'roll_out' ? (
           <RollOut
@@ -153,5 +186,5 @@ export default function DayScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center', padding: spacing.lg, paddingBottom: spacing.xxl },
-  modeRow: { marginBottom: spacing.xl },
+  heroCta: { marginTop: spacing.lg },
 });
