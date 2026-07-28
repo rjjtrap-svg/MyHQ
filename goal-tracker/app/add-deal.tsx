@@ -23,7 +23,7 @@ import { uploadDealPhoto } from '@/src/firebase/storage';
 import { prepareImageForUpload } from '@/src/lib/image';
 import { generateId } from '@/src/lib/id';
 import { Banner } from '@/src/components/Banner';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, layout, radius, spacing, typography } from '@/src/theme';
 import { todayISO } from '@/src/lib/dates';
 import { SaleDateField, isValidSaleDate } from '@/src/components/SaleDateField';
 
@@ -318,6 +318,9 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   content: {
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
     padding: spacing.lg,
   },
   photoRequiredCard: {

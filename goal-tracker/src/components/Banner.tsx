@@ -17,7 +17,10 @@ export function Banner({
 }) {
   const isError = tone === 'error';
   return (
-    <View style={[styles.base, isError ? styles.error : styles.info]}>
+    <View
+      style={[styles.base, isError ? styles.error : styles.info]}
+      accessibilityRole={isError ? 'alert' : 'summary'}
+    >
       <Text
         style={[styles.text, isError ? styles.errorText : styles.infoText, { textAlign: align }]}
       >
@@ -40,10 +43,10 @@ const styles = StyleSheet.create({
     borderColor: colors.dangerBorder,
   },
   info: {
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
+    backgroundColor: colors.infoSurface,
+    borderColor: colors.infoBorder,
   },
   text: { ...typography.caption, fontWeight: '600' },
   errorText: { color: colors.dangerText },
-  infoText: { color: colors.textMuted },
+  infoText: { color: colors.textSecondary },
 });

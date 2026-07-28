@@ -11,7 +11,7 @@ import { Banner } from '@/src/components/Banner';
 import { Emblem } from '@/src/components/Emblem';
 import { WaveRule } from '@/src/components/WaveRule';
 import { Button, SegmentedToggle } from '@/src/components/Button';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, layout, radius, spacing, typography } from '@/src/theme';
 
 type Mode = 'sign-in' | 'sign-up';
 
@@ -212,6 +212,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   content: {
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
     padding: spacing.lg,
     paddingTop: spacing.xxl,
   },

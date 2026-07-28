@@ -12,7 +12,7 @@ import { CircularProgress } from '@/src/components/CircularProgress';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { SegmentedToggle } from '@/src/components/Button';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, layout, radius, spacing, typography } from '@/src/theme';
 import { LeaderboardEntry } from '@/src/types';
 
 function formatMoney(amount: number): string {
@@ -204,6 +204,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   content: {
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },

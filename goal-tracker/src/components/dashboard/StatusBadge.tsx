@@ -47,10 +47,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     borderRadius: radius.round,
     paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
   pillSubtle: {
     backgroundColor: 'transparent',

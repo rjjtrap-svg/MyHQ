@@ -3,13 +3,11 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '@/src/store/authStore';
@@ -25,7 +23,8 @@ import { PersonalBestsEditor } from '@/src/components/PersonalBestsEditor';
 import { WaveRule } from '@/src/components/WaveRule';
 import { StreakFlame } from '@/src/components/StreakFlame';
 import { Banner } from '@/src/components/Banner';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { Screen } from '@/src/components/Screen';
+import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 
 export default function ProfileScreen() {
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
@@ -100,8 +99,7 @@ export default function ProfileScreen() {
     profile?.role === 'manager' ? 'Manager' : profile?.role === 'team_lead' ? 'Team Lead' : 'Rep';
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <Screen testID="profile-screen" contentStyle={styles.content}>
         <View style={styles.card}>
           <View style={styles.identityRow}>
             <Pressable onPress={pickPhoto} style={styles.avatarWrap} disabled={uploading}>
@@ -198,21 +196,20 @@ export default function ProfileScreen() {
           bestPitchGrade={gradedPitches.reduce((max, s) => Math.max(max, s.grade ?? 0), 0)}
           overrides={me?.bests}
         />
-      </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, paddingTop: spacing.md },
+  content: { paddingTop: spacing.md },
 
   card: {
-    backgroundColor: colors.surface,
+    ...elevation.raised,
+    backgroundColor: colors.surfaceElevated,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: colors.borderStrong,
+    padding: layout.cardPadding,
     marginBottom: spacing.md,
   },
   identityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -232,7 +229,7 @@ const styles = StyleSheet.create({
   },
   identityText: { flex: 1, gap: 2 },
   roleTag: { ...typography.eyebrow, color: colors.gold },
-  name: { ...typography.title, fontSize: 26, color: colors.text },
+  name: { ...typography.pageTitle, fontSize: 26, color: colors.text },
   identityMeta: { flexDirection: 'row', marginTop: spacing.xs },
   cardWave: { marginVertical: spacing.md, opacity: 0.8 },
   bio: { ...typography.body, color: colors.textMuted, lineHeight: 21 },
@@ -242,7 +239,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     padding: spacing.sm + 2,
     color: colors.text,
     fontSize: 15,

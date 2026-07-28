@@ -16,7 +16,7 @@ import { generateId } from '@/src/lib/id';
 import { formatClock } from '@/src/lib/dates';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, layout, radius, spacing, typography } from '@/src/theme';
 import { firebaseEnabled } from '@/src/firebase/config';
 import { Membership, Role } from '@/src/types';
 
@@ -569,6 +569,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },

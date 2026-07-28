@@ -11,7 +11,7 @@ import { useSettingsStore } from '@/src/store/settingsStore';
 import { ProfileBody, profileStyles } from '@/src/components/ProfileBody';
 import { WaveRule } from '@/src/components/WaveRule';
 import { StreakFlame } from '@/src/components/StreakFlame';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, layout, radius, spacing, typography } from '@/src/theme';
 
 /**
  * A teammate's profile card. Deliberately hides commission — the Firestore rules don't let
@@ -108,7 +108,7 @@ export default function MemberProfileScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, paddingTop: spacing.md },
+  content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, paddingTop: spacing.md },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md },
   backText: { ...typography.caption, color: colors.accent, fontWeight: '700' },
   missing: { ...typography.body, color: colors.textFaint },

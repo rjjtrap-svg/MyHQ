@@ -18,7 +18,12 @@ export function BarChart({ data, height = 140, color = colors.primary, highlight
   const max = Math.max(1, ...data.map((d) => d.value));
 
   return (
-    <View style={[styles.row, { height: height + 24 }]}>
+    <View
+      style={[styles.row, { height: height + 24 }]}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={data.map((item) => `${item.label}: ${item.value}`).join(', ')}
+    >
       {data.map((d, i) => {
         const barHeight = d.value === 0 ? 3 : Math.max(6, (d.value / max) * height);
         const isLast = highlightLastBar && i === data.length - 1;

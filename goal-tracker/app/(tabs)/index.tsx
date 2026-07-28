@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
@@ -10,11 +9,13 @@ import { pendingFollowUps } from '@/src/lib/dealFollowUps';
 import { MilestoneOverlay } from '@/src/components/MilestoneOverlay';
 import { Section } from '@/src/components/Section';
 import { PullQuote } from '@/src/components/PullQuote';
+import { Screen } from '@/src/components/Screen';
+import { EmptyState } from '@/src/components/EmptyState';
 import { PerformanceHeader } from '@/src/components/dashboard/PerformanceHeader';
 import { GoalProgressCard } from '@/src/components/dashboard/GoalProgressCard';
 import { MetricCard } from '@/src/components/dashboard/MetricCard';
 import { NextActionCard } from '@/src/components/dashboard/NextActionCard';
-import { colors, layout, radius, spacing, typography } from '@/src/theme';
+import { colors, radius, spacing, typography } from '@/src/theme';
 import { parseISODate, shortDateLabel } from '@/src/lib/dates';
 
 function round1(n: number): string {
@@ -37,7 +38,7 @@ export default function HomeScreen() {
 
   const followUps = useMemo(() => pendingFollowUps(deals), [deals]);
 
-  // The four most recent live deals. Cancelled ones are excluded here for the same reason
+  // The five most recent live deals. Cancelled ones are excluded here for the same reason
   // they're excluded everywhere else — a fallen-through deal is not recent momentum.
   const recent = useMemo(
     () =>
@@ -51,8 +52,8 @@ export default function HomeScreen() {
   const shortOfToday = Math.max(Math.ceil(stats.requiredPerDay) - stats.todaySales, 0);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <>
+      <Screen testID="dashboard-screen">
         <PerformanceHeader
           name={profile?.displayName}
           date={today}
@@ -174,17 +175,19 @@ export default function HomeScreen() {
           }
         >
           {recent.length === 0 ? (
-            <Pressable style={styles.empty} onPress={() => router.push('/add-deal')}>
-              <Text style={styles.emptyTitle}>Nothing on the board yet</Text>
-              <Text style={styles.emptyBody}>
-                Your first logged deal starts the streak and every number above it.
-              </Text>
-              <Text style={styles.emptyCta}>Log a deal →</Text>
-            </Pressable>
+            <EmptyState
+              icon="bolt"
+              title="Nothing on the board yet"
+              body="Your first logged deal starts the streak and every number above it."
+              actionLabel="Log a deal"
+              onAction={() => router.push('/add-deal')}
+            />
           ) : (
             recent.map((d) => (
               <Pressable
                 key={d.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${d.customerName || d.address || 'Deal'}, ${d.stage}`}
                 style={({ pressed }) => [styles.activity, pressed && styles.activityPressed]}
                 onPress={() => router.push('/(tabs)/deals')}
               >
@@ -206,6 +209,8 @@ export default function HomeScreen() {
         <View style={styles.quickRow}>
           <Pressable
             style={({ pressed }) => [styles.quick, pressed && styles.quickPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={today.getHours() < 14 ? 'Roll out for the day' : 'Wrap up the day'}
             onPress={() => router.push('/day')}
           >
             <FontAwesome name="sun-o" size={14} color={colors.gold} />
@@ -216,30 +221,18 @@ export default function HomeScreen() {
         </View>
 
         <PullQuote />
-      </ScrollView>
-
+      </Screen>
       <MilestoneOverlay
         milestone={pendingCelebration}
         dailyAlert={pendingDailyAlert}
         salesGoal={settings.salesGoal}
         onDismiss={pendingDailyAlert ? clearDailyAlert : clearCelebration}
       />
-    </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    width: '100%',
-    maxWidth: layout.dashboardMaxWidth,
-    alignSelf: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -256,7 +249,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.sm,
@@ -285,30 +278,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
     textTransform: 'capitalize',
   },
-  empty: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    padding: spacing.lg,
-    alignItems: 'flex-start',
-  },
-  emptyTitle: {
-    ...typography.cardTitle,
-    color: colors.text,
-  },
-  emptyBody: {
-    ...typography.body,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-    lineHeight: 21,
-  },
-  emptyCta: {
-    ...typography.badge,
-    color: colors.primary,
-    marginTop: spacing.md,
-  },
   quickRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -322,12 +291,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
+    minHeight: 48,
     paddingVertical: spacing.md,
     gap: spacing.sm,
   },
   quickPressed: {
     backgroundColor: colors.surfacePressed,
+    transform: [{ scale: 0.99 }],
   },
   quickLabel: {
     ...typography.badge,

@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
 import { useAuthStore } from '@/src/store/authStore';
@@ -17,7 +16,9 @@ import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { StatTile } from '@/src/components/StatTile';
 import { StagePillRow } from '@/src/components/StagePill';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { EmptyState } from '@/src/components/EmptyState';
+import { Screen } from '@/src/components/Screen';
+import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 import { Deal, DealStage } from '@/src/types';
 
 function formatPercent(numerator: number, denominator: number): string {
@@ -300,8 +301,7 @@ export default function DealsScreen() {
   const monthlyChart = monthly.map((p) => ({ label: p.label, value: p.count }));
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <Screen testID="deals-screen">
         <ScreenHeader
           eyebrow="Your book"
           title="My Deals"
@@ -319,7 +319,11 @@ export default function DealsScreen() {
 
         <Section title={`Pipeline (${livePipeline.length})`}>
           {livePipeline.length === 0 ? (
-            <Text style={styles.emptyText}>No deals logged yet — tap the + button to add one.</Text>
+            <EmptyState
+              icon="briefcase"
+              title="Your pipeline is ready"
+              body="Log your first deal with the center action and it will appear here."
+            />
           ) : (
             livePipeline.map((deal) => <DealRow key={deal.id} deal={deal} />)
           )}
@@ -372,20 +376,11 @@ export default function DealsScreen() {
             <StatTile label="This month" value={String(stats.monthSales)} />
           </View>
         </Section>
-      </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   heading: {
     ...typography.hero,
     fontSize: 28,
@@ -407,10 +402,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  emptyText: {
-    ...typography.body,
-    color: colors.textFaint,
-  },
   field: {
     marginBottom: spacing.md,
   },
@@ -424,18 +415,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
+    minHeight: layout.minTouchTarget,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
     color: colors.text,
     fontSize: 15,
   },
   dealCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    ...elevation.card,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: colors.borderSubtle,
+    padding: layout.cardPadding,
     marginBottom: spacing.md,
     gap: spacing.sm,
   },

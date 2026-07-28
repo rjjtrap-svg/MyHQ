@@ -13,7 +13,7 @@ import { useAuthStore } from '@/src/store/authStore';
 import { useKnocksStore } from '@/src/store/knocksStore';
 import { currentWhy, useLockInNotesStore } from '@/src/store/lockInNotesStore';
 import { useTeamStore } from '@/src/store/teamStore';
-import { colors, spacing } from '@/src/theme';
+import { colors, layout, spacing } from '@/src/theme';
 
 type DayMode = 'roll_out' | 'wrap_up';
 
@@ -152,6 +152,6 @@ export default function DayScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center', padding: spacing.lg, paddingBottom: spacing.xxl },
   modeRow: { marginBottom: spacing.xl },
 });
