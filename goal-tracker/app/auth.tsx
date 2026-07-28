@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
@@ -20,12 +29,16 @@ import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme'
  * Drop a JPEG at assets/images/auth-cover.jpg and flip HAS_COVER to true; the gradient is
  * the stand-in until then, not the intent.
  */
-const HAS_COVER = false;
+const HAS_COVER = true;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const COVER = HAS_COVER ? require('../assets/images/auth-cover.jpg') : undefined;
 
 /** The loop of the job, spread across the image the way GOAT spreads past/present/future. */
 const BEATS = ['KNOCK', 'CLOSE', 'REPEAT'];
+
+/** Intrinsic size of assets/images/auth-cover.jpg. Used to do cover maths by hand. */
+const COVER_W = 1080;
+const COVER_H = 1440;
 
 type Mode = 'landing' | 'sign-in' | 'sign-up';
 type FieldName = 'name' | 'email' | 'password' | 'code';
@@ -60,6 +73,7 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [focused, setFocused] = useState<FieldName | null>(null);
+  const window = useWindowDimensions();
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -125,61 +139,69 @@ export default function AuthScreen() {
   }
 
   if (mode === 'landing') {
-    const Backdrop: any = HAS_COVER ? ImageBackground : LinearGradient;
-    const backdropProps: any = HAS_COVER
-      ? { source: COVER, resizeMode: 'cover' }
-      : { colors: colors.gradientDusk, start: { x: 0.2, y: 0 }, end: { x: 0.8, y: 1 } };
-
     return (
       <View style={styles.landing}>
-        <Backdrop {...backdropProps} style={styles.cover}>
-          {/* Scrim. A photograph will not reliably keep white type legible along its bottom
-              edge, and the button and links both live there. */}
+        {/* An absolutely positioned Image rather than ImageBackground: on react-native-web
+            ImageBackground's cover anchors and over-zooms, which put a stone plinth on
+            screen and the subject off it. This form crops from the centre on both
+            platforms. */}
+        {HAS_COVER ? (
+          <Image source={COVER} style={coverStyle(window.width, window.height)} />
+        ) : (
           <LinearGradient
-            colors={['transparent', colors.overlay, colors.background]}
-            locations={[0.45, 0.78, 1]}
+            colors={colors.gradientDusk}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
             style={StyleSheet.absoluteFill}
-            pointerEvents="none"
           />
+        )}
 
-          <SafeAreaView style={styles.landingSafe} edges={['top', 'bottom']}>
-            <View style={styles.landingTop}>
-              <Mark size={30} />
-            </View>
+        {/* Scrim. A photograph will not reliably keep white type legible along its own
+            bottom edge, and the button and both links live there. */}
+        <LinearGradient
+          colors={['transparent', colors.overlay, colors.background]}
+          locations={[0.45, 0.78, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
 
-            <View style={styles.beats}>
-              {BEATS.map((beat) => (
-                <Text key={beat} style={styles.beat}>
-                  {beat}
-                </Text>
-              ))}
-            </View>
+        <SafeAreaView style={styles.landingSafe} edges={['top', 'bottom']}>
+          <View style={styles.landingTop}>
+            <Mark size={30} />
+          </View>
 
-            <View style={styles.landingBottom}>
-              <Text style={styles.landingNote}>Built for the doors, not the desk.</Text>
-              <Button
-                label="Sign up"
-                onPress={() => {
-                  setError(null);
-                  setMode('sign-up');
-                }}
-                variant="hero"
-                size="xl"
-                style={styles.landingCta}
-              />
-              <Pressable
-                onPress={() => {
-                  setError(null);
-                  setMode('sign-in');
-                }}
-                hitSlop={12}
-                accessibilityRole="link"
-              >
-                <Text style={styles.landingLink}>Log in</Text>
-              </Pressable>
-            </View>
-          </SafeAreaView>
-        </Backdrop>
+          <View style={styles.beats}>
+            {BEATS.map((beat) => (
+              <Text key={beat} style={styles.beat}>
+                {beat}
+              </Text>
+            ))}
+          </View>
+
+          <View style={styles.landingBottom}>
+            <Text style={styles.landingNote}>Built for the doors, not the desk.</Text>
+            <Button
+              label="Sign up"
+              onPress={() => {
+                setError(null);
+                setMode('sign-up');
+              }}
+              variant="hero"
+              size="xl"
+              style={styles.landingCta}
+            />
+            <Pressable
+              onPress={() => {
+                setError(null);
+                setMode('sign-in');
+              }}
+              hitSlop={12}
+              accessibilityRole="link"
+            >
+              <Text style={styles.landingLink}>Log in</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
       </View>
     );
   }
@@ -333,6 +355,27 @@ function Field({
   );
 }
 
+/**
+ * Cover, computed rather than declared.
+ *
+ * react-native-web applied object-fit from neither the `resizeMode` prop nor the style key,
+ * and ignored aspectRatio here too — every attempt left the photograph stretched from 3:4
+ * into the screen's 9:19.5. Scaling by hand and centring the overflow is the one form the
+ * layout engine cannot misread, and it is identical on native.
+ */
+function coverStyle(width: number, height: number) {
+  const scale = Math.max(width / COVER_W, height / COVER_H);
+  const w = COVER_W * scale;
+  const h = COVER_H * scale;
+  return {
+    position: 'absolute' as const,
+    width: w,
+    height: h,
+    left: (width - w) / 2,
+    top: (height - h) / 2,
+  };
+}
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -363,8 +406,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
 
-  landing: { flex: 1, backgroundColor: colors.background },
-  cover: { flex: 1 },
+  landing: { flex: 1, backgroundColor: colors.background, overflow: 'hidden' },
+  // width/height and resizeMode go in the STYLE, not the prop. As a `resizeMode` prop it
+  // came out as object-fit: fill, and absoluteFill alone left the element at its natural
+  // 1080x1440 anchored top-left — so the screen showed the top-left corner of the photo at
+  // 1:1 instead of the framed crop.
+
   landingSafe: { flex: 1, justifyContent: 'space-between', paddingHorizontal: layout.screenGutter },
   landingTop: { paddingTop: spacing.lg },
   /** The three beats sit on the optical centre of the image, spread edge to edge. */
