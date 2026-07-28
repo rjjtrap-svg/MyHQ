@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Goal Tracker",
+    "slug": "goal-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "goaltracker",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0E1014",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0E1014"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.goaltracker.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Used to record practice pitches for the AI sales coach."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0E1014"
+      },
+      "package": "com.goaltracker.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "color": "#5B8CFF"
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Used to record practice pitches for the AI sales coach."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

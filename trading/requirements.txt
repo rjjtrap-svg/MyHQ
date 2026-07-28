@@ -1,0 +1,4 @@
+alpaca-py>=0.33
+supabase>=2.7
+python-dotenv>=1.0
+pytest>=8.0

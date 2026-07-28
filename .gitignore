@@ -1,6 +1,11 @@
 .env
 .env.*
+!*.env.example
 *.pem
 *.key
 secrets
 secrets/
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc
