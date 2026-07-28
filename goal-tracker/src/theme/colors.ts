@@ -28,9 +28,13 @@ export const colors = {
   brandSurface: '#1A1D25',
 
   border: '#2A2F3A',
+  borderSubtle: '#242933',
+  borderStrong: '#3A4250',
   divider: '#20242C',
 
   text: '#F2F5F9',
+  textPrimary: '#F2F5F9',
+  textSecondary: '#B8C0CC',
   textMuted: '#9AA3B2',
   textFaint: '#68717F',
   /** Text and icons sitting on `primary`. */
@@ -55,6 +59,8 @@ export const colors = {
   success: '#34C77B',
   warning: '#F5A524',
   info: '#4FA9F5',
+  infoSurface: '#142433',
+  infoBorder: '#285170',
   /** Premium insight and coaching. Used sparingly — it stops meaning anything otherwise. */
   premium: '#A277FF',
 
@@ -66,6 +72,12 @@ export const colors = {
   onPace: '#5B8CFF',
   behind: '#F5A524',
   fire: '#FF7A45',
+  fireSurface: '#2B1B16',
+  fireBorder: '#6B3524',
+
+  /** Scrim used behind modal celebrations and blocking overlays. */
+  overlay: 'rgba(6, 7, 10, 0.76)',
+  goldSurface: '#2B2417',
 
   /**
    * Knock dispositions. Deliberately not the danger/success pair — a "not interested" is a

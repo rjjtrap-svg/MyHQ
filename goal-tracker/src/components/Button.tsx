@@ -32,7 +32,17 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={inactive}
-      style={[styles.base, sizes[size], variants[variant], inactive && styles.inactive, style]}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: inactive, busy }}
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.base,
+        sizes[size],
+        variants[variant],
+        pressed && !inactive && pressedVariants[variant],
+        inactive && styles.inactive,
+        style,
+      ]}
     >
       {busy ? (
         <ActivityIndicator size="small" color={variant === 'ghost' ? colors.textMuted : colors.onPrimary} />
@@ -44,9 +54,14 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  base: {
+    minHeight: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   inactive: { opacity: 0.55 },
-  label: { fontWeight: '700' },
+  label: { ...typography.button },
 });
 
 const sizes = StyleSheet.create({
@@ -65,6 +80,12 @@ const variants = StyleSheet.create({
   solid: { backgroundColor: colors.primary },
   ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
   danger: { backgroundColor: colors.dangerSurface, borderWidth: 1, borderColor: colors.dangerBorder },
+});
+
+const pressedVariants = StyleSheet.create({
+  solid: { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.985 }] },
+  ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.985 }] },
+  danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.985 }] },
 });
 
 const labelVariants = StyleSheet.create({
@@ -95,7 +116,14 @@ export function SegmentedToggle<T extends string>({
           <Pressable
             key={o.key}
             onPress={() => onChange(o.key)}
-            style={[segStyles.tab, stretch && segStyles.tabStretch, active && segStyles.tabActive]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            style={({ pressed }) => [
+              segStyles.tab,
+              stretch && segStyles.tabStretch,
+              active && segStyles.tabActive,
+              pressed && !active && segStyles.tabPressed,
+            ]}
           >
             <Text style={[segStyles.text, active && segStyles.textActive]}>{o.label}</Text>
           </Pressable>
@@ -114,9 +142,17 @@ const segStyles = StyleSheet.create({
     borderColor: colors.border,
     padding: 3,
   },
-  tab: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, alignItems: 'center', borderRadius: radius.sm },
+  tab: {
+    minHeight: 40,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+  },
   tabStretch: { flex: 1 },
   tabActive: { backgroundColor: colors.primary },
+  tabPressed: { backgroundColor: colors.surfacePressed },
   text: { ...typography.eyebrow, fontSize: 10, color: colors.textMuted },
   textActive: { color: colors.onPrimary },
 });

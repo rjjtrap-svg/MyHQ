@@ -7,7 +7,7 @@ import { BADGES, BADGE_GROUP_LABELS, BadgeContext, BadgeDef } from '@/src/lib/ba
 import { BadgePatch } from './BadgePatch';
 import { Section } from './Section';
 import { parseISODate, shortDateLabel } from '@/src/lib/dates';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 
 function money(n: number): string {
   if (!n) return '$0';
@@ -271,32 +271,33 @@ export const profileStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
+    ...elevation.card,
+    backgroundColor: colors.surfaceElevated,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: colors.borderSubtle,
+    padding: layout.cardPadding,
     marginBottom: spacing.lg,
   },
   identityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   identityText: { flex: 1, gap: 2 },
   roleTag: { ...typography.eyebrow, color: colors.gold },
-  name: { ...typography.title, fontSize: 26, color: colors.text },
+  name: { ...typography.pageTitle, fontSize: 26, color: colors.text },
 
   scoreGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   scoreTile: {
     width: '48.5%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.sm + 2,
   },
-  scoreValue: { ...typography.scoreValue, color: colors.text },
-  scoreRule: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
-  scoreLabel: { ...typography.eyebrow, fontSize: 10, color: colors.textMuted },
+  scoreValue: { ...typography.metric, color: colors.text },
+  scoreRule: { height: 1, backgroundColor: colors.borderSubtle, marginVertical: spacing.sm },
+  scoreLabel: { ...typography.label, color: colors.textMuted },
   scoreSub: { ...typography.caption, fontSize: 11, color: colors.textFaint, marginTop: 2 },
 
   projectionCard: {
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
   projectionValue: { ...typography.scoreValue, fontSize: 42, color: colors.onPrimary, marginTop: spacing.xs },
   projectionSub: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
 
-  hairline: { height: 1, backgroundColor: colors.border },
+  hairline: { height: 1, backgroundColor: colors.borderSubtle },
   trendRow: { paddingVertical: spacing.sm + 2, gap: 2 },
   trendLabel: { ...typography.eyebrow, fontSize: 10, color: colors.textMuted },
   trendNow: { ...typography.scoreValue, fontSize: 26, color: colors.text },

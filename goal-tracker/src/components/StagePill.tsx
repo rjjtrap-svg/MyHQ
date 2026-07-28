@@ -37,6 +37,9 @@ export function StagePillRow({ stage, onAdvance }: { stage: DealStage; onAdvance
             key={s}
             disabled={!isNext}
             onPress={() => onAdvance(s)}
+            accessibilityRole="button"
+            accessibilityLabel={isNext ? `Move deal to ${STAGE_LABELS[s]}` : STAGE_LABELS[s]}
+            accessibilityState={{ disabled: !isNext, selected: done }}
             style={[styles.pill, done && styles.pillDone, isNext && styles.pillNext]}
           >
             <Text style={[styles.pillText, done && styles.pillTextDone, isNext && styles.pillTextNext]}>
@@ -56,11 +59,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   pill: {
+    minHeight: 36,
+    justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.round,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     backgroundColor: colors.surface,
   },
   pillDone: {
