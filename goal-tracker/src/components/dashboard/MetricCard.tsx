@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
+import { colors, spacing, typography } from '@/src/theme';
 
 export type Trend = 'up' | 'down' | 'flat';
 
@@ -83,19 +83,16 @@ export function MetricCard({
 
 const styles = StyleSheet.create({
   card: {
-    ...elevation.card,
     flexBasis: '48%',
     flexGrow: 1,
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    padding: layout.cardPadding,
-    marginBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   cardPressed: {
     backgroundColor: colors.surfacePressed,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.72,
   },
   head: {
     flexDirection: 'row',
