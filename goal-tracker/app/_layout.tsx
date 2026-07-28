@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import './globals.css'
+  import React, { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
