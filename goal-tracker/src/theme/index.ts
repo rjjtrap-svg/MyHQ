@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import type { ViewStyle } from 'react-native';
 import { colors } from './colors';
 
 export const spacing = {
@@ -16,6 +17,28 @@ export const radius = {
   lg: 24,
   xl: 32,
   round: 999,
+} as const;
+
+/** Shared responsive bounds keep wide-screen PWA layouts composed rather than stretched. */
+export const layout = {
+  dashboardMaxWidth: 720,
+} as const;
+
+/**
+ * Elevation is intentionally restrained: cards should separate from the canvas without
+ * looking like floating white sheets. Android uses its native elevation while iOS and web
+ * receive the equivalent soft, dark shadow.
+ */
+export const shadows = {
+  card: Platform.select<ViewStyle>({
+    android: { elevation: 2 },
+    default: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.22,
+      shadowRadius: 18,
+    },
+  }) ?? {},
 } as const;
 
 /**
@@ -102,5 +125,5 @@ export const typography = {
 
 export { colors };
 
-export const theme = { colors, spacing, radius, typography, fonts };
+export const theme = { colors, spacing, radius, layout, shadows, typography, fonts };
 export type Theme = typeof theme;

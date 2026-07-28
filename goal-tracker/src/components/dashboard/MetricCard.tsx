@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 
 export type Trend = 'up' | 'down' | 'flat';
 
@@ -81,6 +81,7 @@ export function MetricCard({
 
 const styles = StyleSheet.create({
   card: {
+    ...shadows.card,
     flexBasis: '48%',
     flexGrow: 1,
     backgroundColor: colors.surfaceElevated,

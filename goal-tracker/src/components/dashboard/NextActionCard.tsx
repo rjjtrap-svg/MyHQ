@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 
 /**
  * One action, chosen for you.
@@ -53,6 +53,7 @@ export function NextActionCard({
 
 const styles = StyleSheet.create({
   card: {
+    ...shadows.card,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceElevated,

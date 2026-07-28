@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { CircularProgress } from '@/src/components/CircularProgress';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, radius, shadows, spacing, typography } from '@/src/theme';
 
 /**
  * The goal, as a ring with the numbers that make it actionable sitting beside it.
@@ -30,7 +30,11 @@ export function GoalProgressCard({
   const perDay = Math.max(Math.ceil(requiredPerDay), 0);
 
   return (
-    <View style={styles.card}>
+    <View
+      style={styles.card}
+      accessibilityLabel={`${Math.round(percent * 100)} percent of goal complete. ${total} of ${goal} sales. ${perDay} needed per day with ${daysRemaining} days left.`}
+    >
+      <View style={[styles.accent, { backgroundColor: ringColor }]} />
       <View style={styles.ringWrap}>
         <CircularProgress progress={percent} size={132} strokeWidth={12} color={ringColor}>
           <Text style={styles.percent}>{Math.round(percent * 100)}%</Text>
@@ -69,6 +73,7 @@ export function GoalProgressCard({
 
 const styles = StyleSheet.create({
   card: {
+    ...shadows.card,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceElevated,
@@ -77,6 +82,15 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
     marginBottom: spacing.xl,
+  },
+  accent: {
+    position: 'absolute',
+    top: 0,
+    right: spacing.lg,
+    left: spacing.lg,
+    height: 2,
+    borderBottomLeftRadius: radius.round,
+    borderBottomRightRadius: radius.round,
   },
   ringWrap: {
     marginRight: spacing.md,

@@ -14,7 +14,7 @@ import { PerformanceHeader } from '@/src/components/dashboard/PerformanceHeader'
 import { GoalProgressCard } from '@/src/components/dashboard/GoalProgressCard';
 import { MetricCard } from '@/src/components/dashboard/MetricCard';
 import { NextActionCard } from '@/src/components/dashboard/NextActionCard';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { colors, layout, radius, spacing, typography } from '@/src/theme';
 import { parseISODate, shortDateLabel } from '@/src/lib/dates';
 
 function round1(n: number): string {
@@ -37,7 +37,7 @@ export default function HomeScreen() {
 
   const followUps = useMemo(() => pendingFollowUps(deals), [deals]);
 
-  // The five most recent live deals. Cancelled ones are excluded here for the same reason
+  // The four most recent live deals. Cancelled ones are excluded here for the same reason
   // they're excluded everywhere else — a fallen-through deal is not recent momentum.
   const recent = useMemo(
     () =>
@@ -234,6 +234,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
+    width: '100%',
+    maxWidth: layout.dashboardMaxWidth,
+    alignSelf: 'center',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
