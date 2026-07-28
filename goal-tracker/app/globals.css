@@ -1,0 +1,61 @@
+:root {
+  --bg: #0D0D0D;
+  --card: #1A1A1A;
+  --card-elevated: #2B2B2B;
+  --text: #F5F5F5;
+  --text-muted: #8A8A8A;
+  --accent: #DAC09A;
+  --accent-dark: #B89A75;
+  --success: #34D399;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 35px 60px -15px rgb(0 0 0 / 0.5);
+}
+.btn {
+  padding: 14px 28px;
+  border-radius: 9999px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #0D0D0D;
+}
+
+.btn-primary:hover {
+  background: var(--accent-dark);
+  transform: scale(1.01);
+}
+.progress-text {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.streak-badge {
+  background: linear-gradient(90deg, #DAC09A, #B89A75);
+  color: #0D0D0D;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 13px;
+}
