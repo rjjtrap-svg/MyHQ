@@ -9,8 +9,8 @@ interface SectionProps extends ViewProps {
 }
 
 /**
- * Section headers are set as patch lettering — small caps, wide tracking, with a short
- * gold tick to the left and a hairline running out to the right. It's the one structural
+ * Section headers use a strong compact title with a hairline running out to the right.
+ * It's the one structural
  * device repeated on every screen, so the app reads as one thing rather than a stack of
  * unrelated card lists.
  */
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.md + 2,
   },
   title: {
     ...typography.sectionTitle,
@@ -44,6 +44,6 @@ const styles = StyleSheet.create({
   rule: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.borderSubtle,
+    backgroundColor: colors.divider,
   },
 });

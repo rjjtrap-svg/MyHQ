@@ -32,20 +32,17 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={inactive}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: inactive, busy }}
-      accessibilityLabel={label}
       style={({ pressed }) => [
         styles.base,
         sizes[size],
         variants[variant],
-        pressed && !inactive && pressedVariants[variant],
+        pressed && !inactive && styles.pressed,
         inactive && styles.inactive,
         style,
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={variant === 'ghost' ? colors.textMuted : colors.onPrimary} />
+        <ActivityIndicator size="small" color={variant === 'ghost' ? colors.textMuted : colors.background} />
       ) : (
         <Text style={[styles.label, labelSizes[size], labelVariants[variant]]}>{label}</Text>
       )}
@@ -54,13 +51,9 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  base: {
-    minHeight: 44,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inactive: { opacity: 0.55 },
+  base: { borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
+  inactive: { backgroundColor: colors.disabled, borderColor: colors.disabled, opacity: 1 },
   label: { ...typography.button },
 });
 
@@ -82,14 +75,8 @@ const variants = StyleSheet.create({
   danger: { backgroundColor: colors.dangerSurface, borderWidth: 1, borderColor: colors.dangerBorder },
 });
 
-const pressedVariants = StyleSheet.create({
-  solid: { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.985 }] },
-  ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.985 }] },
-  danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.985 }] },
-});
-
 const labelVariants = StyleSheet.create({
-  solid: { color: colors.onPrimary },
+  solid: { color: colors.background },
   ghost: { color: colors.textMuted },
   danger: { color: colors.dangerText },
 });
@@ -116,14 +103,7 @@ export function SegmentedToggle<T extends string>({
           <Pressable
             key={o.key}
             onPress={() => onChange(o.key)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            style={({ pressed }) => [
-              segStyles.tab,
-              stretch && segStyles.tabStretch,
-              active && segStyles.tabActive,
-              pressed && !active && segStyles.tabPressed,
-            ]}
+            style={[segStyles.tab, stretch && segStyles.tabStretch, active && segStyles.tabActive]}
           >
             <Text style={[segStyles.text, active && segStyles.textActive]}>{o.label}</Text>
           </Pressable>
@@ -142,17 +122,9 @@ const segStyles = StyleSheet.create({
     borderColor: colors.border,
     padding: 3,
   },
-  tab: {
-    minHeight: 40,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.sm,
-  },
+  tab: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, alignItems: 'center', borderRadius: radius.sm },
   tabStretch: { flex: 1 },
   tabActive: { backgroundColor: colors.primary },
-  tabPressed: { backgroundColor: colors.surfacePressed },
   text: { ...typography.eyebrow, fontSize: 10, color: colors.textMuted },
-  textActive: { color: colors.onPrimary },
+  textActive: { color: colors.background },
 });

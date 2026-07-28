@@ -4,8 +4,8 @@ import { Emblem } from './Emblem';
 import { colors, spacing, typography } from '@/src/theme';
 
 /**
- * Every top-level screen opens the same way: a gold eyebrow, a serif-weight title, the
- * mark on the right, and a seigaiha rule underneath. Before this existed, only Home had
+ * Every top-level screen opens the same way: an accent eyebrow, a strong title, the
+ * mark on the right, and a quiet divider underneath. Before this existed, only Home had
  * the treatment and the other four screens opened with a bare title, which made them read
  * like a different app.
  *
@@ -51,24 +51,24 @@ const styles = StyleSheet.create({
   text: { flex: 1 },
   eyebrow: {
     ...typography.eyebrow,
-    color: colors.gold,
+    color: colors.accent,
   },
   title: {
-    ...typography.pageTitle,
+    ...typography.hero,
     color: colors.text,
-    marginTop: 4,
+    fontSize: 32,
+    lineHeight: 38,
+    marginTop: spacing.xs,
   },
   subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    lineHeight: 21,
+    ...typography.caption,
+    color: colors.textMuted,
     marginTop: spacing.sm,
-    maxWidth: 560,
   },
   rule: {
     height: 1,
-    backgroundColor: colors.borderSubtle,
-    marginTop: spacing.lg,
-    marginBottom: spacing.xl,
+    backgroundColor: colors.divider,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
 });

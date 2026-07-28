@@ -6,7 +6,7 @@ import { colors, radius, spacing } from '@/src/theme';
 export function StreakFlame({ streak }: { streak: number }) {
   if (streak <= 0) return null;
   return (
-    <View style={styles.container} accessibilityLabel={`${streak} day streak`}>
+    <View style={styles.container}>
       <FontAwesome name="fire" size={16} color={colors.fire} />
       <Text style={styles.text}>{streak}-day streak</Text>
     </View>
@@ -18,8 +18,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.fireSurface,
-    borderColor: colors.fireBorder,
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
     borderWidth: 1,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
