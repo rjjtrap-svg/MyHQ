@@ -10,7 +10,7 @@ import { computeGoalStats } from '@/src/lib/stats';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { ProfileBody, profileStyles } from '@/src/components/ProfileBody';
 import { StreakFlame } from '@/src/components/StreakFlame';
-import { colors, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 
 /**
  * A teammate's profile card. Deliberately hides commission — the Firestore rules don't let
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, paddingTop: spacing.md },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md },
-  backText: { ...typography.caption, color: colors.accent, fontWeight: '700' },
+  backText: { ...typography.caption, color: colors.accent, fontFamily: fonts.sansBold },
   missing: { ...typography.body, color: colors.textFaint },
   card: {
     backgroundColor: colors.surface,

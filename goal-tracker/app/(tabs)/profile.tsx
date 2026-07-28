@@ -23,7 +23,7 @@ import { PersonalBestsEditor } from '@/src/components/PersonalBestsEditor';
 import { StreakFlame } from '@/src/components/StreakFlame';
 import { Banner } from '@/src/components/Banner';
 import { Screen } from '@/src/components/Screen';
-import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 
 export default function ProfileScreen() {
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   bioButtons: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.sm },
   bioCount: { ...typography.caption, color: colors.textFaint, marginRight: 'auto' },
   ghostButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
-  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontWeight: '700' },
+  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontFamily: fonts.sansBold },
   solidButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.xs + 2,
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     minWidth: 76,
     alignItems: 'center',
   },
-  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '700' },
+  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.sansBold },
 
   editBestsRow: {
     flexDirection: 'row',
@@ -266,6 +266,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.lg,
   },
-  editBestsText: { ...typography.caption, color: colors.accent, fontWeight: '700' },
+  editBestsText: { ...typography.caption, color: colors.accent, fontFamily: fonts.sansBold },
 
 });

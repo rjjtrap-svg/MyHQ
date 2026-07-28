@@ -7,7 +7,7 @@ import { BADGES, BADGE_GROUP_LABELS, BadgeContext, BadgeDef } from '@/src/lib/ba
 import { BadgePatch } from './BadgePatch';
 import { Section } from './Section';
 import { parseISODate, shortDateLabel } from '@/src/lib/dates';
-import { colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 
 function money(n: number): string {
   if (!n) return '$0';
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   sparkTitle: { ...typography.eyebrow, fontSize: 10, color: colors.textMuted, marginBottom: spacing.md },
   sparkRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 130 },
   sparkCol: { flex: 1, alignItems: 'center', gap: spacing.xs },
-  sparkCount: { ...typography.caption, fontSize: 11, color: colors.textMuted, fontWeight: '700' },
+  sparkCount: { ...typography.caption, fontSize: 11, color: colors.textMuted, fontFamily: fonts.sansBold },
   sparkTrack: {
     width: 20,
     height: 80,

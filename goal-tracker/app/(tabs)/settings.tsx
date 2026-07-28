@@ -17,7 +17,7 @@ import { formatClock } from '@/src/lib/dates';
 import { confirmAction, notify } from '@/src/lib/dialogs';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
-import { colors, layout, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 import { firebaseEnabled } from '@/src/firebase/config';
 import { Membership, Role } from '@/src/types';
 
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
   inviteCodeText: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: fonts.sansHeavy,
     letterSpacing: 2,
   },
   regenButton: {
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     color: colors.danger,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
   numberRow: {
     flexDirection: 'row',
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   addTimeButton: {
     flexDirection: 'row',
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
   },
   addTimeText: {
     color: colors.primary,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
     fontSize: 13,
   },
   rangeLabel: {
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
   pushEnabledText: {
     ...typography.caption,
     color: colors.success,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
   },
   memberRow: {
     paddingVertical: spacing.md,
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
   },
   rolePillText: {
     color: colors.textMuted,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
     fontSize: 12,
   },
   rolePillTextActive: {
@@ -854,7 +854,7 @@ const styles = StyleSheet.create({
   overseerChipText: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.sansSemiBold,
   },
   overseerChipTextActive: {
     color: colors.primary,

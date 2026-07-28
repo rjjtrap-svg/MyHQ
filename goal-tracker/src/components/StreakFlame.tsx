@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { colors, radius, spacing } from '@/src/theme';
+import { fonts, colors, radius, spacing } from '@/src/theme';
 
 export function StreakFlame({ streak }: { streak: number }) {
   if (streak <= 0) return null;
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: colors.fire,
-    fontWeight: '700',
+    fontFamily: fonts.sansBold,
     fontSize: 13,
   },
 });

@@ -4,7 +4,7 @@ import { useDealsStore, DealDetailsInput } from '@/src/store/dealsStore';
 import { Deal } from '@/src/types';
 import { Banner } from '@/src/components/Banner';
 import { SaleDateField, isValidSaleDate } from '@/src/components/SaleDateField';
-import { colors, radius, spacing, typography } from '@/src/theme';
+import { fonts, colors, radius, spacing, typography } from '@/src/theme';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   buttons: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.xs },
   ghostButton: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
-  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontWeight: '700' },
+  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontFamily: fonts.sansBold },
   solidButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.sm,
@@ -192,5 +192,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   solidButtonDisabled: { opacity: 0.5 },
-  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontWeight: '700' },
+  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.sansBold },
 });

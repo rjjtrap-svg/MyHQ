@@ -120,6 +120,17 @@ export const colors = {
   gradientPrimary: ['#5B8CFF', '#7C6BFF'] as const,
   gradientGold: ['#E0A93B', '#FF7A45'] as const,
 
+  /**
+   * Time-of-day surfaces. These are the one place colour is allowed to be atmosphere rather
+   * than information, because they carry a real signal: whether you are heading out or
+   * closing down. A rep opening this at 7am and at 9pm should not see the same screen.
+   *
+   * Both land on `background` at the bottom so a gradient panel dissolves into the page
+   * instead of ending on a hard edge.
+   */
+  gradientDawn: ['#4A2E1C', '#1A1410', '#0E1014'] as const,
+  gradientDusk: ['#1B2440', '#101624', '#0E1014'] as const,
+
   /** Trough behind any progress bar or ring. */
   track: '#252A35',
 } as const;
