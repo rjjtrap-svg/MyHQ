@@ -6,9 +6,9 @@ import { colors, elevation, layout, radius, spacing, typography } from '@/src/th
 /**
  * The goal, as a ring with the numbers that make it actionable sitting beside it.
  *
- * The ring used to stand alone and centred, which looked calm and said very little — a
- * percentage doesn't tell you what to do today. Pairing it with "needed per day" and "days
- * left" turns it from a score into a plan.
+ * Premium-refined treatment: the ring carries the status colour, the side panel stays
+ * quiet so the numbers can breathe, and the top accent is a soft signal rather than a
+ * hard stripe.
  */
 export function GoalProgressCard({
   percent,
@@ -37,8 +37,9 @@ export function GoalProgressCard({
       accessibilityLabel={`${Math.round(percent * 100)} percent complete. ${total} of ${goal} sales. ${perDay} needed per day, with ${daysRemaining} days left.`}
     >
       <View style={[styles.accent, { backgroundColor: ringColor }]} />
+
       <View style={styles.ringWrap}>
-        <CircularProgress progress={percent} size={132} strokeWidth={12} color={ringColor}>
+        <CircularProgress progress={percent} size={128} strokeWidth={11} color={ringColor}>
           <Text style={styles.percent}>{Math.round(percent * 100)}%</Text>
         </CircularProgress>
       </View>
@@ -52,13 +53,15 @@ export function GoalProgressCard({
 
         <View style={styles.rule} />
 
-        <View style={styles.factRow}>
-          <Text style={styles.factValue}>{perDay}</Text>
-          <Text style={styles.factLabel}>needed a day</Text>
-        </View>
-        <View style={styles.factRow}>
-          <Text style={styles.factValue}>{daysRemaining}</Text>
-          <Text style={styles.factLabel}>days left</Text>
+        <View style={styles.facts}>
+          <View style={styles.factRow}>
+            <Text style={styles.factValue}>{perDay}</Text>
+            <Text style={styles.factLabel}>needed a day</Text>
+          </View>
+          <View style={styles.factRow}>
+            <Text style={styles.factValue}>{daysRemaining}</Text>
+            <Text style={styles.factLabel}>days left</Text>
+          </View>
         </View>
 
         {remaining === 0 ? (
@@ -82,23 +85,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    padding: layout.cardPadding,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: layout.cardPadding,
     marginBottom: spacing.xl,
+    overflow: 'hidden',
   },
   accent: {
     position: 'absolute',
     top: 0,
-    left: spacing.lg,
-    right: spacing.lg,
-    height: 2,
-    borderRadius: radius.round,
+    left: 0,
+    right: 0,
+    height: 1.5,
+    opacity: 0.85,
   },
   ringWrap: {
-    marginRight: spacing.md,
+    marginRight: spacing.md + 2,
   },
   percent: {
     ...typography.metric,
-    fontSize: 30,
+    fontSize: 28,
+    letterSpacing: -0.6,
     color: colors.text,
   },
   side: {
@@ -107,16 +113,19 @@ const styles = StyleSheet.create({
   eyebrow: {
     ...typography.eyebrow,
     fontSize: 9,
+    letterSpacing: 1.4,
     color: colors.textMuted,
   },
   fraction: {
     ...typography.metric,
+    fontSize: 28,
+    letterSpacing: -0.6,
     color: colors.text,
-    marginTop: 2,
+    marginTop: 1,
   },
   fractionGoal: {
     ...typography.scoreValue,
-    fontSize: 20,
+    fontSize: 18,
     color: colors.textFaint,
   },
   rule: {
@@ -124,15 +133,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.divider,
     marginVertical: spacing.sm,
   },
+  facts: {
+    gap: 1,
+  },
   factRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: 2,
   },
   factValue: {
     ...typography.cardTitle,
+    fontSize: 14,
     color: colors.text,
-    width: 28,
+    width: 26,
   },
   factLabel: {
     ...typography.caption,
@@ -141,6 +153,8 @@ const styles = StyleSheet.create({
   },
   closer: {
     ...typography.badge,
+    fontSize: 10,
+    letterSpacing: 0.6,
     color: colors.gold,
     marginTop: spacing.sm,
   },
