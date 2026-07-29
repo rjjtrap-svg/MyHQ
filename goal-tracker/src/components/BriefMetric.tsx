@@ -68,4 +68,27 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     backgroundColor: colors.brandSurface,
   },
-  metricWide: { flexBasis: '23%', minWidth
+  metricWide: { flexBasis: '23%', minWidth: 0 },
+  metricHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  metricLabel: {
+    ...typography.eyebrow,
+    color: colors.textMuted,
+    fontSize: 9,
+    flex: 1,
+  },
+  metricValue: {
+    ...typography.metric,
+    color: colors.text,
+    marginTop: spacing.sm,
+  },
+  metricDetail: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontSize: 11,
+    marginTop: spacing.xs,
+  },
+});
