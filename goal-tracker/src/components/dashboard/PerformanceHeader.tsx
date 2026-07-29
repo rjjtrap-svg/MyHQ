@@ -23,13 +23,6 @@ const PACE_LABEL: Record<PaceStatus, string> = {
   behind: 'Behind pace',
 };
 
-/**
- * The top of the cockpit: who you are, what day it is, and where you stand — before any
- * number appears.
- *
- * The headline is the pace sentence rather than a total, because "you are 3 ahead of plan"
- * is the thing that changes what a rep does this morning. A running total does not.
- */
 export function PerformanceHeader({
   name,
   date,
@@ -67,7 +60,7 @@ export function PerformanceHeader({
           </Text>
           <Text style={styles.headline}>{line}</Text>
         </View>
-        <Mark size={30} />
+        <Mark size={28} />
       </View>
 
       <View style={styles.badges}>
@@ -85,8 +78,8 @@ export function PerformanceHeader({
 
 const styles = StyleSheet.create({
   wrap: {
-    paddingTop: spacing.md,
-    marginBottom: spacing.lg,
+    paddingTop: spacing.sm + 2,
+    marginBottom: spacing.lg + 4,
   },
   topRow: {
     flexDirection: 'row',
@@ -98,17 +91,22 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     ...typography.eyebrow,
+    fontSize: 11,
+    letterSpacing: 1.5,
     color: colors.gold,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs + 2,
   },
   headline: {
     ...typography.pageTitle,
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: -0.6,
     color: colors.text,
   },
   badges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: spacing.md - 2,
   },
 });
