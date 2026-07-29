@@ -57,7 +57,7 @@ export function Button({
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={variant === 'hero' ? colors.background : variant === 'ghost' ? colors.textMuted : colors.text} />
+        <ActivityIndicator size="small" color={variant === 'hero' ? colors.onPrimary : variant === 'ghost' ? colors.textMuted : colors.text} />
       ) : (
         <Text style={[styles.label, labelSizes[size], labelVariants[variant]]}>{label}</Text>
       )}
@@ -107,24 +107,24 @@ const labelSizes = StyleSheet.create({
  * `ghost` keeps the dimmer border so the two are still distinguishable side by side.
  */
 const variants = StyleSheet.create({
-  // The one loud thing. White on a dark screen is the only fill that outranks glass without
-  // introducing a hue, which is what keeps the palette monochrome while still having a
-  // clear primary. Use it once per screen — twice and neither is primary.
-  hero: { backgroundColor: colors.text },
+  // The one loud thing: soft gold on deep black. Its contents must be `onPrimary`, which is
+  // near-black — light text on this would be unreadable. Use it once per screen; twice and
+  // neither is primary.
+  hero: { backgroundColor: colors.primary },
   solid: { backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorderStrong },
   ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
   danger: { backgroundColor: colors.dangerSurface, borderWidth: 1, borderColor: colors.dangerBorder },
 });
 
 const pressedVariants = StyleSheet.create({
-  hero: { backgroundColor: colors.textSecondary, transform: [{ scale: 0.97 }] },
+  hero: { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.97 }] },
   solid: { backgroundColor: colors.glassPressed, transform: [{ scale: 0.97 }] },
   ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.97 }] },
   danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.97 }] },
 });
 
 const labelVariants = StyleSheet.create({
-  hero: { color: colors.background },
+  hero: { color: colors.onPrimary },
   solid: { color: colors.text },
   ghost: { color: colors.textMuted },
   danger: { color: colors.dangerText },

@@ -13,13 +13,13 @@ export const spacing = {
 } as const;
 
 export const layout = {
-  screenGutter: 20,
-  screenGutterWide: 32,
+  screenGutter: 24,
+  screenGutterWide: 40,
   contentMaxWidth: 760,
   /** Single-column forms. A sign-in field stretched to 760px reads as a broken layout. */
   formMaxWidth: 420,
-  sectionGap: 32,
-  cardPadding: 18,
+  sectionGap: 40,
+  cardPadding: 20,
   minTouchTarget: 44,
 } as const;
 
@@ -102,28 +102,28 @@ export const fonts = {
 };
 
 export const typography = {
-  hero: { fontFamily: fonts.sansHeavy, fontSize: 44, letterSpacing: -0.5 },
-  title: { fontFamily: fonts.sansBold, fontSize: 24, letterSpacing: -0.3 },
-  subtitle: { fontFamily: fonts.sansBold, fontSize: 17, letterSpacing: -0.2 },
-  body: { fontFamily: fonts.sans, fontSize: 15 },
+  hero: { fontFamily: fonts.sansHeavy, fontSize: 48, letterSpacing: -1 },
+  title: { fontFamily: fonts.sansBold, fontSize: 26, letterSpacing: -0.5 },
+  subtitle: { fontFamily: fonts.sansBold, fontSize: 18, letterSpacing: -0.3 },
+  body: { fontFamily: fonts.sans, fontSize: 16 },
   caption: { fontFamily: fonts.sansMedium, fontSize: 13 },
   pageTitle: {
     fontFamily: fonts.sansHeavy,
-    fontSize: 30,
-    lineHeight: 36,
-    letterSpacing: -0.8,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -1.1,
   },
   sectionTitle: {
     fontFamily: fonts.sansBold,
-    fontSize: 17,
-    lineHeight: 22,
-    letterSpacing: -0.25,
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: -0.4,
   },
   metric: {
     fontFamily: fonts.display,
-    fontSize: 34,
-    lineHeight: 40,
-    letterSpacing: -0.8,
+    fontSize: 38,
+    lineHeight: 44,
+    letterSpacing: -1,
   },
   label: {
     fontFamily: fonts.sansBold,
@@ -136,14 +136,14 @@ export const typography = {
   eyebrow: {
     fontFamily: fonts.sansBold,
     fontSize: 11,
-    letterSpacing: 1.6,
+    letterSpacing: 2,
     textTransform: 'uppercase' as const,
   },
   /** Scoreboard numerals — wide, tight, oversized. */
   scoreValue: {
     fontFamily: fonts.display,
-    fontSize: 32,
-    letterSpacing: -0.6,
+    fontSize: 34,
+    letterSpacing: -0.8,
   },
   /**
    * The one number a screen is actually about — today's sales, the goal percentage.
@@ -152,20 +152,20 @@ export const typography = {
    */
   metricHero: {
     fontFamily: fonts.displayHeavy,
-    fontSize: 52,
-    letterSpacing: -1.4,
+    fontSize: 60,
+    letterSpacing: -2,
   },
   /** Card headings. Sits between subtitle and body — a card title is not a section title. */
   cardTitle: {
     fontFamily: fonts.sansBold,
-    fontSize: 15,
-    letterSpacing: -0.2,
+    fontSize: 16,
+    letterSpacing: -0.3,
   },
   /** Status pills. Tighter tracking than eyebrow because badges are short and boxed. */
   badge: {
     fontFamily: fonts.sansHeavy,
     fontSize: 10,
-    letterSpacing: 0.8,
+    letterSpacing: 1.1,
     textTransform: 'uppercase' as const,
   },
   /** Button labels, so every button agrees without each one restating it. */
