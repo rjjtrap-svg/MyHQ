@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import Svg, { Circle, G, Path } from 'react-native-svg';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
 import { useUIStore } from '@/src/store/uiStore';
 import { useAuthStore } from '@/src/store/authStore';
@@ -11,6 +10,7 @@ import { pendingFollowUps } from '@/src/lib/dealFollowUps';
 import { MilestoneOverlay } from '@/src/components/MilestoneOverlay';
 import { Section } from '@/src/components/Section';
 import { Screen } from '@/src/components/Screen';
+import { Mark } from '@/src/components/Mark';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { parseISODate, shortDateLabel } from '@/src/lib/dates';
 
@@ -26,49 +26,17 @@ function greeting(date: Date): string {
 
 type MetricIcon = React.ComponentProps<typeof FontAwesome>['name'];
 
+// A single quiet wash, not a pattern — contour lines and glow rings read as decoration
+// competing with the numbers, and the app's own design system rules that out on purpose.
 function AtmosphericBackdrop() {
   return (
     <View pointerEvents="none" style={styles.atmosphere}>
       <LinearGradient
-        colors={[colors.infoSurface, colors.brandSurface, colors.background]}
-        locations={[0, 0.48, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.energyOne} />
-      <View style={styles.energyTwo} />
-      <Svg width="100%" height="520" viewBox="0 0 760 520" style={styles.contours}>
-        <G fill="none" stroke={colors.primary} strokeWidth="1" opacity="0.1">
-          <Path d="M-70 212C67 119 188 131 302 205s241 75 528-57" />
-          <Path d="M-72 238C69 145 187 156 296 226s239 73 532-53" />
-          <Path d="M-74 266C73 174 184 182 287 248s238 70 545-48" />
-          <Path d="M-78 298C79 207 183 211 279 272s237 65 555-44" />
-          <Path d="M-82 334C86 245 181 245 270 301s237 58 570-40" />
-        </G>
-      </Svg>
-      <LinearGradient
-        colors={['transparent', colors.background]}
-        locations={[0.3, 1]}
+        colors={[colors.goldSurface, colors.brandSurface, colors.background]}
+        locations={[0, 0.55, 1]}
         style={StyleSheet.absoluteFill}
       />
     </View>
-  );
-}
-
-function OuroborosMark({ size }: { size: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" accessibilityLabel="MyHQ ouroboros mark">
-      <G fill="none" stroke={colors.textSecondary} strokeLinecap="round" strokeLinejoin="round">
-        <Path
-          d="M48.8 15.3C42.2 8.8 31.7 7.2 23.5 11.6 13.8 16.8 9.4 28.5 12.8 39c3.7 11.5 15.8 18.1 27.3 14.8 8.8-2.5 14.8-10.4 15.1-19.2"
-          strokeWidth="5.2"
-        />
-        <Path d="M47.9 15.8c4.7-2.1 8.7-.7 10.5 2.8-2.1 1.5-3.6 3.5-4.5 6l-6.6-2.2-4.5 2.2 1.5-5.1-3.2-3.8 6.8.1Z" strokeWidth="2.2" fill={colors.surfaceRaised} />
-        <Path d="M53.8 24.6c-3.2 4.2-3.1 8.1 1.4 10" strokeWidth="2.2" />
-        <Path d="M14.5 30.1c5.1-1.9 9.5-5.5 12.5-10.1M15.1 42.4c6-1 11.3-4.2 15.1-9M24.3 52c5.2-2.2 9.5-6.1 12.3-11" strokeWidth="1" opacity="0.66" />
-        <Path d="M20.2 14.1c3.5 2.6 6.1 6.3 7.3 10.4M34.2 9.4c1.4 4.4 1.3 8.7-.3 12.8M46.4 14.1c-1.3 3.5-3.6 6.7-6.6 9" strokeWidth="1" opacity="0.66" />
-      </G>
-      <Circle cx="52.1" cy="18.2" r="1.1" fill={colors.text} />
-    </Svg>
   );
 }
 
@@ -184,7 +152,7 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.today}>Today</Text>
           </View>
-          <OuroborosMark size={wide ? 64 : 58} />
+          <Mark size={32} />
         </View>
 
         <View
@@ -355,52 +323,27 @@ const styles = StyleSheet.create({
     top: 0,
     left: -spacing.xl,
     right: -spacing.xl,
-    height: 760,
+    height: 420,
     overflow: 'hidden',
   },
-  energyOne: {
-    position: 'absolute',
-    width: 520,
-    height: 220,
-    borderRadius: radius.round,
-    borderWidth: 34,
-    borderColor: colors.primary,
-    opacity: 0.08,
-    top: 104,
-    left: '14%',
-    transform: [{ rotate: '-14deg' }, { scaleX: 1.35 }],
-  },
-  energyTwo: {
-    position: 'absolute',
-    width: 360,
-    height: 160,
-    borderRadius: radius.round,
-    borderWidth: 18,
-    borderColor: colors.primaryMuted,
-    opacity: 0.06,
-    top: 238,
-    right: '-22%',
-    transform: [{ rotate: '21deg' }, { scaleX: 1.4 }],
-  },
-  contours: { position: 'absolute', top: 80, left: 0, right: 0 },
   intro: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: spacing.lg,
   },
   greeting: {
-    ...typography.caption,
+    ...typography.eyebrow,
     color: colors.textMuted,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs + 2,
   },
   today: {
     ...typography.eyebrow,
-    color: colors.primaryMuted,
+    color: colors.primary,
   },
   hero: {
-    paddingTop: spacing.xxl + spacing.lg,
-    paddingBottom: spacing.xxxl,
+    paddingTop: spacing.xxl + spacing.xl,
+    paddingBottom: spacing.xxxl + spacing.md,
   },
   headline: {
     ...typography.pageTitle,
@@ -498,14 +441,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: colors.premium,
+    borderColor: colors.primary,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.xl,
   },
   closeDayPressed: { opacity: 0.76 },
   closeDayCopy: { flex: 1, paddingRight: spacing.md },
-  closeDayEyebrow: { ...typography.eyebrow, color: colors.premium, fontSize: 10 },
+  closeDayEyebrow: { ...typography.eyebrow, color: colors.primary, fontSize: 10 },
   closeDayTitle: { ...typography.subtitle, color: colors.text, marginTop: spacing.sm },
   closeDayBody: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
   closeDayAction: { ...typography.button, color: colors.primary, maxWidth: 112, textAlign: 'right' },
