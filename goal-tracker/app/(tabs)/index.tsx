@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
 import { useUIStore } from '@/src/store/uiStore';
 import { useAuthStore } from '@/src/store/authStore';
@@ -8,7 +11,6 @@ import { pendingFollowUps } from '@/src/lib/dealFollowUps';
 import { MilestoneOverlay } from '@/src/components/MilestoneOverlay';
 import { Section } from '@/src/components/Section';
 import { Screen } from '@/src/components/Screen';
-import { Mark } from '@/src/components/Mark';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { parseISODate, shortDateLabel } from '@/src/lib/dates';
 
@@ -22,10 +24,73 @@ function greeting(date: Date): string {
   return 'Evening';
 }
 
-function BriefMetric({ label, value, detail }: { label: string; value: string | number; detail: string }) {
+type MetricIcon = React.ComponentProps<typeof FontAwesome>['name'];
+
+function AtmosphericBackdrop() {
   return (
-    <View style={styles.metric}>
-      <Text style={styles.metricLabel}>{label}</Text>
+    <View pointerEvents="none" style={styles.atmosphere}>
+      <LinearGradient
+        colors={[colors.infoSurface, colors.brandSurface, colors.background]}
+        locations={[0, 0.48, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.energyOne} />
+      <View style={styles.energyTwo} />
+      <Svg width="100%" height="520" viewBox="0 0 760 520" style={styles.contours}>
+        <G fill="none" stroke={colors.primary} strokeWidth="1" opacity="0.1">
+          <Path d="M-70 212C67 119 188 131 302 205s241 75 528-57" />
+          <Path d="M-72 238C69 145 187 156 296 226s239 73 532-53" />
+          <Path d="M-74 266C73 174 184 182 287 248s238 70 545-48" />
+          <Path d="M-78 298C79 207 183 211 279 272s237 65 555-44" />
+          <Path d="M-82 334C86 245 181 245 270 301s237 58 570-40" />
+        </G>
+      </Svg>
+      <LinearGradient
+        colors={['transparent', colors.background]}
+        locations={[0.3, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+    </View>
+  );
+}
+
+function OuroborosMark({ size }: { size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" accessibilityLabel="MyHQ ouroboros mark">
+      <G fill="none" stroke={colors.textSecondary} strokeLinecap="round" strokeLinejoin="round">
+        <Path
+          d="M48.8 15.3C42.2 8.8 31.7 7.2 23.5 11.6 13.8 16.8 9.4 28.5 12.8 39c3.7 11.5 15.8 18.1 27.3 14.8 8.8-2.5 14.8-10.4 15.1-19.2"
+          strokeWidth="5.2"
+        />
+        <Path d="M47.9 15.8c4.7-2.1 8.7-.7 10.5 2.8-2.1 1.5-3.6 3.5-4.5 6l-6.6-2.2-4.5 2.2 1.5-5.1-3.2-3.8 6.8.1Z" strokeWidth="2.2" fill={colors.surfaceRaised} />
+        <Path d="M53.8 24.6c-3.2 4.2-3.1 8.1 1.4 10" strokeWidth="2.2" />
+        <Path d="M14.5 30.1c5.1-1.9 9.5-5.5 12.5-10.1M15.1 42.4c6-1 11.3-4.2 15.1-9M24.3 52c5.2-2.2 9.5-6.1 12.3-11" strokeWidth="1" opacity="0.66" />
+        <Path d="M20.2 14.1c3.5 2.6 6.1 6.3 7.3 10.4M34.2 9.4c1.4 4.4 1.3 8.7-.3 12.8M46.4 14.1c-1.3 3.5-3.6 6.7-6.6 9" strokeWidth="1" opacity="0.66" />
+      </G>
+      <Circle cx="52.1" cy="18.2" r="1.1" fill={colors.text} />
+    </Svg>
+  );
+}
+
+function BriefMetric({
+  label,
+  value,
+  detail,
+  icon,
+  wide,
+}: {
+  label: string;
+  value: string | number;
+  detail: string;
+  icon: MetricIcon;
+  wide: boolean;
+}) {
+  return (
+    <View style={[styles.metric, wide && styles.metricWide]}>
+      <View style={styles.metricHead}>
+        <FontAwesome name={icon} size={11} color={colors.primary} />
+        <Text style={styles.metricLabel}>{label}</Text>
+      </View>
       <Text style={styles.metricValue} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
@@ -37,6 +102,8 @@ function BriefMetric({ label, value, detail }: { label: string; value: string | 
 }
 
 export default function HomeScreen() {
+  const { width } = useWindowDimensions();
+  const wide = width >= 768;
   const router = useRouter();
   const { deals, settings, stats } = useGoalStats();
   const profile = useAuthStore((s) => s.profile);
@@ -72,7 +139,7 @@ export default function HomeScreen() {
           ? 'Take it back.'
           : stats.pace === 'ahead'
             ? 'Keep moving.'
-            : 'Stay on pace.';
+            : 'Lock in.';
 
   const paceLine =
     stats.pace === 'ahead'
@@ -88,20 +155,20 @@ export default function HomeScreen() {
   const objective =
     followUps.length > 0
       ? {
-          label: 'Needs an answer',
-          value: `${followUps.length} ${followUps.length === 1 ? 'deal' : 'deals'}`,
+          label: "Today's focus",
+          value: `${followUps.length} ${followUps.length === 1 ? 'deal needs' : 'deals need'} review`,
           action: 'Review',
           onPress: () => router.push('/(tabs)/deals'),
         }
       : shortOfToday > 0
         ? {
-            label: "Today's objective",
+            label: "Today's focus",
             value: `${shortOfToday} more ${shortOfToday === 1 ? 'close' : 'closes'}`,
             action: 'Log sale',
             onPress: () => router.push('/add-deal'),
           }
         : {
-            label: "Today's objective",
+            label: "Today's focus",
             value: 'Complete',
             action: 'Close the day',
             onPress: () => router.push('/day'),
@@ -110,6 +177,7 @@ export default function HomeScreen() {
   return (
     <>
       <Screen testID="dashboard-screen">
+        <AtmosphericBackdrop />
         <View style={styles.intro}>
           <View>
             <Text style={styles.greeting}>
@@ -117,7 +185,7 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.today}>Today</Text>
           </View>
-          <Mark size={28} />
+          <OuroborosMark size={wide ? 64 : 58} />
         </View>
 
         <View
@@ -139,16 +207,14 @@ export default function HomeScreen() {
           onPress={objective.onPress}
           accessibilityRole="button"
           accessibilityLabel={`${objective.label}. ${objective.value}. ${objective.action}`}
-          style={({ pressed }) => [styles.objective, pressed && styles.objectivePressed]}
+          style={({ pressed }) => [styles.focus, pressed && styles.focusPressed]}
         >
-          <View style={styles.objectiveCopy}>
-            <Text style={styles.objectiveLabel}>{objective.label}</Text>
-            <Text style={styles.objectiveValue}>{objective.value}</Text>
+          <View style={styles.focusCopy}>
+            <Text style={styles.focusLabel}>{objective.label}</Text>
+            <Text style={styles.focusValue}>{objective.value}</Text>
           </View>
-          <Text style={styles.objectiveAction}>{objective.action} →</Text>
+          <Text style={styles.focusAction}>{objective.action} →</Text>
         </Pressable>
-
-        <View style={styles.divider} />
 
         <Section title="Performance">
           <View style={styles.metricGrid}>
@@ -156,21 +222,29 @@ export default function HomeScreen() {
               label="Today"
               value={stats.todaySales}
               detail={shortOfToday > 0 ? `${shortOfToday} more today` : 'Objective complete'}
+              icon="bolt"
+              wide={wide}
             />
             <BriefMetric
               label="This week"
               value={stats.weekSales}
               detail={`${round1(stats.requiredPerWeek)} needed`}
+              icon="calendar"
+              wide={wide}
             />
             <BriefMetric
               label="Pace"
               value={`${stats.paceDelta >= 0 ? '+' : ''}${round1(stats.paceDelta)}`}
               detail={`${round1(stats.expectedByToday)} expected`}
+              icon="line-chart"
+              wide={wide}
             />
             <BriefMetric
               label="Streak"
               value={stats.currentStreak}
               detail={stats.currentStreak >= stats.longestStreak && stats.currentStreak > 0 ? 'Personal best' : `Best ${stats.longestStreak}`}
+              icon="circle-o-notch"
+              wide={wide}
             />
           </View>
         </Section>
@@ -181,21 +255,29 @@ export default function HomeScreen() {
               label="Daily average"
               value={round1(stats.runningAverage)}
               detail={`${stats.daysElapsed} days logged`}
+              icon="signal"
+              wide={wide}
             />
             <BriefMetric
               label="Best day"
               value={stats.bestDay?.count ?? 0}
               detail={stats.bestDay ? shortDateLabel(parseISODate(stats.bestDay.date)) : 'Not set yet'}
+              icon="trophy"
+              wide={wide}
             />
             <BriefMetric
               label="Projected installs"
               value={Math.round(stats.projectedInstalls)}
               detail={`${stats.retentionPercent}% retention`}
+              icon="check-circle-o"
+              wide={wide}
             />
             <BriefMetric
               label="Projected finish"
               value={stats.projectedFinishDate ? shortDateLabel(parseISODate(stats.projectedFinishDate)) : '—'}
               detail={stats.projectedFinishDate ? 'At this pace' : 'More days needed'}
+              icon="flag-checkered"
+              wide={wide}
             />
           </View>
         </Section>
@@ -204,7 +286,7 @@ export default function HomeScreen() {
           title="Latest"
           right={
             <Pressable onPress={() => router.push('/(tabs)/deals')} hitSlop={8}>
-              <Text style={styles.seeAll}>All deals</Text>
+              <Text style={styles.seeAll}>View all deals</Text>
             </Pressable>
           }
         >
@@ -240,13 +322,21 @@ export default function HomeScreen() {
         </Section>
 
         <Pressable
-          style={({ pressed }) => [styles.dayAction, pressed && styles.activityPressed]}
+          style={({ pressed }) => [styles.closeDay, pressed && styles.closeDayPressed]}
           accessibilityRole="button"
-          accessibilityLabel={today.getHours() < 14 ? 'Roll out for the day' : 'Wrap up the day'}
+          accessibilityLabel="Close the day. Review, reflect, and reset."
           onPress={() => router.push('/day')}
         >
-          <Text style={styles.dayLabel}>{today.getHours() < 14 ? 'Roll out' : 'Wrap up'}</Text>
-          <Text style={styles.dayArrow}>→</Text>
+          <LinearGradient
+            colors={[colors.brandSurface, colors.surfaceElevated]}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.closeDayCopy}>
+            <Text style={styles.closeDayEyebrow}>Close the day</Text>
+            <Text style={styles.closeDayTitle}>Review. Reflect. Reset.</Text>
+            <Text style={styles.closeDayBody}>Close strong and prepare for tomorrow.</Text>
+          </View>
+          <Text style={styles.closeDayAction}>Close the day →</Text>
         </Pressable>
       </Screen>
 
@@ -261,6 +351,39 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  atmosphere: {
+    position: 'absolute',
+    top: 0,
+    left: -spacing.xl,
+    right: -spacing.xl,
+    height: 760,
+    overflow: 'hidden',
+  },
+  energyOne: {
+    position: 'absolute',
+    width: 520,
+    height: 220,
+    borderRadius: radius.round,
+    borderWidth: 34,
+    borderColor: colors.primary,
+    opacity: 0.08,
+    top: 104,
+    left: '14%',
+    transform: [{ rotate: '-14deg' }, { scaleX: 1.35 }],
+  },
+  energyTwo: {
+    position: 'absolute',
+    width: 360,
+    height: 160,
+    borderRadius: radius.round,
+    borderWidth: 18,
+    borderColor: colors.primaryMuted,
+    opacity: 0.06,
+    top: 238,
+    right: '-22%',
+    transform: [{ rotate: '21deg' }, { scaleX: 1.4 }],
+  },
+  contours: { position: 'absolute', top: 80, left: 0, right: 0 },
   intro: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -274,11 +397,11 @@ const styles = StyleSheet.create({
   },
   today: {
     ...typography.eyebrow,
-    color: colors.gold,
+    color: colors.primaryMuted,
   },
   hero: {
-    paddingTop: spacing.xxxl,
-    paddingBottom: spacing.xxl,
+    paddingTop: spacing.xxl + spacing.lg,
+    paddingBottom: spacing.xxxl,
   },
   headline: {
     ...typography.pageTitle,
@@ -304,41 +427,41 @@ const styles = StyleSheet.create({
   },
   pace: {
     ...typography.caption,
-    color: colors.gold,
+    color: colors.primaryMuted,
     marginTop: spacing.sm,
   },
-  objective: {
+  focus: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 76,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    minHeight: 88,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderStrong,
   },
-  objectivePressed: { backgroundColor: colors.surfacePressed, opacity: 0.8 },
-  objectiveCopy: { flex: 1, paddingRight: spacing.md },
-  objectiveLabel: { ...typography.eyebrow, color: colors.textMuted, fontSize: 10 },
-  objectiveValue: { ...typography.subtitle, color: colors.text, marginTop: spacing.xs },
-  objectiveAction: { ...typography.button, color: colors.primary },
-  divider: {
-    height: 1,
-    backgroundColor: colors.borderSubtle,
-    marginTop: spacing.xxl,
-    marginBottom: spacing.xl,
-  },
+  focusPressed: { opacity: 0.65 },
+  focusCopy: { flex: 1, paddingRight: spacing.md },
+  focusLabel: { ...typography.eyebrow, color: colors.textMuted, fontSize: 10 },
+  focusValue: { ...typography.subtitle, color: colors.text, marginTop: spacing.sm },
+  focusAction: { ...typography.button, color: colors.primary },
   metricGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   metric: {
-    flexBasis: '50%',
+    flexBasis: '47%',
+    flexGrow: 1,
     minWidth: 140,
-    paddingVertical: spacing.md,
-    paddingRight: spacing.lg,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.brandSurface,
   },
-  metricLabel: { ...typography.eyebrow, color: colors.textFaint, fontSize: 9 },
+  metricWide: { flexBasis: '23%', minWidth: 0 },
+  metricHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  metricLabel: { ...typography.eyebrow, color: colors.textMuted, fontSize: 9, flex: 1 },
   metricValue: { ...typography.metric, color: colors.text, marginTop: spacing.sm },
   metricDetail: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: spacing.xs },
   seeAll: { ...typography.badge, color: colors.primary },
@@ -346,9 +469,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 58,
+    backgroundColor: colors.brandSurface,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSubtle,
     paddingVertical: spacing.sm,
+    marginBottom: spacing.xs,
   },
   activityPressed: { opacity: 0.62 },
   activityText: { flex: 1 },
@@ -365,15 +492,22 @@ const styles = StyleSheet.create({
   emptyTitle: { ...typography.subtitle, color: colors.text },
   emptyBody: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
   emptyAction: { ...typography.button, color: colors.primary, marginTop: spacing.md },
-  dayAction: {
+  closeDay: {
+    position: 'relative',
+    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSubtle,
-    paddingVertical: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.premium,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     marginBottom: spacing.xl,
   },
-  dayLabel: { ...typography.eyebrow, color: colors.textSecondary },
-  dayArrow: { ...typography.subtitle, color: colors.gold },
+  closeDayPressed: { opacity: 0.76 },
+  closeDayCopy: { flex: 1, paddingRight: spacing.md },
+  closeDayEyebrow: { ...typography.eyebrow, color: colors.premium, fontSize: 10 },
+  closeDayTitle: { ...typography.subtitle, color: colors.text, marginTop: spacing.sm },
+  closeDayBody: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
+  closeDayAction: { ...typography.button, color: colors.primary, maxWidth: 112, textAlign: 'right' },
 });
