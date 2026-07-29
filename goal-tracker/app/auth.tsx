@@ -125,16 +125,19 @@ export default function AuthScreen() {
           style={styles.cover}
           imageStyle={styles.coverImage}
         >
-          <View style={styles.coolWash} pointerEvents="none" />
+          {/* A light top scrim, just enough to keep the mark readable — the photo stays the
+              hero, not a backdrop drowned in a flat wash. */}
           <LinearGradient
             colors={[colors.overlay, 'transparent']}
-            locations={[0, 0.32]}
+            locations={[0, 0.22]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
+          {/* The real contrast work happens low, over the path rather than the figure, so
+              the darkening reads as ground shadow instead of a haze laid over the monk. */}
           <LinearGradient
             colors={['transparent', colors.overlay, colors.background]}
-            locations={[0.42, 0.78, 1]}
+            locations={[0.58, 0.82, 1]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -145,34 +148,42 @@ export default function AuthScreen() {
               <Text style={styles.wordmark}>MYHQ</Text>
             </View>
 
-            <View style={styles.landingHeadline}>
-              <Text style={styles.headline}>{BEATS.join('. ')}.</Text>
-              <Text style={styles.headlineSub}>Built for the doors, not the desk.</Text>
-            </View>
+            <View style={styles.landingSpacer} />
 
-            <View style={styles.landingBottom}>
-              <Button
-                label="Sign up"
-                onPress={() => {
-                  setError(null);
-                  setMode('sign-up');
-                }}
-                variant="hero"
-                size="xl"
-                style={styles.landingCta}
-              />
-              <Pressable
-                onPress={() => {
-                  setError(null);
-                  setMode('sign-in');
-                }}
-                hitSlop={12}
-                accessibilityRole="link"
-                style={styles.landingLinkRow}
-              >
-                <Text style={styles.landingLinkPrompt}>Already have an account? </Text>
-                <Text style={styles.landingLink}>Log in</Text>
-              </Pressable>
+            <View style={styles.landingFoot}>
+              <View style={styles.landingHeadline}>
+                {BEATS.map((word) => (
+                  <Text key={word} style={styles.headline}>
+                    {word}.
+                  </Text>
+                ))}
+                <Text style={styles.headlineSub}>Built for the doors, not the desk.</Text>
+              </View>
+
+              <View style={styles.landingBottom}>
+                <Button
+                  label="Sign up"
+                  onPress={() => {
+                    setError(null);
+                    setMode('sign-up');
+                  }}
+                  variant="hero"
+                  size="xl"
+                  style={styles.landingCta}
+                />
+                <Pressable
+                  onPress={() => {
+                    setError(null);
+                    setMode('sign-in');
+                  }}
+                  hitSlop={12}
+                  accessibilityRole="link"
+                  style={styles.landingLinkRow}
+                >
+                  <Text style={styles.landingLinkPrompt}>Already have an account? </Text>
+                  <Text style={styles.landingLink}>Log in</Text>
+                </Pressable>
+              </View>
             </View>
           </SafeAreaView>
         </ImageBackground>
@@ -363,19 +374,11 @@ const styles = StyleSheet.create({
   landing: { flex: 1, backgroundColor: colors.background },
   cover: { flex: 1 },
   coverImage: { alignSelf: 'center' },
-  // A heavy scrim rather than a light tint — it's what mutes a colour photo down toward the
-  // desaturated, greyscale mood the rest of the app lives in, without touching the asset.
-  coolWash: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
-    opacity: 0.58,
-  },
   landingSafe: {
     flex: 1,
     width: '100%',
     maxWidth: layout.contentMaxWidth,
     alignSelf: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: layout.screenGutter,
   },
   landingTop: {
@@ -390,12 +393,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2.4,
   },
+  // Pushes the headline/CTA group down onto the lower, darker, calmer part of the photo —
+  // ground rather than the figure — instead of letting it fall wherever flexbox happens to
+  // land it in the middle of the frame.
+  landingSpacer: { flex: 1, minHeight: spacing.xxxl },
+  landingFoot: { paddingBottom: spacing.lg },
   // The one statement on the screen — big, confident, sitting where the eye lands first.
+  // Stacked one word per line on purpose rather than left to auto-wrap: a wrap can break
+  // mid-phrase depending on screen width, this can't.
   landingHeadline: { marginBottom: spacing.xxl },
   headline: {
     ...typography.hero,
     fontSize: 40,
-    lineHeight: 44,
+    lineHeight: 42,
     color: colors.text,
   },
   headlineSub: {
@@ -405,7 +415,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginTop: spacing.md,
   },
-  landingBottom: { paddingBottom: spacing.lg, gap: spacing.lg, alignItems: 'center' },
+  landingBottom: { gap: spacing.lg, alignItems: 'center' },
   // Square, not a pill. The reference's button is a hard rectangle and that squared edge is
   // most of why it reads as a brand rather than as a form control.
   landingCta: { borderRadius: 0, width: '100%' },
