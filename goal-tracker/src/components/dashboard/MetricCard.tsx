@@ -5,17 +5,6 @@ import { colors, elevation, layout, radius, spacing, typography } from '@/src/th
 
 export type Trend = 'up' | 'down' | 'flat';
 
-/**
- * A metric tile with room to breathe.
- *
- * Deliberately not the same shape as StatTile, which is the compact two-up used deeper in
- * the app. This one carries an optional icon, a trend and a comparison line, because on the
- * dashboard a number without context ("14") is trivia — "14, +3 on last week" is a fact you
- * can act on.
- *
- * Trend arrows are paired with the comparison text rather than replacing it: an arrow alone
- * is meaningless to anyone who can't see the colour.
- */
 export function MetricCard({
   label,
   value,
@@ -30,7 +19,6 @@ export function MetricCard({
   value: string | number;
   sublabel?: string;
   trend?: Trend;
-  /** Colours the value. Use only when the number itself carries a status. */
   accent?: string;
   icon?: React.ComponentProps<typeof FontAwesome>['name'];
   onPress?: () => void;
@@ -38,14 +26,19 @@ export function MetricCard({
 }) {
   const body = (
     <>
+      {!!accent && <View style={[styles.leftAccent, { backgroundColor: accent }]} />}
       <View style={styles.head}>
         <Text style={styles.label} numberOfLines={1}>
           {label}
         </Text>
-        {!!icon && <FontAwesome name={icon} size={12} color={colors.textFaint} />}
+        {!!icon && <FontAwesome name={icon} size={11} color={colors.textFaint} />}
       </View>
 
-      <Text style={[styles.value, !!accent && { color: accent }]} numberOfLines={1} adjustsFontSizeToFit>
+      <Text
+        style={[styles.value, !!accent && { color: accent }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
         {value}
       </Text>
 
@@ -90,34 +83,46 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
-    padding: layout.cardPadding,
+    padding: layout.cardPadding - 2,
     marginBottom: spacing.sm,
+    overflow: 'hidden',
   },
   cardPressed: {
     backgroundColor: colors.surfacePressed,
     transform: [{ scale: 0.985 }],
   },
+  leftAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 10,
+    bottom: 10,
+    width: 2.5,
+    borderRadius: radius.round,
+    opacity: 0.9,
+  },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm - 1,
   },
   label: {
     ...typography.label,
+    fontSize: 11,
     color: colors.textMuted,
     flex: 1,
     marginRight: spacing.xs,
   },
   value: {
     ...typography.metric,
-    fontSize: 32,
+    fontSize: 30,
+    letterSpacing: -0.7,
     color: colors.text,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.xs,
+    marginTop: spacing.xs - 1,
   },
   trendIcon: {
     marginRight: 4,
