@@ -9,6 +9,7 @@ import { MilestoneOverlay } from '@/src/components/MilestoneOverlay';
 import { Section } from '@/src/components/Section';
 import { Screen } from '@/src/components/Screen';
 import { Mark } from '@/src/components/Mark';
+import { Button } from '@/src/components/Button';
 import { colors, radius, spacing, typography } from '@/src/theme';
 import { parseISODate, shortDateLabel } from '@/src/lib/dates';
 
@@ -135,22 +136,23 @@ export default function HomeScreen() {
           <Text style={styles.pace}>{paceLine}</Text>
         </View>
 
-        <Pressable
-          onPress={objective.onPress}
-          accessibilityRole="button"
-          accessibilityLabel={`${objective.label}. ${objective.value}. ${objective.action}`}
-          style={({ pressed }) => [styles.objective, pressed && styles.objectivePressed]}
-        >
-          <View style={styles.objectiveCopy}>
-            <Text style={styles.objectiveLabel}>{objective.label}</Text>
-            <Text style={styles.objectiveValue}>{objective.value}</Text>
-          </View>
-          <Text style={styles.objectiveAction}>{objective.action} →</Text>
-        </Pressable>
+        {/* The one loud thing. This was a blue text link inside a row — the least prominent
+            element on a screen whose whole job is getting a rep to log a sale and leave. */}
+        <View style={styles.objective}>
+          <Text style={styles.objectiveLabel}>{objective.label}</Text>
+          <Text style={styles.objectiveValue}>{objective.value}</Text>
+          <Button
+            label={objective.action}
+            onPress={objective.onPress}
+            variant="hero"
+            size="xl"
+            style={styles.objectiveCta}
+          />
+        </View>
 
         <View style={styles.divider} />
 
-        <Section title="Performance">
+        <Section title="Performance" index={0}>
           <View style={styles.metricGrid}>
             <BriefMetric
               label="Today"
@@ -175,7 +177,7 @@ export default function HomeScreen() {
           </View>
         </Section>
 
-        <Section title="Outlook">
+        <Section title="Outlook" index={1}>
           <View style={styles.metricGrid}>
             <BriefMetric
               label="Daily average"
@@ -202,6 +204,7 @@ export default function HomeScreen() {
 
         <Section
           title="Latest"
+          index={2}
           right={
             <Pressable onPress={() => router.push('/(tabs)/deals')} hitSlop={8}>
               <Text style={styles.seeAll}>All deals</Text>
@@ -308,20 +311,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   objective: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 76,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
   },
-  objectivePressed: { backgroundColor: colors.surfacePressed, opacity: 0.8 },
-  objectiveCopy: { flex: 1, paddingRight: spacing.md },
   objectiveLabel: { ...typography.eyebrow, color: colors.textMuted, fontSize: 10 },
   objectiveValue: { ...typography.subtitle, color: colors.text, marginTop: spacing.xs },
-  objectiveAction: { ...typography.button, color: colors.primary },
+  objectiveCta: { marginTop: spacing.md },
   divider: {
     height: 1,
     backgroundColor: colors.borderSubtle,
@@ -341,7 +338,7 @@ const styles = StyleSheet.create({
   metricLabel: { ...typography.eyebrow, color: colors.textFaint, fontSize: 9 },
   metricValue: { ...typography.metric, color: colors.text, marginTop: spacing.sm },
   metricDetail: { ...typography.caption, color: colors.textMuted, fontSize: 11, marginTop: spacing.xs },
-  seeAll: { ...typography.badge, color: colors.primary },
+  seeAll: { ...typography.badge, color: colors.textMuted },
   activity: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -364,7 +361,12 @@ const styles = StyleSheet.create({
   empty: { paddingVertical: spacing.lg },
   emptyTitle: { ...typography.subtitle, color: colors.text },
   emptyBody: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
-  emptyAction: { ...typography.button, color: colors.primary, marginTop: spacing.md },
+  emptyAction: {
+    ...typography.button,
+    color: colors.text,
+    textDecorationLine: 'underline',
+    marginTop: spacing.md,
+  },
   dayAction: {
     flexDirection: 'row',
     alignItems: 'center',
