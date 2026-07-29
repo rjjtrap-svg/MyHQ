@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
@@ -28,12 +29,13 @@ import {
   followUpQuestion,
   pendingFollowUps,
 } from '@/src/lib/dealFollowUps';
+import { AtmosphericBackdrop } from '@/src/components/AtmosphericBackdrop';
+import { BriefMetric, MetricGrid } from '@/src/components/BriefMetric';
+import { FocusRow } from '@/src/components/FocusRow';
 import { BarChart } from '@/src/components/BarChart';
 import { Button, SegmentedToggle } from '@/src/components/Button';
 import { DealEditor } from '@/src/components/DealEditor';
 import { Section } from '@/src/components/Section';
-import { ScreenHeader } from '@/src/components/ScreenHeader';
-import { StatTile } from '@/src/components/StatTile';
 import { StagePillRow } from '@/src/components/StagePill';
 import { EmptyState } from '@/src/components/EmptyState';
 import { Screen } from '@/src/components/Screen';
@@ -172,9 +174,7 @@ function DealRow({ deal }: { deal: Deal }) {
             </View>
           ) : cancelling ? (
             <View style={styles.cancelBlock}>
-              <Text style={styles.cancelPrompt}>
-                Why did it cancel? (optional)
-              </Text>
+              <Text style={styles.cancelPrompt}>Why did it cancel? (optional)</Text>
               <TextInput
                 style={styles.cancelInput}
                 value={cancelReason}
@@ -201,10 +201,7 @@ function DealRow({ deal }: { deal: Deal }) {
               </View>
             </View>
           ) : (
-            <Pressable
-              onPress={() => setCancelling(true)}
-              style={styles.cancelLinkRow}
-            >
+            <Pressable onPress={() => setCancelling(true)} style={styles.cancelLinkRow}>
               <Text style={styles.cancelLink}>Mark cancelled</Text>
             </Pressable>
           )}
@@ -225,16 +222,13 @@ function DealRow({ deal }: { deal: Deal }) {
             </View>
           </View>
 
-          {editing && (
-            <DealEditor deal={deal} onDone={() => setEditing(false)} />
-          )}
+          {editing && <DealEditor deal={deal} onDone={() => setEditing(false)} />}
         </>
       ) : null}
     </Surface>
   );
 }
 
-/** The deals waiting on the rep to confirm an install happened or a cheque landed. */
 function NeedsAttention({ deals }: { deals: Deal[] }) {
   const advanceStage = useDealsStore((s) => s.advanceStage);
   const dismissPrompt = useDealsStore((s) => s.dismissPrompt);
@@ -244,13 +238,9 @@ function NeedsAttention({ deals }: { deals: Deal[] }) {
   if (followUps.length === 0) return null;
 
   return (
-    <Section title={`Needs attention (${followUps.length})`}>
+    <Section title={`Needs attention (${followUps.length})`} index={1}>
       {followUps.map((f) => (
-        <Surface
-          key={`${f.deal.id}-${f.kind}`}
-          level="raised"
-          style={styles.followUpCard}
-        >
+        <Surface key={`${f.deal.id}-${f.kind}`} level="raised" style={styles.followUpCard}>
           <Text style={styles.followUpQuestion}>{followUpQuestion(f)}</Text>
           <Text style={styles.followUpMeta}>
             {f.kind === 'install'
@@ -276,10 +266,7 @@ function NeedsAttention({ deals }: { deals: Deal[] }) {
               label="Yes"
               size="sm"
               onPress={() =>
-                advanceStage(
-                  f.deal.id,
-                  f.kind === 'install' ? 'installed' : 'paid',
-                )
+                advanceStage(f.deal.id, f.kind === 'install' ? 'installed' : 'paid')
               }
             />
           </View>
@@ -321,7 +308,7 @@ function ClosingKpis({
   }
 
   return (
-    <Section title="Closing efficiency">
+    <Section title="Closing efficiency" index={3}>
       <View style={styles.field}>
         <Text style={styles.fieldLabel}>Doors knocked today</Text>
         <TextInput
@@ -334,28 +321,29 @@ function ClosingKpis({
           placeholderTextColor={colors.textFaint}
         />
       </View>
-      <View style={styles.grid}>
-        <StatTile
+      <MetricGrid>
+        <BriefMetric
           label="Closing % today"
           value={formatPercent(todaySales, doorsToday)}
-          sublabel={`${todaySales} / ${doorsToday}`}
+          detail={`${todaySales} / ${doorsToday}`}
+          icon="percent"
         />
-        <StatTile
+        <BriefMetric
           label="Closing % this week"
           value={formatPercent(weekSales, doorsThisWeek)}
-          sublabel={`${weekSales} / ${doorsThisWeek}`}
+          detail={`${weekSales} / ${doorsThisWeek}`}
+          icon="line-chart"
         />
-      </View>
+      </MetricGrid>
     </Section>
   );
 }
 
 export default function DealsScreen() {
+  const router = useRouter();
   const { deals, stats } = useGoalStats();
   const commissions = useCommissionStore((s) => s.byDealId);
-  const [chartRange, setChartRange] = useState<'daily' | 'weekly' | 'monthly'>(
-    'daily',
-  );
+  const [chartRange, setChartRange] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
   const myCommissionTotals = useMemo(() => {
     let paid = 0;
@@ -381,6 +369,7 @@ export default function DealsScreen() {
     () => deals.filter((d) => !d.deletedAt && d.stage === 'cancelled'),
     [deals],
   );
+  const followUps = useMemo(() => pendingFollowUps(deals), [deals]);
 
   const daily = useMemo(() => dailyPoints(deals, 14), [deals]);
   const weekly = useMemo(() => weeklyPoints(deals, 8), [deals]);
@@ -410,35 +399,52 @@ export default function DealsScreen() {
 
   return (
     <Screen testID="deals-screen">
-      <ScreenHeader
-        eyebrow="Your book"
-        title="My Deals"
-        subtitle="Private to you — only you and your manager see commission."
-      />
+      <AtmosphericBackdrop height={520} />
 
-      <Surface level="raised" style={styles.commissionHero}>
-        <Text style={styles.heroLabel}>Total commission</Text>
-        <Text style={styles.heroValue}>
-          {formatMoney(myCommissionTotals.total)}
-        </Text>
-        <View style={styles.heroMetaRow}>
-          <Text style={styles.heroMeta}>
-            Paid {formatMoney(myCommissionTotals.paid)}
-          </Text>
-          <Text style={styles.heroMeta}>
-            Pending {formatMoney(myCommissionTotals.pending)}
-          </Text>
+      <View style={styles.intro}>
+        <View>
+          <Text style={styles.eyebrow}>Your book</Text>
+          <Text style={styles.pageTitle}>Deals</Text>
         </View>
-      </Surface>
+      </View>
+
+      <View style={styles.hero}>
+        <Text style={styles.heroLabel}>Total commission</Text>
+        <Text style={styles.heroValue}>{formatMoney(myCommissionTotals.total)}</Text>
+        <Text style={styles.heroMeta}>
+          Paid {formatMoney(myCommissionTotals.paid)} · Pending{' '}
+          {formatMoney(myCommissionTotals.pending)}
+        </Text>
+      </View>
+
+      {followUps.length > 0 ? (
+        <FocusRow
+          label="Needs attention"
+          value={`${followUps.length} ${
+            followUps.length === 1 ? 'deal needs' : 'deals need'
+          } review`}
+          action="Review"
+          onPress={() => {}}
+        />
+      ) : (
+        <FocusRow
+          label="Today's move"
+          value="Log a new sale"
+          action="Add deal"
+          onPress={() => router.push('/add-deal')}
+        />
+      )}
 
       <NeedsAttention deals={deals} />
 
-      <Section title={`Pipeline (${livePipeline.length})`}>
+      <Section title={`Pipeline (${livePipeline.length})`} index={2}>
         {livePipeline.length === 0 ? (
           <EmptyState
             icon="briefcase"
             title="Your pipeline is ready"
-            body="Log your first deal with the center action and it will appear here."
+            body="Log your first deal and it will appear here."
+            actionLabel="Log sale"
+            onAction={() => router.push('/add-deal')}
           />
         ) : (
           livePipeline.map((deal) => <DealRow key={deal.id} deal={deal} />)
@@ -449,6 +455,7 @@ export default function DealsScreen() {
 
       <Section
         title="Sales history"
+        index={4}
         right={<Text style={styles.rangeLabel}>{chartCaption}</Text>}
       >
         <SegmentedToggle
@@ -466,52 +473,55 @@ export default function DealsScreen() {
         </View>
       </Section>
 
-      <Section title="Performance">
-        <View style={styles.grid}>
-          <StatTile
+      <Section title="Performance" index={5}>
+        <MetricGrid>
+          <BriefMetric
             label="Running average"
             value={stats.runningAverage.toFixed(1)}
-            sublabel="sales / day"
+            detail="sales / day"
+            icon="signal"
           />
-          <StatTile
+          <BriefMetric
             label="Best day"
             value={stats.bestDay ? String(stats.bestDay.count) : '—'}
-            sublabel={
+            detail={
               stats.bestDay
                 ? shortDateLabel(parseISODate(stats.bestDay.date))
                 : undefined
             }
+            icon="trophy"
           />
-          <StatTile
-            label="Best week"
-            value={stats.bestWeek ? String(stats.bestWeek.count) : '—'}
-            sublabel={
-              stats.bestWeek
-                ? `wk of ${shortDateLabel(parseISODate(stats.bestWeek.weekStart))}`
-                : undefined
-            }
+          <BriefMetric
+            label="Current streak"
+            value={`${stats.currentStreak}d`}
+            detail={`Best ${stats.longestStreak}d`}
+            icon="circle-o-notch"
           />
-          <StatTile label="Current streak" value={`${stats.currentStreak}d`} />
-          <StatTile label="Longest streak" value={`${stats.longestStreak}d`} />
-          <StatTile label="This month" value={String(stats.monthSales)} />
-        </View>
+          <BriefMetric
+            label="This month"
+            value={String(stats.monthSales)}
+            icon="calendar"
+          />
+        </MetricGrid>
       </Section>
 
       {cancelledDeals.length > 0 && (
-        <Section title={`Cancelled (${cancelledDeals.length})`}>
-          <View style={styles.grid}>
-            <StatTile
+        <Section title={`Cancelled (${cancelledDeals.length})`} index={6}>
+          <MetricGrid>
+            <BriefMetric
               label="Cancel rate"
               value={`${cancels.cancelRate.toFixed(1)}%`}
-              sublabel={`${cancels.cancelled} of ${cancels.cancelled + livePipeline.length}`}
+              detail={`${cancels.cancelled} of ${cancels.cancelled + livePipeline.length}`}
+              icon="times-circle"
               accent={colors.danger}
             />
-            <StatTile
+            <BriefMetric
               label="Commission lost"
               value={formatMoney(cancels.lost)}
+              icon="usd"
               accent={colors.danger}
             />
-          </View>
+          </MetricGrid>
           {cancelledDeals.map((deal) => (
             <DealRow key={deal.id} deal={deal} />
           ))}
@@ -522,36 +532,43 @@ export default function DealsScreen() {
 }
 
 const styles = StyleSheet.create({
-  rangeLabel: {
-    ...typography.caption,
-    color: colors.textFaint,
-  },
-  grid: {
+  intro: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    paddingTop: spacing.lg,
   },
-  commissionHero: {
-    alignItems: 'center',
+  eyebrow: {
+    ...typography.caption,
+    color: colors.textMuted,
     marginBottom: spacing.xs,
+  },
+  pageTitle: {
+    ...typography.eyebrow,
+    color: colors.primaryMuted,
+  },
+  hero: {
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xl,
   },
   heroLabel: {
     ...typography.eyebrow,
     color: colors.textMuted,
-    marginBottom: spacing.sm,
+    fontSize: 10,
   },
   heroValue: {
     ...typography.metricHero,
-    color: colors.textPrimary,
-  },
-  heroMetaRow: {
-    flexDirection: 'row',
-    gap: spacing.lg,
+    color: colors.text,
     marginTop: spacing.sm,
   },
   heroMeta: {
     ...typography.caption,
     color: colors.textMuted,
+    marginTop: spacing.sm,
+  },
+  rangeLabel: {
+    ...typography.caption,
+    color: colors.textFaint,
   },
   chart: {
     marginTop: spacing.md,
@@ -579,6 +596,7 @@ const styles = StyleSheet.create({
   dealCard: {
     marginBottom: spacing.md,
     gap: spacing.sm,
+    backgroundColor: colors.brandSurface,
   },
   dealHeaderRow: {
     flexDirection: 'row',
