@@ -7,16 +7,8 @@ import { useUIStore } from '@/src/store/uiStore';
 import { useAuthStore } from '@/src/store/authStore';
 import { pendingFollowUps } from '@/src/lib/dealFollowUps';
 import { MilestoneOverlay } from '@/src/components/MilestoneOverlay';
-import { Section } from '@/src/components/Section';
-import { PullQuote } from '@/src/components/PullQuote';
 import { Screen } from '@/src/components/Screen';
-import { EmptyState } from '@/src/components/EmptyState';
-import { PerformanceHeader } from '@/src/components/dashboard/PerformanceHeader';
-import { GoalProgressCard } from '@/src/components/dashboard/GoalProgressCard';
-import { MetricCard } from '@/src/components/dashboard/MetricCard';
-import { NextActionCard } from '@/src/components/dashboard/NextActionCard';
-import { colors, radius, spacing, typography } from '@/src/theme';
-import { parseISODate, shortDateLabel } from '@/src/lib/dates';
+import { colors, radius, spacing, typography, fonts } from '@/src/theme';
 
 function round1(n: number): string {
   return (Math.round(n * 10) / 10).toString();
@@ -32,196 +24,110 @@ export default function HomeScreen() {
   const clearDailyAlert = useUIStore((s) => s.clearDailyAlert);
 
   const today = new Date();
+  const firstName = (profile?.displayName ?? '').trim().split(' ')[0];
+
+  const shortOfToday = Math.max(Math.ceil(stats.requiredPerDay) - stats.todaySales, 0);
+  const remaining = Math.max(settings.salesGoal - stats.totalSales, 0);
+
+  const headline =
+    stats.pace === 'ahead'
+      ? 'Keep the pressure on.'
+      : stats.pace === 'behind'
+        ? 'Take it back.'
+        : 'Hold the line.';
+
+  const paceLabel =
+    stats.pace === 'ahead' ? 'AHEAD OF PACE' : stats.pace === 'behind' ? 'BEHIND PACE' : 'ON PACE';
 
   const paceColor =
     stats.pace === 'ahead' ? colors.ahead : stats.pace === 'behind' ? colors.behind : colors.onPace;
 
-  const followUps = useMemo(() => pendingFollowUps(deals), [deals]);
-
-  // The five most recent live deals. Cancelled ones are excluded here for the same reason
-  // they're excluded everywhere else — a fallen-through deal is not recent momentum.
-  const recent = useMemo(
-    () =>
-      deals
-        .filter((d) => !d.deletedAt && d.stage !== 'cancelled')
-        .sort((a, b) => b.soldAt.localeCompare(a.soldAt))
-        .slice(0, 4),
-    [deals]
-  );
-
-  const shortOfToday = Math.max(Math.ceil(stats.requiredPerDay) - stats.todaySales, 0);
-
   return (
     <>
       <Screen testID="dashboard-screen">
-        <PerformanceHeader
-          name={profile?.displayName}
-          date={today}
-          pace={stats.pace}
-          paceDelta={stats.paceDelta}
-          streak={stats.currentStreak}
-        />
-
-        <GoalProgressCard
-          percent={stats.percentComplete}
-          total={stats.totalSales}
-          goal={settings.salesGoal}
-          requiredPerDay={stats.requiredPerDay}
-          daysRemaining={stats.daysRemaining}
-          ringColor={paceColor}
-        />
-
-        {/* Exactly one next action, picked from real state rather than offering a menu. */}
-        {followUps.length > 0 ? (
-          <NextActionCard
-            eyebrow="Needs an answer"
-            headline={`${followUps.length} ${followUps.length === 1 ? 'deal is' : 'deals are'} waiting on you`}
-            detail="Confirm the install or the payday and clear the list."
-            icon="clock-o"
-            tone="attention"
-            onPress={() => router.push('/(tabs)/deals')}
-          />
-        ) : shortOfToday > 0 ? (
-          <NextActionCard
-            eyebrow="Today"
-            headline={`${shortOfToday} more to hit today's number`}
-            detail="Log it the moment it closes — the streak counts calendar days."
-            icon="plus"
-            onPress={() => router.push('/add-deal')}
-          />
-        ) : (
-          <NextActionCard
-            eyebrow="Today"
-            headline="Today's number is done"
-            detail="Close the day out and set tomorrow's target."
-            icon="check"
-            onPress={() => router.push('/day')}
-          />
-        )}
-
-        <Section title="Today">
-          <View style={styles.grid}>
-            <MetricCard
-              label="Sales today"
-              value={stats.todaySales}
-              sublabel={shortOfToday > 0 ? `${shortOfToday} short of target` : 'Target cleared'}
-              accent={shortOfToday > 0 ? undefined : colors.ahead}
-              icon="bolt"
-            />
-            <MetricCard
-              label="This week"
-              value={stats.weekSales}
-              sublabel={`${round1(stats.requiredPerWeek)} needed a week`}
-              icon="calendar"
-            />
-            <MetricCard
-              label="Pace vs plan"
-              value={`${stats.paceDelta >= 0 ? '+' : ''}${round1(stats.paceDelta)}`}
-              sublabel={`${round1(stats.expectedByToday)} expected by now`}
-              trend={stats.paceDelta > 0 ? 'up' : stats.paceDelta < 0 ? 'down' : 'flat'}
-              accent={paceColor}
-            />
-            <MetricCard
-              label="Current streak"
-              value={stats.currentStreak}
-              sublabel={
-                stats.currentStreak >= stats.longestStreak && stats.currentStreak > 0
-                  ? 'Your best run yet'
-                  : `Best is ${stats.longestStreak}`
-              }
-              accent={stats.currentStreak > 0 ? colors.fire : undefined}
-              icon="fire"
-            />
-          </View>
-        </Section>
-
-        <Section title="Momentum">
-          <View style={styles.grid}>
-            <MetricCard
-              label="Daily average"
-              value={round1(stats.runningAverage)}
-              sublabel={`over ${stats.daysElapsed} days`}
-            />
-            <MetricCard
-              label="Best day"
-              value={stats.bestDay?.count ?? 0}
-              sublabel={
-                stats.bestDay ? shortDateLabel(parseISODate(stats.bestDay.date)) : 'Not set yet'
-              }
-            />
-            <MetricCard
-              label="Projected installs"
-              value={Math.round(stats.projectedInstalls)}
-              sublabel={`${stats.retentionPercent}% retention`}
-            />
-            <MetricCard
-              label="Projected finish"
-              value={
-                stats.projectedFinishDate
-                  ? shortDateLabel(parseISODate(stats.projectedFinishDate))
-                  : '—'
-              }
-              sublabel={stats.projectedFinishDate ? 'at this pace' : 'need more days logged'}
-            />
-          </View>
-        </Section>
-
-        <Section
-          title="Latest"
-          right={
-            <Pressable onPress={() => router.push('/(tabs)/deals')} hitSlop={8}>
-              <Text style={styles.seeAll}>All deals</Text>
-            </Pressable>
-          }
-        >
-          {recent.length === 0 ? (
-            <EmptyState
-              icon="bolt"
-              title="Nothing on the board yet"
-              body="Your first logged deal starts the streak and every number above it."
-              actionLabel="Log a deal"
-              onAction={() => router.push('/add-deal')}
-            />
-          ) : (
-            recent.map((d) => (
-              <Pressable
-                key={d.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${d.customerName || d.address || 'Deal'}, ${d.stage}`}
-                style={({ pressed }) => [styles.activity, pressed && styles.activityPressed]}
-                onPress={() => router.push('/(tabs)/deals')}
-              >
-                <View style={styles.activityDot} />
-                <View style={styles.activityText}>
-                  <Text style={styles.activityName} numberOfLines={1}>
-                    {d.customerName || d.address || 'Deal'}
-                  </Text>
-                  <Text style={styles.activityMeta}>
-                    {shortDateLabel(parseISODate(d.date))} · {d.stage}
-                  </Text>
-                </View>
-                <FontAwesome name="chevron-right" size={11} color={colors.textFaint} />
-              </Pressable>
-            ))
-          )}
-        </Section>
-
-        <View style={styles.quickRow}>
-          <Pressable
-            style={({ pressed }) => [styles.quick, pressed && styles.quickPressed]}
-            accessibilityRole="button"
-            accessibilityLabel={today.getHours() < 14 ? 'Roll out for the day' : 'Wrap up the day'}
-            onPress={() => router.push('/day')}
-          >
-            <FontAwesome name="sun-o" size={14} color={colors.gold} />
-            <Text style={styles.quickLabel}>
-              {today.getHours() < 14 ? 'Roll out' : 'Wrap up'}
-            </Text>
-          </Pressable>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.eyebrow}>
+            {today.getHours() < 12 ? 'Morning' : today.getHours() < 17 ? 'Afternoon' : 'Evening'}
+            {firstName ? `, ${firstName}` : ''}
+          </Text>
+          <Text style={styles.headline}>{headline}</Text>
         </View>
 
-        <PullQuote />
+        {/* Giant Progress */}
+        <View style={styles.progressBlock}>
+          <Text style={styles.bigNumber}>
+            {stats.totalSales}
+            <Text style={styles.bigGoal}> / {settings.salesGoal}</Text>
+          </Text>
+          <Text style={styles.subLine}>
+            {remaining} left • {Math.abs(Math.round(stats.paceDelta))}{' '}
+            {stats.pace === 'ahead' ? 'ahead' : stats.pace === 'behind' ? 'behind' : 'on'} plan
+          </Text>
+
+          <View style={[styles.pacePill, { borderColor: paceColor }]}>
+            <View style={[styles.paceDot, { backgroundColor: paceColor }]} />
+            <Text style={[styles.paceText, { color: paceColor }]}>{paceLabel}</Text>
+          </View>
+        </View>
+
+        {/* Today's Focus */}
+        <Pressable
+          style={({ pressed }) => [styles.focusCard, pressed && styles.focusPressed]}
+          onPress={() => router.push('/add-deal')}
+        >
+          <View style={styles.focusLeft}>
+            <Text style={styles.focusEyebrow}>TODAY'S FOCUS</Text>
+            <Text style={styles.focusHeadline}>
+              {shortOfToday > 0
+                ? `${shortOfToday} more close${shortOfToday === 1 ? '' : 's'}`
+                : "Today's number is done"}
+            </Text>
+          </View>
+          <View style={styles.focusButton}>
+            <Text style={styles.focusButtonText}>
+              {shortOfToday > 0 ? 'Log sale →' : 'Wrap up →'}
+            </Text>
+          </View>
+        </Pressable>
+
+        {/* Performance row */}
+        <Text style={styles.sectionLabel}>Performance</Text>
+        <View style={styles.metricsRow}>
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>Sales today</Text>
+            <Text style={styles.metricValue}>{stats.todaySales}</Text>
+          </View>
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>This week</Text>
+            <Text style={styles.metricValue}>{stats.weekSales}</Text>
+          </View>
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>Pace</Text>
+            <Text style={[styles.metricValue, { color: paceColor }]}>
+              {stats.paceDelta >= 0 ? '+' : ''}
+              {round1(stats.paceDelta)}
+            </Text>
+          </View>
+          <View style={styles.metric}>
+            <Text style={styles.metricLabel}>Streak</Text>
+            <Text style={styles.metricValue}>{stats.currentStreak}</Text>
+          </View>
+        </View>
+
+        {/* Quick wrap-up */}
+        <Pressable
+          style={({ pressed }) => [styles.wrapCard, pressed && styles.focusPressed]}
+          onPress={() => router.push('/day')}
+        >
+          <FontAwesome name="sun-o" size={14} color={colors.gold} />
+          <Text style={styles.wrapText}>
+            {today.getHours() < 14 ? 'Roll out for the day' : 'Wrap up the day'}
+          </Text>
+          <FontAwesome name="chevron-right" size={12} color={colors.textFaint} />
+        </Pressable>
       </Screen>
+
       <MilestoneOverlay
         milestone={pendingCelebration}
         dailyAlert={pendingDailyAlert}
@@ -233,75 +139,108 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  seeAll: {
-    ...typography.badge,
-    color: colors.primary,
-  },
-  activity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  activityPressed: {
-    backgroundColor: colors.surfacePressed,
-  },
-  activityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.round,
-    backgroundColor: colors.success,
-    marginRight: spacing.md,
-  },
-  activityText: {
-    flex: 1,
-  },
-  activityName: {
-    ...typography.cardTitle,
-    color: colors.text,
-  },
-  activityMeta: {
-    ...typography.caption,
-    fontSize: 11,
-    color: colors.textFaint,
-    marginTop: 1,
-    textTransform: 'capitalize',
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+  header: {
+    paddingTop: spacing.md,
     marginBottom: spacing.xl,
   },
-  quick: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    minHeight: 48,
-    paddingVertical: spacing.md,
-    gap: spacing.sm,
+  eyebrow: {
+    ...typography.eyebrow,
+    color: colors.gold,
+    marginBottom: spacing.sm,
   },
-  quickPressed: {
-    backgroundColor: colors.surfacePressed,
-    transform: [{ scale: 0.99 }],
-  },
-  quickLabel: {
-    ...typography.badge,
+  headline: {
+    fontFamily: fonts.sansHeavy,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.8,
     color: colors.text,
   },
-});
+
+  progressBlock: {
+    alignItems: 'center',
+    marginBottom: spacing.xl + 8,
+  },
+  bigNumber: {
+    fontFamily: fonts.displayHeavy,
+    fontSize: 64,
+    lineHeight: 70,
+    letterSpacing: -2,
+    color: colors.text,
+  },
+  bigGoal: {
+    fontFamily: fonts.display,
+    fontSize: 36,
+    color: colors.textFaint,
+  },
+  subLine: {
+    ...typography.caption,
+    fontSize: 14,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+  },
+  pacePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radius.round,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: spacing.md,
+  },
+  paceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 7,
+  },
+  paceText: {
+    ...typography.badge,
+    fontSize: 11,
+  },
+
+  focusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    padding: 18,
+    marginBottom: spacing.xl,
+  },
+  focusPressed: {
+    backgroundColor: colors.surfacePressed,
+  },
+  focusLeft: {
+    flex: 1,
+  },
+  focusEyebrow: {
+    ...typography.badge,
+    color: colors.textMuted,
+    marginBottom: 4,
+  },
+  focusHeadline: {
+    ...typography.cardTitle,
+    fontSize: 17,
+    color: colors.text,
+  },
+  focusButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  focusButtonText: {
+    ...typography.button,
+    color: colors.onPrimary,
+    fontSize: 14,
+  },
+
+  sectionLabel: {
+    ...typography.sectionTitle,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    gap
