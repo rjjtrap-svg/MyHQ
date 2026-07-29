@@ -57,7 +57,7 @@ export function Button({
       ]}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={variant === 'hero' ? colors.background : variant === 'ghost' ? colors.textMuted : colors.text} />
+        <ActivityIndicator size="small" color={variant === 'hero' ? colors.onPrimary : variant === 'ghost' ? colors.textMuted : colors.text} />
       ) : (
         <Text style={[styles.label, labelSizes[size], labelVariants[variant]]}>{label}</Text>
       )}
@@ -99,7 +99,7 @@ const labelSizes = StyleSheet.create({
 });
 
 /**
- * `solid` is glass, not a colour fill. A saturated blue slab is the loudest thing on a dark
+ * `solid` is glass, not a colour fill. A saturated fill is the loudest thing on a dark
  * screen and it was winning against the content it sat under. A lit tint of the background
  * with a brighter edge still reads as the one thing to press, because it is the only element
  * on the screen with that edge — hierarchy from light rather than from hue.
@@ -107,24 +107,24 @@ const labelSizes = StyleSheet.create({
  * `ghost` keeps the dimmer border so the two are still distinguishable side by side.
  */
 const variants = StyleSheet.create({
-  // The one loud thing. White on a dark screen is the only fill that outranks glass without
-  // introducing a hue, which is what keeps the palette monochrome while still having a
-  // clear primary. Use it once per screen — twice and neither is primary.
-  hero: { backgroundColor: colors.text },
+  // The one loud thing, and the one place the brand accent is allowed to be a fill rather
+  // than a hairline. Gold on a near-black screen is the only fill that outranks glass without
+  // reaching for a second hue. Use it once per screen — twice and neither is primary.
+  hero: { backgroundColor: colors.primary },
   solid: { backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorderStrong },
   ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
   danger: { backgroundColor: colors.dangerSurface, borderWidth: 1, borderColor: colors.dangerBorder },
 });
 
 const pressedVariants = StyleSheet.create({
-  hero: { backgroundColor: colors.textSecondary, transform: [{ scale: 0.97 }] },
+  hero: { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.97 }] },
   solid: { backgroundColor: colors.glassPressed, transform: [{ scale: 0.97 }] },
   ghost: { backgroundColor: colors.surfacePressed, transform: [{ scale: 0.97 }] },
   danger: { backgroundColor: colors.dangerBorder, transform: [{ scale: 0.97 }] },
 });
 
 const labelVariants = StyleSheet.create({
-  hero: { color: colors.background },
+  hero: { color: colors.onPrimary },
   solid: { color: colors.text },
   ghost: { color: colors.textMuted },
   danger: { color: colors.dangerText },

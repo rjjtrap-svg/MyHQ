@@ -23,12 +23,16 @@ export const layout = {
   minTouchTarget: 44,
 } as const;
 
+/**
+ * Deliberately more restrained than a typical soft "AI" UI — small, intentional radii rather
+ * than the generic rounded-everything look. `round` stays for true pills and circular controls.
+ */
 export const radius = {
-  xs: 6,
-  sm: 10,
-  md: 16,
-  lg: 24,
-  xl: 32,
+  xs: 2,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 18,
   round: 999,
 } as const;
 

@@ -1,71 +1,78 @@
 /**
- * The palette. Dark-first performance aesthetic — deep charcoal rather than pure black,
- * layered surfaces, one confident action accent, and gold kept as the brand thread so the
- * app still reads as the same product at night rather than a generic dark dashboard.
+ * The palette. Cinematic near-black, layered greyscale surfaces, and a single soft gold/beige
+ * accent — the only colour allowed to carry the brand. Quiet luxury, not a startup dashboard:
+ * no second brand hue competing with gold, no bright fills. Semantic states (danger, success,
+ * warning, info, premium, pace) keep their own hues on purpose — they report information, not
+ * identity — but every surface and neutral in the app now reads as deep charcoal rather than
+ * the old cool-blue dark theme.
  *
  * MIGRATION NOTE, read before using `primary`:
- * In the cream palette `primary` was a dark brown, and several components used it as a
- * large surface fill (quote cards, the why card, the overrides hero). Inverted, `primary`
- * is now a saturated blue *action* colour. Filling a whole card with it looks like a
- * warning, not a feature. Use `surfaceElevated` or `brandSurface` for large fills and keep
- * `primary` for buttons, active states and interactive affordances.
+ * `primary` is the one action/brand accent — a soft gold/beige (`#D4C09A` range), not the old
+ * electric-indigo blue. It is light, so anything filled with it needs dark text on top
+ * (`onPrimary`), not white. Use `surfaceElevated` or `brandSurface` for large fills; keep
+ * `primary` for buttons, active states and the interactive affordances a screen wants you to
+ * notice.
  *
- * Every token name from the cream palette is preserved on purpose — 44 files import from
+ * Every token name from the previous palette is preserved on purpose — 44 files import from
  * here, and renaming would have turned a repaint into a refactor.
  */
 export const colors = {
-  /** Primary background. Near-black with a cool cast; pure #000 reads cheap and crushes shadows. */
-  background: '#0E1014',
+  /** Primary background. Deep, near-true black with a faint warm cast; pure #000 crushes shadows. */
+  background: '#0B0B0A',
   /** Secondary background — sections and inset groups. */
-  surface: '#16191F',
+  surface: '#141412',
   /** Card surface. The default resting plane for content. */
-  surfaceElevated: '#1D212A',
+  surfaceElevated: '#1C1C19',
   /** One step above a card: modals, sheets, the thing you're acting on. */
-  surfaceRaised: '#252A35',
+  surfaceRaised: '#26251F',
   /** Pressed state for any tappable surface. */
-  surfacePressed: '#2E3440',
+  surfacePressed: '#302F27',
   /** A deliberately branded dark plane — replaces the old brown fills. */
-  brandSurface: '#1A1D25',
+  brandSurface: '#161512',
 
-  border: '#2A2F3A',
-  borderSubtle: '#242933',
-  borderStrong: '#3A4250',
-  divider: '#20242C',
+  border: '#2C2A24',
+  borderSubtle: '#211F1A',
+  borderStrong: '#3D3A30',
+  divider: '#1D1C18',
 
-  text: '#F2F5F9',
-  textPrimary: '#F2F5F9',
-  textSecondary: '#B8C0CC',
-  textMuted: '#9AA3B2',
-  textFaint: '#68717F',
-  /** Text and icons sitting on `primary`. */
-  onPrimary: '#FFFFFF',
+  text: '#F5F2EA',
+  textPrimary: '#F5F2EA',
+  textSecondary: '#B7B0A2',
+  textMuted: '#8C8577',
+  textFaint: '#5C564A',
+  /** Text and icons sitting on `primary`. Primary is light now, so this is dark, not white. */
+  onPrimary: '#15130D',
 
-  /** Primary action. Electric indigo — navigation, buttons, the thing to tap. */
-  primary: '#5B8CFF',
-  primaryPressed: '#4570E8',
-  /** Low-emphasis tint of the action colour: secondary labels on primary surfaces. */
-  primaryMuted: '#8FAEFF',
-  /** Secondary accent, used where the old palette used a mid brown. */
-  accent: '#7C93B8',
-  /** The brand thread. Achievements, eyebrows, the mark itself. */
-  gold: '#E0A93B',
+  /** Primary action and the one brand accent. Soft gold/beige — navigation, buttons, the thing to tap. */
+  primary: '#D4C09A',
+  primaryPressed: '#BFA97C',
+  /**
+   * Low-emphasis tint of the action colour: secondary labels on primary surfaces, and soft
+   * "done"/selected badge fills. Kept as rgba rather than a flat hex so it reads correctly
+   * whether it's used as translucent text or as a translucent wash over a dark surface.
+   */
+  primaryMuted: 'rgba(212, 192, 154, 0.7)',
+  /** Secondary, quieter-than-primary neutral — warm grey, not a second hue. Gold stays the only accent. */
+  accent: '#948C7C',
+  /** The brand thread. Achievements, eyebrows, the mark itself. Same value as `primary` on purpose. */
+  gold: '#D4C09A',
 
   danger: '#E5484D',
   /** Alert surfaces. Dark-tinted rather than pale — a pale block on charcoal is a flashbang. */
-  dangerSurface: '#2A1618',
-  dangerBorder: '#5C2226',
-  dangerText: '#FF8F94',
+  dangerSurface: '#241512',
+  dangerBorder: '#4A241F',
+  dangerText: '#FF9891',
 
   success: '#34C77B',
   warning: '#F5A524',
   info: '#4FA9F5',
-  infoSurface: '#142433',
-  infoBorder: '#285170',
+  infoSurface: '#141C24',
+  infoBorder: '#25384A',
   /** Premium insight and coaching. Used sparingly — it stops meaning anything otherwise. */
   premium: '#A277FF',
 
-  disabledSurface: '#1A1E26',
-  disabledText: '#59616E',
+  disabledSurface: '#1A1916',
+  disabledText: '#4C473C',
 
   /**
    * Glass. Buttons and active segments are lit tints of the background rather than a solid
@@ -75,41 +82,40 @@ export const colors = {
    * `surfaceElevated` and plain `background` and pick up whatever is underneath. A hex
    * would be right on exactly one of those and wrong on the other two.
    */
-  glass: 'rgba(255, 255, 255, 0.07)',
-  glassPressed: 'rgba(255, 255, 255, 0.14)',
-  glassBorder: 'rgba(255, 255, 255, 0.16)',
+  glass: 'rgba(255, 255, 255, 0.06)',
+  glassPressed: 'rgba(255, 255, 255, 0.12)',
+  glassBorder: 'rgba(255, 255, 255, 0.14)',
   /** The primary action's edge — the one thing allowed to be brighter than its neighbours. */
-  glassBorderStrong: 'rgba(255, 255, 255, 0.30)',
+  glassBorderStrong: 'rgba(255, 255, 255, 0.28)',
 
   /** Pace states. Green ahead, amber behind — never red, being behind is not a failure. */
   ahead: '#34C77B',
-  onPace: '#5B8CFF',
+  onPace: '#D4C09A',
   behind: '#F5A524',
   fire: '#FF7A45',
-  fireSurface: '#2B1B16',
-  fireBorder: '#6B3524',
+  fireSurface: '#26160F',
+  fireBorder: '#5C3620',
 
   /** Scrim used behind modal celebrations and blocking overlays. */
-  overlay: 'rgba(6, 7, 10, 0.76)',
-  goldSurface: '#2B2417',
+  overlay: 'rgba(5, 4, 3, 0.78)',
+  goldSurface: '#241E13',
 
   /**
    * Knock dispositions. Deliberately not the danger/success pair — a "not interested" is a
    * normal outcome at a door, not an error state, and colouring it like one makes a good
    * day's work look like a screen full of failures.
    */
-  knockNotHome: '#68717F',
-  knockNotInterested: '#7C93B8',
-  knockCallback: '#E0A93B',
+  knockNotHome: '#6E6A60',
+  knockNotInterested: '#948C7C',
+  knockCallback: '#D4C09A',
   knockSold: '#34C77B',
   knockDoNotKnock: '#E5484D',
 
   /**
    * The launcher icon's own colours — they mirror PRIMARY and GOLD in
    * tools/generate_icon.py exactly. Unused by app code since the in-app mark became
-   * `Mark.tsx` (a door, drawn from `gold` and `primary`); kept because the generated
-   * icon/splash/favicon set still uses these values, so deleting them here would leave the
-   * generator's palette undocumented.
+   * `Mark.tsx`; kept because the generated icon/splash/favicon set still uses these values,
+   * so deleting them here would leave the generator's palette undocumented.
    *
    * NOTE: the launcher icon is still the old ouroboros and no longer matches `Mark.tsx`.
    * Re-cutting the icon from the door geometry is a separate job — see AGENTS.md.
@@ -117,8 +123,8 @@ export const colors = {
   markBody: '#B08034',
   markHighlight: '#FFC75E',
 
-  gradientPrimary: ['#5B8CFF', '#7C6BFF'] as const,
-  gradientGold: ['#E0A93B', '#FF7A45'] as const,
+  gradientPrimary: ['#D4C09A', '#BFA97C'] as const,
+  gradientGold: ['#D4C09A', '#B08F5C'] as const,
 
   /**
    * Time-of-day surfaces. These are the one place colour is allowed to be atmosphere rather
@@ -126,13 +132,14 @@ export const colors = {
    * closing down. A rep opening this at 7am and at 9pm should not see the same screen.
    *
    * Both land on `background` at the bottom so a gradient panel dissolves into the page
-   * instead of ending on a hard edge.
+   * instead of ending on a hard edge. Dusk stays a warm charcoal now rather than navy, so it
+   * doesn't reintroduce blue as a second hue.
    */
-  gradientDawn: ['#4A2E1C', '#1A1410', '#0E1014'] as const,
-  gradientDusk: ['#1B2440', '#101624', '#0E1014'] as const,
+  gradientDawn: ['#4A2E1C', '#1A1410', '#0B0B0A'] as const,
+  gradientDusk: ['#221F1A', '#151412', '#0B0B0A'] as const,
 
   /** Trough behind any progress bar or ring. */
-  track: '#252A35',
+  track: '#26251F',
 } as const;
 
 export type AppColors = typeof colors;
