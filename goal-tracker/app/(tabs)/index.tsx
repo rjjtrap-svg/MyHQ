@@ -1,11 +1,10 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
 import { useUIStore } from '@/src/store/uiStore';
 import { useAuthStore } from '@/src/store/authStore';
-import { pendingFollowUps } from '@/src/lib/dealFollowUps';
 import { MilestoneOverlay } from '@/src/components/MilestoneOverlay';
 import { Screen } from '@/src/components/Screen';
 import { colors, radius, spacing, typography, fonts } from '@/src/theme';
@@ -16,7 +15,7 @@ function round1(n: number): string {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { deals, settings, stats } = useGoalStats();
+  const { settings, stats } = useGoalStats();
   const profile = useAuthStore((s) => s.profile);
   const pendingCelebration = useUIStore((s) => s.pendingCelebration);
   const clearCelebration = useUIStore((s) => s.clearCelebration);
@@ -74,7 +73,7 @@ export default function HomeScreen() {
         {/* Today's Focus */}
         <Pressable
           style={({ pressed }) => [styles.focusCard, pressed && styles.focusPressed]}
-          onPress={() => router.push('/add-deal')}
+          onPress={() => router.push(shortOfToday > 0 ? '/add-deal' : '/day')}
         >
           <View style={styles.focusLeft}>
             <Text style={styles.focusEyebrow}>TODAY'S FOCUS</Text>
@@ -243,4 +242,46 @@ const styles = StyleSheet.create({
   },
   metricsRow: {
     flexDirection: 'row',
-    gap
+    gap: 10,
+    marginBottom: spacing.xl,
+  },
+  metric: {
+    flex: 1,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  metricLabel: {
+    ...typography.badge,
+    fontSize: 10,
+    color: colors.textMuted,
+    marginBottom: 6,
+  },
+  metricValue: {
+    fontFamily: fonts.display,
+    fontSize: 22,
+    color: colors.text,
+  },
+
+  wrapCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    gap: 12,
+    marginBottom: spacing.xxl,
+  },
+  wrapText: {
+    ...typography.cardTitle,
+    color: colors.text,
+    flex: 1,
+  },
+});
