@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  ImageBackground,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +24,34 @@ import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const COVER = require('../assets/images/auth-cover-final.jpg');
+/** Intrinsic size of the cover, so the crop can be computed rather than declared. */
+const COVER_W = 1200;
+const COVER_H = 800;
+
+/**
+ * Cover, by hand.
+ *
+ * react-native-web applies object-fit to Image from neither the `resizeMode` prop nor the
+ * style key, and ImageBackground lays out at the asset's natural size instead of filling its
+ * parent. On a 414pt phone that left a 1200pt-wide landscape photo anchored to the left edge,
+ * so the screen showed a stone plinth and the subject was off-frame entirely. It only looked
+ * right on a tablet, where the viewport happened to be wide enough to contain it.
+ *
+ * Scaling to max(w/W, h/H) and centring the overflow is the one form the layout engine
+ * cannot misread, and it is identical on native.
+ */
+function coverStyle(width: number, height: number) {
+  const scale = Math.max(width / COVER_W, height / COVER_H);
+  const w = COVER_W * scale;
+  const h = COVER_H * scale;
+  return {
+    position: 'absolute' as const,
+    width: w,
+    height: h,
+    left: (width - w) / 2,
+    top: (height - h) / 2,
+  };
+}
 
 /** The loop of the job, spread across the image the way GOAT spreads past/present/future. */
 const BEATS = ['KNOCK', 'CLOSE', 'REPEAT'];
@@ -52,7 +80,7 @@ const COPY: Record<
 };
 
 export default function AuthScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const narrow = width < 430;
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const profile = useAuthStore((s) => s.profile);
@@ -130,16 +158,12 @@ export default function AuthScreen() {
   if (mode === 'landing') {
     return (
       <View style={styles.landing}>
-        <ImageBackground
-          source={COVER}
-          resizeMode={narrow ? 'contain' : 'cover'}
-          style={styles.cover}
-          imageStyle={[styles.coverImage, narrow && styles.coverImageNarrow]}
-        >
+        <View style={styles.cover}>
+          <Image source={COVER} style={coverStyle(width, height)} />
           <View style={[styles.coolWash, narrow && styles.coolWashNarrow]} pointerEvents="none" />
           <LinearGradient
             colors={['transparent', colors.overlay, colors.background]}
-            locations={[0.36, 0.74, 1]}
+            locations={[0.28, 0.66, 0.94]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -159,6 +183,7 @@ export default function AuthScreen() {
             </View>
 
             <View style={styles.landingBottom}>
+              <Text style={styles.landingHeadline}>One more door.</Text>
               <Text style={styles.landingNote}>Built for the doors, not the desk.</Text>
               <Button
                 label="Sign up"
@@ -182,7 +207,7 @@ export default function AuthScreen() {
               </Pressable>
             </View>
           </SafeAreaView>
-        </ImageBackground>
+        </View>
       </View>
     );
   }
@@ -195,12 +220,8 @@ export default function AuthScreen() {
   });
 
   return (
-    <ImageBackground
-      source={COVER}
-      resizeMode="cover"
-      style={styles.formBackdrop}
-      imageStyle={styles.formImage}
-    >
+    <View style={styles.formBackdrop}>
+      <Image source={COVER} style={coverStyle(width, height)} />
       <View style={styles.formWash} pointerEvents="none" />
       <LinearGradient
         colors={[colors.overlay, colors.overlay, colors.background]}
@@ -332,7 +353,7 @@ export default function AuthScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -440,19 +461,33 @@ const styles = StyleSheet.create({
   },
   beat: {
     ...typography.badge,
-    fontSize: 13,
-    letterSpacing: 1.2,
-    color: colors.text,
+    fontSize: 11,
+    letterSpacing: 2.6,
+    color: colors.textSecondary,
   },
-  landingBottom: { paddingBottom: spacing.lg, gap: spacing.md, alignItems: 'center' },
+  landingBottom: { paddingBottom: spacing.xl, alignItems: 'center' },
+  /**
+   * The headline the screen was missing. Centred and set at display size so the bottom of
+   * the frame carries weight instead of trailing off into a caption and a button.
+   */
+  landingHeadline: {
+    ...typography.pageTitle,
+    fontSize: 40,
+    lineHeight: 44,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
   landingNote: {
     ...typography.caption,
     fontSize: 12,
-    color: colors.textSecondary,
+    color: colors.textMuted,
+    letterSpacing: 0.2,
+    marginBottom: spacing.lg,
   },
   // Square, not a pill. The reference's button is a hard rectangle and that squared edge is
   // most of why it reads as a brand rather than as a form control.
-  landingCta: { borderRadius: 0, width: '100%' },
+  landingCta: { borderRadius: 0, width: '100%', marginBottom: spacing.lg },
   landingLink: {
     ...typography.caption,
     fontSize: 13,
