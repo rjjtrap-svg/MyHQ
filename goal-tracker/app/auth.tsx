@@ -16,8 +16,8 @@ import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const COVER = require('../assets/images/auth-cover-final.jpg');
 
-/** The loop of the job, spread across the image the way GOAT spreads past/present/future. */
-const BEATS = ['KNOCK', 'CLOSE', 'REPEAT'];
+/** The loop of the job — the landing screen's one line of copy, stated as a headline. */
+const BEATS = ['Knock', 'Close', 'Repeat'];
 
 type Mode = 'landing' | 'sign-in' | 'sign-up';
 type FieldName = 'name' | 'email' | 'password' | 'code';
@@ -127,8 +127,14 @@ export default function AuthScreen() {
         >
           <View style={styles.coolWash} pointerEvents="none" />
           <LinearGradient
+            colors={[colors.overlay, 'transparent']}
+            locations={[0, 0.32]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <LinearGradient
             colors={['transparent', colors.overlay, colors.background]}
-            locations={[0.48, 0.8, 1]}
+            locations={[0.42, 0.78, 1]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -139,16 +145,12 @@ export default function AuthScreen() {
               <Text style={styles.wordmark}>MYHQ</Text>
             </View>
 
-            <View style={styles.beats}>
-              {BEATS.map((beat) => (
-                <Text key={beat} style={styles.beat}>
-                  {beat}
-                </Text>
-              ))}
+            <View style={styles.landingHeadline}>
+              <Text style={styles.headline}>{BEATS.join('. ')}.</Text>
+              <Text style={styles.headlineSub}>Built for the doors, not the desk.</Text>
             </View>
 
             <View style={styles.landingBottom}>
-              <Text style={styles.landingNote}>Built for the doors, not the desk.</Text>
               <Button
                 label="Sign up"
                 onPress={() => {
@@ -166,7 +168,9 @@ export default function AuthScreen() {
                 }}
                 hitSlop={12}
                 accessibilityRole="link"
+                style={styles.landingLinkRow}
               >
+                <Text style={styles.landingLinkPrompt}>Already have an account? </Text>
                 <Text style={styles.landingLink}>Log in</Text>
               </Pressable>
             </View>
@@ -280,6 +284,7 @@ export default function AuthScreen() {
           <Button
             label={copy.action}
             onPress={mode === 'sign-in' ? handleSignIn : handleSignUp}
+            variant="hero"
             size="lg"
             busy={busy}
             style={styles.submit}
@@ -358,10 +363,12 @@ const styles = StyleSheet.create({
   landing: { flex: 1, backgroundColor: colors.background },
   cover: { flex: 1 },
   coverImage: { alignSelf: 'center' },
+  // A heavy scrim rather than a light tint — it's what mutes a colour photo down toward the
+  // desaturated, greyscale mood the rest of the app lives in, without touching the asset.
   coolWash: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.background,
-    opacity: 0.3,
+    opacity: 0.58,
   },
   landingSafe: {
     flex: 1,
@@ -383,34 +390,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2.4,
   },
-  /** The three beats sit on the optical centre of the image, spread edge to edge. */
-  beats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xxl,
-  },
-  beat: {
-    ...typography.badge,
-    fontSize: 13,
-    letterSpacing: 1.2,
+  // The one statement on the screen — big, confident, sitting where the eye lands first.
+  landingHeadline: { marginBottom: spacing.xxl },
+  headline: {
+    ...typography.hero,
+    fontSize: 40,
+    lineHeight: 44,
     color: colors.text,
   },
-  landingBottom: { paddingBottom: spacing.lg, gap: spacing.md, alignItems: 'center' },
-  landingNote: {
-    ...typography.caption,
+  headlineSub: {
+    ...typography.eyebrow,
     fontSize: 12,
-    color: colors.textSecondary,
+    letterSpacing: 2.2,
+    color: colors.primary,
+    marginTop: spacing.md,
   },
+  landingBottom: { paddingBottom: spacing.lg, gap: spacing.lg, alignItems: 'center' },
   // Square, not a pill. The reference's button is a hard rectangle and that squared edge is
   // most of why it reads as a brand rather than as a form control.
   landingCta: { borderRadius: 0, width: '100%' },
+  landingLinkRow: { flexDirection: 'row', alignItems: 'center' },
+  landingLinkPrompt: {
+    ...typography.caption,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
   landingLink: {
     ...typography.caption,
     fontSize: 13,
     fontFamily: fonts.sansBold,
-    color: colors.text,
-    textDecorationLine: 'underline',
+    color: colors.primary,
   },
 
   title: {
@@ -457,9 +466,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   // The only state change on the form. A focus ring is the one affordance a dark form needs
-  // and the old screen had none — you could not tell which field you were typing into.
+  // and the old screen had none — you could not tell which field you were typing into. Gold,
+  // not white, so the one accent colour is what tells you where you are.
   inputFocused: {
-    borderColor: colors.glassBorderStrong,
+    borderColor: colors.primary,
     backgroundColor: colors.surfaceElevated,
   },
   codeInput: {
@@ -497,8 +507,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontSize: 13,
     fontFamily: fonts.sansBold,
-    color: colors.text,
-    textDecorationLine: 'underline',
+    color: colors.primary,
   },
 
   setupTitle: {
