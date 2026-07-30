@@ -17,6 +17,7 @@ import { formatClock } from '@/src/lib/dates';
 import { confirmAction, notify } from '@/src/lib/dialogs';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { Button } from '@/src/components/Button';
 import { fonts, colors, layout, radius, spacing, typography } from '@/src/theme';
 import { firebaseEnabled } from '@/src/firebase/config';
 import { Membership, Role } from '@/src/types';
@@ -543,9 +544,7 @@ export default function SettingsScreen() {
           <Section title="Account">
             <Text style={styles.accountName}>{profile.displayName}</Text>
             <Text style={styles.accountEmail}>{profile.email}</Text>
-            <Pressable style={styles.signOutButton} onPress={handleSignOut}>
-              <Text style={styles.signOutText}>Sign out</Text>
-            </Pressable>
+            <Button label="Sign out" variant="danger" size="lg" onPress={handleSignOut} />
           </Section>
         )}
       </ScrollView>
@@ -679,17 +678,6 @@ const styles = StyleSheet.create({
     color: colors.textFaint,
     marginTop: 2,
     marginBottom: spacing.md,
-  },
-  signOutButton: {
-    borderWidth: 1,
-    borderColor: colors.danger,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  signOutText: {
-    color: colors.danger,
-    fontFamily: fonts.sansBold,
   },
   numberRow: {
     flexDirection: 'row',

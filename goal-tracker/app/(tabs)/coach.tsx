@@ -27,6 +27,7 @@ import { LockInTab } from '@/src/components/lockin/LockInTab';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { Banner } from '@/src/components/Banner';
+import { Button } from '@/src/components/Button';
 import { fonts, colors, radius, spacing, typography } from '@/src/theme';
 import { ObjectionExchange, PitchSubmission } from '@/src/types';
 
@@ -137,16 +138,8 @@ function PitchSubmissionCard({
       {confirming && (
         <View style={styles.deleteConfirmRow}>
           <Text style={styles.deleteConfirmText}>Delete this pitch?</Text>
-          <Pressable onPress={() => setConfirming(false)} style={styles.resetCancelButton} disabled={deleting}>
-            <Text style={styles.resetCancelText}>Cancel</Text>
-          </Pressable>
-          <Pressable onPress={() => onDelete(submission.id)} style={styles.deleteConfirmButton} disabled={deleting}>
-            {deleting ? (
-              <ActivityIndicator size="small" color={colors.background} />
-            ) : (
-              <Text style={styles.resetConfirmButtonText}>Delete</Text>
-            )}
-          </Pressable>
+          <Button label="Cancel" variant="ghost" size="sm" onPress={() => setConfirming(false)} disabled={deleting} />
+          <Button label="Delete" variant="danger" size="sm" onPress={() => onDelete(submission.id)} busy={deleting} />
         </View>
       )}
 
@@ -537,20 +530,8 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
             still knows your goals, your history, and what you've worked on together.
           </Text>
           <View style={styles.resetConfirmButtons}>
-            <Pressable
-              onPress={() => setConfirmingReset(false)}
-              style={styles.resetCancelButton}
-              disabled={resetting}
-            >
-              <Text style={styles.resetCancelText}>Cancel</Text>
-            </Pressable>
-            <Pressable onPress={confirmReset} style={styles.resetConfirmButton} disabled={resetting}>
-              {resetting ? (
-                <ActivityIndicator size="small" color={colors.background} />
-              ) : (
-                <Text style={styles.resetConfirmButtonText}>Start fresh</Text>
-              )}
-            </Pressable>
+            <Button label="Cancel" variant="ghost" size="sm" onPress={() => setConfirmingReset(false)} disabled={resetting} />
+            <Button label="Start fresh" variant="danger" size="sm" onPress={confirmReset} busy={resetting} />
           </View>
         </View>
       )}
@@ -579,20 +560,14 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
           {confirmDeleteId === m.id && (
             <View style={styles.deleteConfirmRow}>
               <Text style={styles.deleteConfirmText}>Delete this message?</Text>
-              <Pressable onPress={() => setConfirmDeleteId(null)} style={styles.resetCancelButton} disabled={!!deletingId}>
-                <Text style={styles.resetCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
+              <Button label="Cancel" variant="ghost" size="sm" onPress={() => setConfirmDeleteId(null)} disabled={!!deletingId} />
+              <Button
+                label="Delete"
+                variant="danger"
+                size="sm"
                 onPress={() => confirmDelete(m.id)}
-                style={styles.deleteConfirmButton}
-                disabled={!!deletingId}
-              >
-                {deletingId === m.id ? (
-                  <ActivityIndicator size="small" color={colors.background} />
-                ) : (
-                  <Text style={styles.resetConfirmButtonText}>Delete</Text>
-                )}
-              </Pressable>
+                busy={deletingId === m.id}
+              />
             </View>
           )}
         </View>
@@ -1073,29 +1048,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: spacing.sm,
   },
-  resetCancelButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-  },
-  resetCancelText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    fontFamily: fonts.sansSemiBold,
-  },
-  resetConfirmButton: {
-    backgroundColor: colors.danger,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-    minWidth: 90,
-    alignItems: 'center',
-  },
-  resetConfirmButtonText: {
-    color: colors.onPrimary,
-    fontSize: 13,
-    fontFamily: fonts.sansBold,
-  },
   deleteConfirmRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1107,13 +1059,5 @@ const styles = StyleSheet.create({
   deleteConfirmText: {
     ...typography.caption,
     color: colors.textMuted,
-  },
-  deleteConfirmButton: {
-    backgroundColor: colors.danger,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-    minWidth: 70,
-    alignItems: 'center',
   },
 });

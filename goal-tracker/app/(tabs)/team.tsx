@@ -1,7 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/src/store/authStore';
@@ -13,7 +12,8 @@ import { CircularProgress } from '@/src/components/CircularProgress';
 import { Section } from '@/src/components/Section';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { SegmentedToggle } from '@/src/components/Button';
-import { colors, layout, radius, spacing, typography } from '@/src/theme';
+import { Screen } from '@/src/components/Screen';
+import { colors, radius, spacing, typography } from '@/src/theme';
 import { LeaderboardEntry } from '@/src/types';
 
 function formatMoney(amount: number): string {
@@ -169,20 +169,16 @@ export default function TeamScreen() {
 
   if (!team) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <Screen scroll={false} testID="team-screen">
         <View style={styles.centerContent}>
           <Text style={styles.body}>Loading your team…</Text>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+    <Screen testID="team-screen">
         <ScreenHeader
           eyebrow="The crew"
           title={team.name}
@@ -280,16 +276,11 @@ export default function TeamScreen() {
             </View>
           </Section>
         )}
-      </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   centerContent: {
     flex: 1,
     alignItems: 'center',
@@ -298,13 +289,6 @@ const styles = StyleSheet.create({
   body: {
     ...typography.body,
     color: colors.textMuted,
-  },
-  content: {
-    width: '100%',
-    maxWidth: layout.contentMaxWidth,
-    alignSelf: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
   },
   progressCard: {
     alignItems: 'center',

@@ -22,6 +22,7 @@ import { ProfileBody, profileStyles } from '@/src/components/ProfileBody';
 import { PersonalBestsEditor } from '@/src/components/PersonalBestsEditor';
 import { StreakFlame } from '@/src/components/StreakFlame';
 import { Banner } from '@/src/components/Banner';
+import { Button } from '@/src/components/Button';
 import { Screen } from '@/src/components/Screen';
 import { fonts, colors, elevation, layout, radius, spacing, typography } from '@/src/theme';
 
@@ -142,16 +143,8 @@ export default function ProfileScreen() {
               />
               <View style={styles.bioButtons}>
                 <Text style={styles.bioCount}>{MAX_BIO_LENGTH - bioDraft.length} left</Text>
-                <Pressable onPress={() => setEditingBio(false)} style={styles.ghostButton} disabled={saving}>
-                  <Text style={styles.ghostButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable onPress={saveBio} style={styles.solidButton} disabled={saving}>
-                  {saving ? (
-                    <ActivityIndicator size="small" color={colors.background} />
-                  ) : (
-                    <Text style={styles.solidButtonText}>Save</Text>
-                  )}
-                </Pressable>
+                <Button label="Cancel" variant="ghost" size="sm" onPress={() => setEditingBio(false)} disabled={saving} />
+                <Button label="Save" variant="hero" size="sm" onPress={saveBio} busy={saving} />
               </View>
             </View>
           ) : (
@@ -247,17 +240,6 @@ const styles = StyleSheet.create({
   },
   bioButtons: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.sm },
   bioCount: { ...typography.caption, color: colors.textFaint, marginRight: 'auto' },
-  ghostButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
-  ghostButtonText: { ...typography.caption, color: colors.textMuted, fontFamily: fonts.sansBold },
-  solidButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.sm,
-    minWidth: 76,
-    alignItems: 'center',
-  },
-  solidButtonText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.sansBold },
 
   editBestsRow: {
     flexDirection: 'row',

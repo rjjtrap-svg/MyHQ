@@ -175,7 +175,7 @@ export default function AddDealScreen() {
               </View>
 
               <Pressable
-                style={[styles.actionButton, uploading && { opacity: 0.6 }]}
+                style={[styles.actionButton, uploading && styles.actionButtonInactive]}
                 onPress={takePhoto}
                 disabled={uploading}
               >
@@ -184,11 +184,11 @@ export default function AddDealScreen() {
               </Pressable>
 
               <Pressable
-                style={[styles.actionButtonSecondary, uploading && { opacity: 0.6 }]}
+                style={[styles.actionButtonSecondary, uploading && styles.actionButtonInactive]}
                 onPress={pickFromLibrary}
                 disabled={uploading}
               >
-                <FontAwesome name="image" size={16} color={colors.primary} />
+                <FontAwesome name="image" size={16} color={colors.textMuted} />
                 <Text style={styles.actionButtonSecondaryText}>Choose from library</Text>
               </Pressable>
 
@@ -281,7 +281,7 @@ export default function AddDealScreen() {
                 <Banner message={error} />
               )}
 
-              <Pressable style={[styles.saveButton, saving && { opacity: 0.6 }]} onPress={saveDetails} disabled={saving}>
+              <Pressable style={[styles.saveButton, saving && styles.actionButtonInactive]} onPress={saveDetails} disabled={saving}>
                 <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save details'}</Text>
               </Pressable>
             </>
@@ -343,20 +343,22 @@ const styles = StyleSheet.create({
     color: colors.textFaint,
     textAlign: 'center',
   },
+  // Mirrors Button's `hero` / `ghost` variants — the loud, once-per-screen fill plus a
+  // dimmer bordered secondary — rather than a solid `colors.primary` slab, which was the
+  // exact anti-pattern Button.tsx was built to retire.
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.text,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     marginBottom: spacing.sm,
   },
   actionButtonText: {
-    color: colors.onPrimary,
-    fontFamily: fonts.sansBold,
-    fontSize: 15,
+    ...typography.button,
+    color: colors.background,
   },
   actionButtonSecondary: {
     flexDirection: 'row',
@@ -364,15 +366,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.border,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
   },
   actionButtonSecondaryText: {
-    color: colors.primary,
-    fontFamily: fonts.sansBold,
-    fontSize: 15,
+    ...typography.button,
+    color: colors.textMuted,
   },
+  actionButtonInactive: { opacity: 0.55 },
   uploadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -453,16 +455,14 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   saveButton: {
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.primary,
+    backgroundColor: colors.text,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
     marginTop: spacing.sm,
   },
   saveButtonText: {
-    color: colors.primary,
-    fontFamily: fonts.sansBold,
+    ...typography.button,
+    color: colors.background,
   },
 });
