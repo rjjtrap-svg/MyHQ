@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   deleteField,
   doc,
   getDoc,
@@ -104,4 +105,18 @@ export async function assignOverseer(teamId: string, repUid: string, overseerUid
     { overseerUid: overseerUid ?? deleteField() },
     { merge: true }
   );
+}
+
+/**
+ * Manager-only: removes someone from the team roster (they left, went inactive, etc).
+ * This only deletes their `members` doc — deals live in a separate top-level `deals`
+ * collection keyed by `repUid`, never nested under the member, so their sales history stays
+ * exactly where it was: still counted in team totals, still visible in the pipeline, just no
+ * longer shown on the leaderboard (which is built by mapping over current `members`).
+ * Their Firebase Auth account and `users/{uid}` profile are untouched, so if they come back
+ * they can rejoin with a fresh invite code rather than being locked out permanently.
+ */
+export async function removeMember(teamId: string, uid: string): Promise<void> {
+  if (!db) throw new Error('Firebase is not configured.');
+  await deleteDoc(doc(db, 'teams', teamId, 'members', uid));
 }

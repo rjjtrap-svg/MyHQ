@@ -9,7 +9,7 @@ import { useDealsStore } from '@/src/store/dealsStore';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTeamStore } from '@/src/store/teamStore';
 import { signOutUser } from '@/src/firebase/auth';
-import { updateMemberRole, assignOverseer } from '@/src/firebase/teams';
+import { updateMemberRole, assignOverseer, removeMember } from '@/src/firebase/teams';
 import { syncDailyReminder } from '@/src/lib/notifications';
 import { getWebPushPermission, isWebPushSupported, requestWebPushPermission } from '@/src/lib/push';
 import { generateId } from '@/src/lib/id';
@@ -118,6 +118,7 @@ function MemberManagementRow({
   busy,
   onChangeRole,
   onChangeOverseer,
+  onRemove,
 }: {
   member: Membership;
   myUid?: string;
@@ -125,14 +126,26 @@ function MemberManagementRow({
   busy: boolean;
   onChangeRole: (uid: string, role: Role) => void;
   onChangeOverseer: (uid: string, overseerUid: string | null) => void;
+  onRemove: (uid: string, displayName: string) => void;
 }) {
   const isSelf = member.uid === myUid;
   return (
     <View style={styles.memberRow}>
-      <Text style={styles.memberName}>
-        {member.displayName}
-        {isSelf ? ' (you)' : ''}
-      </Text>
+      <View style={styles.memberNameRow}>
+        <Text style={styles.memberName}>
+          {member.displayName}
+          {isSelf ? ' (you)' : ''}
+        </Text>
+        {!isSelf && (
+          <Button
+            label="Remove"
+            variant="danger"
+            size="sm"
+            onPress={() => onRemove(member.uid, member.displayName)}
+            disabled={busy}
+          />
+        )}
+      </View>
       <RolePicker
         value={member.role}
         onChange={(role) => onChangeRole(member.uid, role)}
@@ -214,6 +227,24 @@ export default function SettingsScreen() {
       await assignOverseer(team.id, uid, overseerUid);
     } catch (err: any) {
       notify('Couldn’t assign team lead', err?.message ?? 'Try again.');
+    } finally {
+      setMemberBusyUid(null);
+    }
+  }
+
+  async function handleRemoveMember(uid: string, displayName: string) {
+    if (!team) return;
+    const confirmed = await confirmAction(
+      'Remove from team',
+      `${displayName} will lose access and drop off the leaderboard. Their sold deals stay counted in team totals — nothing about their sales history is deleted.`,
+      'Remove'
+    );
+    if (!confirmed) return;
+    setMemberBusyUid(uid);
+    try {
+      await removeMember(team.id, uid);
+    } catch (err: any) {
+      notify('Couldn’t remove them', err?.message ?? 'Try again.');
     } finally {
       setMemberBusyUid(null);
     }
@@ -421,6 +452,7 @@ export default function SettingsScreen() {
                 busy={memberBusyUid === member.uid}
                 onChangeRole={handleChangeRole}
                 onChangeOverseer={handleChangeOverseer}
+                onRemove={handleRemoveMember}
               />
             ))}
           </Section>
@@ -779,6 +811,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    gap: spacing.sm,
+  },
+  memberNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
   },
   memberName: {
