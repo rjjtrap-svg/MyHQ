@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  FlatList,
   Image,
   Pressable,
   StyleSheet,
@@ -7,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { useGoalStats } from '@/src/hooks/useGoalStats';
 import { useAuthStore } from '@/src/store/authStore';
@@ -36,7 +38,6 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { StatTile } from '@/src/components/StatTile';
 import { StagePillRow } from '@/src/components/StagePill';
 import { EmptyState } from '@/src/components/EmptyState';
-import { Screen } from '@/src/components/Screen';
 import { Surface } from '@/src/components/Surface';
 import { colors, fonts, layout, radius, spacing, typography } from '@/src/theme';
 import { Deal, DealStage } from '@/src/types';
@@ -409,119 +410,174 @@ export default function DealsScreen() {
         : 'Last 6 months';
 
   return (
-    <Screen testID="deals-screen">
-      <ScreenHeader
-        eyebrow="Your book"
-        title="My Deals"
-        subtitle="Private to you — only you and your manager see commission."
+    <SafeAreaView style={styles.safe} edges={['top']} testID="deals-screen">
+      <FlatList
+        data={livePipeline}
+        keyExtractor={(deal) => deal.id}
+        renderItem={({ item }) => <DealRow deal={item} />}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        // The pipeline is the one list here that grows unbounded with real usage (25-40+
+        // deals/day, day after day) — everything else stays in the header/footer and renders
+        // once, same as before. FlatList only windows the `data` prop, so the pipeline is the
+        // part that actually needed virtualizing.
+        ListHeaderComponent={
+          <>
+            <ScreenHeader
+              eyebrow="Your book"
+              title="My Deals"
+              subtitle="Private to you — only you and your manager see commission."
+            />
+
+            <Surface level="raised" style={styles.commissionHero}>
+              <Text style={styles.heroLabel}>Total commission</Text>
+              <Text style={styles.heroValue}>
+                {formatMoney(myCommissionTotals.total)}
+              </Text>
+              <View style={styles.heroMetaRow}>
+                <Text style={styles.heroMeta}>
+                  Paid {formatMoney(myCommissionTotals.paid)}
+                </Text>
+                <Text style={styles.heroMeta}>
+                  Pending {formatMoney(myCommissionTotals.pending)}
+                </Text>
+              </View>
+            </Surface>
+
+            <NeedsAttention deals={deals} />
+
+            {livePipeline.length === 0 ? (
+              <Section title={`Pipeline (${livePipeline.length})`}>
+                <EmptyState
+                  icon="briefcase"
+                  title="Your pipeline is ready"
+                  body="Log your first deal with the center action and it will appear here."
+                />
+              </Section>
+            ) : (
+              <View style={styles.pipelineHeader}>
+                <Text style={styles.pipelineTitle}>{`Pipeline (${livePipeline.length})`}</Text>
+                <View style={styles.pipelineRule} />
+              </View>
+            )}
+          </>
+        }
+        ListFooterComponent={
+          <>
+            {livePipeline.length > 0 && <View style={styles.pipelineFootSpacer} />}
+
+            <ClosingKpis todaySales={stats.todaySales} weekSales={stats.weekSales} />
+
+            <Section
+              title="Sales history"
+              right={<Text style={styles.rangeLabel}>{chartCaption}</Text>}
+            >
+              <SegmentedToggle
+                options={[
+                  { key: 'daily', label: 'Daily' },
+                  { key: 'weekly', label: 'Weekly' },
+                  { key: 'monthly', label: 'Monthly' },
+                ]}
+                value={chartRange}
+                onChange={setChartRange}
+                stretch
+              />
+              <View style={styles.chart}>
+                <BarChart data={chartData} highlightLastBar />
+              </View>
+            </Section>
+
+            <Section title="Performance">
+              <View style={styles.grid}>
+                <StatTile
+                  label="Running average"
+                  value={stats.runningAverage.toFixed(1)}
+                  sublabel="sales / day"
+                />
+                <StatTile
+                  label="Best day"
+                  value={stats.bestDay ? String(stats.bestDay.count) : '—'}
+                  sublabel={
+                    stats.bestDay
+                      ? shortDateLabel(parseISODate(stats.bestDay.date))
+                      : undefined
+                  }
+                />
+                <StatTile
+                  label="Best week"
+                  value={stats.bestWeek ? String(stats.bestWeek.count) : '—'}
+                  sublabel={
+                    stats.bestWeek
+                      ? `wk of ${shortDateLabel(parseISODate(stats.bestWeek.weekStart))}`
+                      : undefined
+                  }
+                />
+                <StatTile label="Current streak" value={`${stats.currentStreak}d`} />
+                <StatTile label="Longest streak" value={`${stats.longestStreak}d`} />
+                <StatTile label="This month" value={String(stats.monthSales)} />
+              </View>
+            </Section>
+
+            {cancelledDeals.length > 0 && (
+              <Section title={`Cancelled (${cancelledDeals.length})`}>
+                <View style={styles.grid}>
+                  <StatTile
+                    label="Cancel rate"
+                    value={`${cancels.cancelRate.toFixed(1)}%`}
+                    sublabel={`${cancels.cancelled} of ${cancels.cancelled + livePipeline.length}`}
+                    accent={colors.danger}
+                  />
+                  <StatTile
+                    label="Commission lost"
+                    value={formatMoney(cancels.lost)}
+                    accent={colors.danger}
+                  />
+                </View>
+                {cancelledDeals.map((deal) => (
+                  <DealRow key={deal.id} deal={deal} />
+                ))}
+              </Section>
+            )}
+          </>
+        }
       />
-
-      <Surface level="raised" style={styles.commissionHero}>
-        <Text style={styles.heroLabel}>Total commission</Text>
-        <Text style={styles.heroValue}>
-          {formatMoney(myCommissionTotals.total)}
-        </Text>
-        <View style={styles.heroMetaRow}>
-          <Text style={styles.heroMeta}>
-            Paid {formatMoney(myCommissionTotals.paid)}
-          </Text>
-          <Text style={styles.heroMeta}>
-            Pending {formatMoney(myCommissionTotals.pending)}
-          </Text>
-        </View>
-      </Surface>
-
-      <NeedsAttention deals={deals} />
-
-      <Section title={`Pipeline (${livePipeline.length})`}>
-        {livePipeline.length === 0 ? (
-          <EmptyState
-            icon="briefcase"
-            title="Your pipeline is ready"
-            body="Log your first deal with the center action and it will appear here."
-          />
-        ) : (
-          livePipeline.map((deal) => <DealRow key={deal.id} deal={deal} />)
-        )}
-      </Section>
-
-      <ClosingKpis todaySales={stats.todaySales} weekSales={stats.weekSales} />
-
-      <Section
-        title="Sales history"
-        right={<Text style={styles.rangeLabel}>{chartCaption}</Text>}
-      >
-        <SegmentedToggle
-          options={[
-            { key: 'daily', label: 'Daily' },
-            { key: 'weekly', label: 'Weekly' },
-            { key: 'monthly', label: 'Monthly' },
-          ]}
-          value={chartRange}
-          onChange={setChartRange}
-          stretch
-        />
-        <View style={styles.chart}>
-          <BarChart data={chartData} highlightLastBar />
-        </View>
-      </Section>
-
-      <Section title="Performance">
-        <View style={styles.grid}>
-          <StatTile
-            label="Running average"
-            value={stats.runningAverage.toFixed(1)}
-            sublabel="sales / day"
-          />
-          <StatTile
-            label="Best day"
-            value={stats.bestDay ? String(stats.bestDay.count) : '—'}
-            sublabel={
-              stats.bestDay
-                ? shortDateLabel(parseISODate(stats.bestDay.date))
-                : undefined
-            }
-          />
-          <StatTile
-            label="Best week"
-            value={stats.bestWeek ? String(stats.bestWeek.count) : '—'}
-            sublabel={
-              stats.bestWeek
-                ? `wk of ${shortDateLabel(parseISODate(stats.bestWeek.weekStart))}`
-                : undefined
-            }
-          />
-          <StatTile label="Current streak" value={`${stats.currentStreak}d`} />
-          <StatTile label="Longest streak" value={`${stats.longestStreak}d`} />
-          <StatTile label="This month" value={String(stats.monthSales)} />
-        </View>
-      </Section>
-
-      {cancelledDeals.length > 0 && (
-        <Section title={`Cancelled (${cancelledDeals.length})`}>
-          <View style={styles.grid}>
-            <StatTile
-              label="Cancel rate"
-              value={`${cancels.cancelRate.toFixed(1)}%`}
-              sublabel={`${cancels.cancelled} of ${cancels.cancelled + livePipeline.length}`}
-              accent={colors.danger}
-            />
-            <StatTile
-              label="Commission lost"
-              value={formatMoney(cancels.lost)}
-              accent={colors.danger}
-            />
-          </View>
-          {cancelledDeals.map((deal) => (
-            <DealRow key={deal.id} deal={deal} />
-          ))}
-        </Section>
-      )}
-    </Screen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  // Matches Screen's own SafeAreaView + content container exactly, since this screen
+  // swapped Screen's ScrollView for a FlatList to virtualize the pipeline.
+  safe: { flex: 1, backgroundColor: colors.background },
+  scrollContent: {
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
+    paddingHorizontal: layout.screenGutter,
+    paddingBottom: spacing.xxxl,
+    flexGrow: 1,
+  },
+  // Mirrors Section's own header row exactly (title + trailing hairline) — split out
+  // because the pipeline's rows are now FlatList `data`, not Section children.
+  pipelineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  pipelineTitle: {
+    ...typography.sectionTitle,
+    color: colors.text,
+  },
+  pipelineRule: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.borderSubtle,
+  },
+  // Replaces Section's own marginBottom: spacing.xl, which would otherwise land right
+  // after the (now childless) pipeline header instead of after the last row.
+  pipelineFootSpacer: { height: spacing.xl },
   rangeLabel: {
     ...typography.caption,
     color: colors.textFaint,
