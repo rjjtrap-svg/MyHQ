@@ -5,7 +5,7 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const { parseDealFields } = require('./ocrParse');
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getFirestore } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 const { getMessaging } = require('firebase-admin/messaging');
 const vision = require('@google-cloud/vision');
@@ -391,19 +391,20 @@ async function assertTeamMember(teamId, uid) {
   }
 }
 
-// Callable from the client: a rep's freeform, ongoing chat with the persistent Managed
-// Agent coach ("Accountability Coach" — Coach tab, default view). Unlike
-// askObjectionHandling, this is a real multi-turn conversation: the same Managed Agent
-// session is reused for every message a given rep sends, so the agent remembers earlier
-// turns instead of starting fresh each time. A message can be plain text, a photo (sent to
-// the agent as a vision content block), or a voice memo (transcribed server-side first,
-// reusing the same transcode/transcribe pipeline as pitch grading) — never more than one
-// attachment per message, matching the app's single "camera" / "mic" buttons.
+// Callable from the client: a rep's freeform chat with the persistent Managed Agent coach
+// ("Accountability Coach" — Coach tab, default view). Split into conversations, each its
+// own Managed Agent session — pass an existing `conversationId` to continue one, or omit it
+// to start a new one (the function creates it and returns the real id). A message can be
+// plain text, a photo (sent to the agent as a vision content block), or a voice memo
+// (transcribed server-side first, reusing the same transcode/transcribe pipeline as pitch
+// grading) — never more than one attachment per message, matching the app's single
+// "camera" / "mic" buttons.
 exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey], timeoutSeconds: 300 }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign in required.');
   }
   const teamId = String(request.data?.teamId || '').trim();
+  const requestedConversationId = request.data?.conversationId ? String(request.data.conversationId).trim() : null;
   const message = String(request.data?.message || '').trim();
   const image = request.data?.image;
   const audio = request.data?.audio;
@@ -447,20 +448,22 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
   }
 
   const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(repUid);
-  const messagesRef = chatRef.collection('messages');
+  const conversationsRef = chatRef.collection('conversations');
 
   try {
     const anthropic = new Anthropic({ apiKey: anthropicApiKey.value() });
+    const now = new Date().toISOString();
 
     const chatSnap = await chatRef.get();
     const chatData = chatSnap.exists ? chatSnap.data() : {};
 
-    // A session's own context dies with the session, so on its own "Start a new
-    // conversation" would give the rep an amnesiac coach. A memory store is workspace-
-    // scoped and outlives every session: it's mounted into each new session as a
-    // directory the agent reads and writes with ordinary file tools, so what it learned
-    // about this rep in January is still there in June, across any number of sessions.
-    // One store per rep — never shared — since it holds personal coaching notes.
+    // A session's own context dies with the session, so a new conversation on its own
+    // would give the rep an amnesiac coach. A memory store is workspace-scoped and
+    // outlives every session: it's mounted into each new session as a directory the agent
+    // reads and writes with ordinary file tools, so what it learned about this rep in
+    // January is still there in June, across any number of conversations. One store per
+    // rep — never shared, and never per-conversation — since it holds personal coaching
+    // notes that need to persist across the History list, not just within one thread.
     let memoryStoreId = chatData.memoryStoreId;
     if (!memoryStoreId) {
       const store = await anthropic.beta.memoryStores.create({
@@ -472,9 +475,20 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
       });
       memoryStoreId = store.id;
     }
+    await chatRef.set({ repUid, teamId, memoryStoreId, updatedAt: now }, { merge: true });
 
-    let sessionId = chatData.sessionId;
-    if (!sessionId) {
+    let conversationRef;
+    let sessionId;
+    let isNewConversation;
+    if (requestedConversationId) {
+      conversationRef = conversationsRef.doc(requestedConversationId);
+      const conversationSnap = await conversationRef.get();
+      if (!conversationSnap.exists) {
+        throw new HttpsError('not-found', 'That conversation no longer exists.');
+      }
+      sessionId = conversationSnap.data().sessionId;
+      isNewConversation = false;
+    } else {
       const session = await anthropic.beta.sessions.create({
         agent: COACH_AGENT_ID,
         environment_id: COACH_ENVIRONMENT_ID,
@@ -495,9 +509,11 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
         ],
       });
       sessionId = session.id;
+      conversationRef = conversationsRef.doc();
+      isNewConversation = true;
     }
-    const now = new Date().toISOString();
-    await chatRef.set({ repUid, teamId, sessionId, memoryStoreId, updatedAt: now }, { merge: true });
+    const conversationId = conversationRef.id;
+    const messagesRef = conversationRef.collection('messages');
 
     // Build both the content sent to the agent and the plain-text version stored/shown in
     // Firestore — a voice memo's "text" is its transcript, since there's nothing else to show.
@@ -529,6 +545,17 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
       content.push({ type: 'text', text: message });
     }
 
+    // Preview is set once, from the conversation's first message — later messages update
+    // updatedAt (for History's recency sort/filter) but leave the label alone.
+    await conversationRef.set(
+      {
+        sessionId,
+        updatedAt: now,
+        ...(isNewConversation ? { startedAt: now, preview: displayText.slice(0, 80) } : {}),
+      },
+      { merge: true }
+    );
+
     const userMsgRef = messagesRef.doc();
     await userMsgRef.set({
       id: userMsgRef.id,
@@ -546,7 +573,7 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
     const agentMsgRef = messagesRef.doc();
     await agentMsgRef.set({ id: agentMsgRef.id, role: 'agent', text: answer, createdAt: new Date().toISOString() });
 
-    return { answer };
+    return { answer, conversationId };
   } catch (err) {
     if (err instanceof HttpsError) throw err;
     console.error('askCoachAgent failed', err);
@@ -556,52 +583,30 @@ exports.askCoachAgent = onCall({ region: 'us-east1', secrets: [anthropicApiKey],
   }
 });
 
-// Callable from the client: clears the rep's stored Managed Agent session id so their
-// *next* message starts a brand-new session. Needed because a session's system
-// instructions are fixed for its whole lifetime (per Anthropic's docs) — if the agent gets
-// upgraded (new instructions/knowledge/model) in the console, a rep's existing ongoing
-// conversation won't pick that up on its own, only a fresh session will.
-//
-// Deliberately leaves memoryStoreId alone: the rep's long-term memory store is re-attached
-// to the new session, so a fresh conversation still remembers everything the coach has
-// learned about them. This only resets the *session*, never the memory.
-exports.resetCoachAgentSession = onCall({ region: 'us-east1' }, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Sign in required.');
-  }
-  const teamId = String(request.data?.teamId || '').trim();
-  if (!teamId) {
-    throw new HttpsError('invalid-argument', 'teamId is required.');
-  }
-  await assertTeamMember(teamId, request.auth.uid);
-  const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(request.auth.uid);
-  await chatRef.set({ sessionId: FieldValue.delete(), updatedAt: new Date().toISOString() }, { merge: true });
-  return { ok: true };
-});
-
-// Callable from the client: deletes one message from the rep's own Accountability Coach
-// chat (e.g. an accidental voice memo or photo) — the Firestore doc, plus its Storage
-// attachment if it had one. Always scoped to the caller's own chat: the doc path is
-// teams/{teamId}/coachChats/{request.auth.uid}/messages/{messageId}, so there's no way to
-// pass another rep's message id and have it resolve to their data.
+// Callable from the client: deletes one message from one of the rep's own Accountability
+// Coach conversations (e.g. an accidental voice memo or photo) — the Firestore doc, plus
+// its Storage attachment if it had one. Pass conversationId === 'legacy' to delete from the
+// original flat thread that predates conversations as their own unit; any other id targets
+// that conversation's messages. Always scoped to the caller's own chat: the doc path is
+// under teams/{teamId}/coachChats/{request.auth.uid}/..., so there's no way to pass another
+// rep's message id and have it resolve to their data.
 exports.deleteCoachChatMessage = onCall({ region: 'us-east1' }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign in required.');
   }
   const teamId = String(request.data?.teamId || '').trim();
+  const conversationId = String(request.data?.conversationId || '').trim();
   const messageId = String(request.data?.messageId || '').trim();
-  if (!teamId || !messageId) {
-    throw new HttpsError('invalid-argument', 'teamId and messageId are required.');
+  if (!teamId || !conversationId || !messageId) {
+    throw new HttpsError('invalid-argument', 'teamId, conversationId, and messageId are required.');
   }
   await assertTeamMember(teamId, request.auth.uid);
 
-  const messageRef = db
-    .collection('teams')
-    .doc(teamId)
-    .collection('coachChats')
-    .doc(request.auth.uid)
-    .collection('messages')
-    .doc(messageId);
+  const chatRef = db.collection('teams').doc(teamId).collection('coachChats').doc(request.auth.uid);
+  const messageRef =
+    conversationId === 'legacy'
+      ? chatRef.collection('messages').doc(messageId)
+      : chatRef.collection('conversations').doc(conversationId).collection('messages').doc(messageId);
 
   const snap = await messageRef.get();
   if (!snap.exists) {

@@ -1,22 +1,100 @@
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
-import { CoachChatMessage } from '@/src/types';
+import { CoachChatMessage, CoachConversation } from '@/src/types';
 import { db, storage, functions } from './config';
 
-/** Live history of a rep's ongoing chat with the persistent Managed Agent coach. */
-export function subscribeCoachChat(
+/** The id used for the flat message thread that predates conversations as their own
+ * unit — kept readable forever, never migrated into the new shape (see sendCoachChatMessage). */
+export const LEGACY_CONVERSATION_ID = 'legacy';
+
+/** Live messages for one conversation. `conversationId === LEGACY_CONVERSATION_ID` reads
+ * the original flat thread; any other id reads `coachChats/{repUid}/conversations/{id}/messages`. */
+export function subscribeCoachConversationMessages(
   teamId: string,
   repUid: string,
+  conversationId: string,
   callback: (messages: CoachChatMessage[]) => void
 ): () => void {
   if (!db) return () => {};
-  const q = query(collection(db, 'teams', teamId, 'coachChats', repUid, 'messages'), orderBy('createdAt', 'asc'));
+  const messagesRef =
+    conversationId === LEGACY_CONVERSATION_ID
+      ? collection(db, 'teams', teamId, 'coachChats', repUid, 'messages')
+      : collection(db, 'teams', teamId, 'coachChats', repUid, 'conversations', conversationId, 'messages');
+  const q = query(messagesRef, orderBy('createdAt', 'asc'));
   return onSnapshot(
     q,
     (snap) => callback(snap.docs.map((d) => d.data() as CoachChatMessage)),
     () => callback([])
   );
+}
+
+/** Recent conversations (last 30 days) for the History list, newest first. The legacy flat
+ * thread is synthesized into the same list from its own most recent message, so old history
+ * shows up right alongside real conversations instead of being invisible. */
+export function subscribeCoachConversations(
+  teamId: string,
+  repUid: string,
+  callback: (conversations: CoachConversation[]) => void
+): () => void {
+  if (!db) return () => {};
+  const sinceIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  let latest: CoachConversation[] = [];
+  let legacy: CoachConversation | null = null;
+
+  function emit() {
+    const all = legacy ? [legacy, ...latest] : latest;
+    callback([...all].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+  }
+
+  const convosQuery = query(
+    collection(db, 'teams', teamId, 'coachChats', repUid, 'conversations'),
+    where('updatedAt', '>=', sinceIso),
+    orderBy('updatedAt', 'desc')
+  );
+  const unsubConvos = onSnapshot(
+    convosQuery,
+    (snap) => {
+      latest = snap.docs.map((d) => {
+        const data = d.data();
+        return { id: d.id, preview: data.preview ?? '', updatedAt: data.updatedAt };
+      });
+      emit();
+    },
+    () => {
+      latest = [];
+      emit();
+    }
+  );
+
+  // The legacy thread has no summary doc of its own — the most recent message stands in
+  // for both its preview and its updatedAt, and it only shows up here if that message is
+  // itself within the last 30 days, same recency rule as everything else in the list.
+  const legacyQuery = query(
+    collection(db, 'teams', teamId, 'coachChats', repUid, 'messages'),
+    orderBy('createdAt', 'desc'),
+    limit(1)
+  );
+  const unsubLegacy = onSnapshot(
+    legacyQuery,
+    (snap) => {
+      const last = snap.docs[0]?.data();
+      legacy = last && last.createdAt >= sinceIso
+        ? { id: LEGACY_CONVERSATION_ID, preview: String(last.text ?? '').slice(0, 80), updatedAt: last.createdAt }
+        : null;
+      emit();
+    },
+    () => {
+      legacy = null;
+      emit();
+    }
+  );
+
+  return () => {
+    unsubConvos();
+    unsubLegacy();
+  };
 }
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -94,53 +172,51 @@ export async function uploadCoachChatAudio(
 }
 
 /**
- * Sends a message into the rep's ongoing Managed Agent session (creating one on first
- * use) and returns the agent's reply. The Cloud Function also writes both sides of the
- * exchange to Firestore, so `subscribeCoachChat` picks it up too — the return value here
- * just lets the UI show the answer immediately without waiting on the snapshot listener.
+ * Sends a message into one conversation's Managed Agent session and returns the agent's
+ * reply plus the conversation id it landed in. Pass `conversationId: null` to start a brand
+ * new conversation — the function creates it server-side and hands back the real id, which
+ * the caller should hold onto for the rest of that thread. The coach's long-term memory
+ * (separate from any one conversation's session) carries over regardless, so a new
+ * conversation is never a cold start for the coach, just a clean thread for the rep.
  */
 export async function sendCoachChatMessage(
   teamId: string,
+  conversationId: string | null,
   message: string,
   attachment?: { image?: CoachChatImageUpload; audio?: CoachChatAudioUpload }
-): Promise<string> {
+): Promise<{ answer: string; conversationId: string }> {
   if (!functions) throw new Error('Firebase is not configured.');
   const callable = httpsCallable<
     {
       teamId: string;
+      conversationId?: string;
       message: string;
       image?: CoachChatImageUpload;
       audio?: CoachChatAudioUpload;
     },
-    { answer: string }
+    { answer: string; conversationId: string }
   >(functions, 'askCoachAgent');
-  const result = await callable({ teamId, message, image: attachment?.image, audio: attachment?.audio });
-  return result.data.answer;
-}
-
-/**
- * Clears the rep's stored Managed Agent session so their next message starts a fresh one
- * — needed because a session's instructions/knowledge are locked in for its whole
- * lifetime, so if the agent gets upgraded in the Anthropic console, an already-ongoing
- * conversation won't pick that up on its own. Existing chat history is untouched.
- */
-export async function resetCoachChatSession(teamId: string): Promise<void> {
-  if (!functions) throw new Error('Firebase is not configured.');
-  const callable = httpsCallable<{ teamId: string }, { ok: boolean }>(functions, 'resetCoachAgentSession');
-  await callable({ teamId });
+  const result = await callable({
+    teamId,
+    conversationId: conversationId ?? undefined,
+    message,
+    image: attachment?.image,
+    audio: attachment?.audio,
+  });
+  return result.data;
 }
 
 /**
  * Deletes one message (in case a voice memo or photo was sent by accident). Removes both
  * the Firestore doc and, if the message had one, its Storage attachment. Only ever deletes
  * from the caller's own chat — there is no way to pass another rep's message id and have
- * it resolve to their data, since the chat doc id is always the caller's own uid.
+ * it resolve to their data, since the path is always scoped to the caller's own uid.
  */
-export async function deleteCoachChatMessage(teamId: string, messageId: string): Promise<void> {
+export async function deleteCoachChatMessage(teamId: string, conversationId: string, messageId: string): Promise<void> {
   if (!functions) throw new Error('Firebase is not configured.');
-  const callable = httpsCallable<{ teamId: string; messageId: string }, { ok: boolean }>(
+  const callable = httpsCallable<{ teamId: string; conversationId: string; messageId: string }, { ok: boolean }>(
     functions,
     'deleteCoachChatMessage'
   );
-  await callable({ teamId, messageId });
+  await callable({ teamId, conversationId, messageId });
 }

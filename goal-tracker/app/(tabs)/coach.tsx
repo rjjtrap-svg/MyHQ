@@ -16,7 +16,7 @@ import {
 } from '@/src/firebase/pitchCoaching';
 import {
   deleteCoachChatMessage,
-  resetCoachChatSession,
+  LEGACY_CONVERSATION_ID,
   sendCoachChatMessage,
   uploadCoachChatAudio,
   uploadCoachChatImage,
@@ -379,18 +379,31 @@ function AudioBubble({ url }: { url: string }) {
   );
 }
 
+/** "3d ago" / "2w ago" — same shape as territory.tsx's lastWorked(), kept local since it's
+ * the only other place this exact formatting is needed. */
+function relativeTime(iso: string): string {
+  const hours = Math.round((Date.now() - new Date(iso).getTime()) / 3600000);
+  if (hours < 1) return 'just now';
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return `${Math.floor(days / 7)}w ago`;
+}
+
 function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<ScrollView> }) {
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const teamId = useTeamStore((s) => s.teamId);
   const messages = useCoachChatStore((s) => s.messages);
+  const conversations = useCoachChatStore((s) => s.conversations);
+  const activeConversationId = useCoachChatStore((s) => s.activeConversationId);
+  const openConversation = useCoachChatStore((s) => s.openConversation);
 
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmingReset, setConfirmingReset] = useState(false);
-  const [resetting, setResetting] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -398,14 +411,27 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
     scrollRef.current?.scrollToEnd({ animated: true });
   }, [messages.length, sending]);
 
+  function openHistoryConversation(id: string) {
+    if (!teamId || !firebaseUser) return;
+    openConversation(teamId, firebaseUser.uid, id);
+    setShowHistory(false);
+  }
+
+  function startNewConversation() {
+    if (!teamId || !firebaseUser) return;
+    openConversation(teamId, firebaseUser.uid, null);
+    setShowHistory(false);
+  }
+
   async function sendText() {
     const trimmed = input.trim();
-    if (!trimmed || !teamId || sending) return;
+    if (!trimmed || !teamId || !firebaseUser || sending) return;
     setError(null);
     setInput('');
     setSending(true);
     try {
-      await sendCoachChatMessage(teamId, trimmed);
+      const { conversationId } = await sendCoachChatMessage(teamId, activeConversationId, trimmed);
+      if (conversationId !== activeConversationId) openConversation(teamId, firebaseUser.uid, conversationId);
     } catch (err: any) {
       setError(err?.message ?? 'Could not reach the AI coach.');
     } finally {
@@ -421,7 +447,8 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
     setSending(true);
     try {
       const image = await uploadCoachChatImage(teamId, firebaseUser.uid, generateId(), localUri);
-      await sendCoachChatMessage(teamId, caption, { image });
+      const { conversationId } = await sendCoachChatMessage(teamId, activeConversationId, caption, { image });
+      if (conversationId !== activeConversationId) openConversation(teamId, firebaseUser.uid, conversationId);
     } catch (err: any) {
       setError(err?.message ?? 'Could not send that photo.');
     } finally {
@@ -473,7 +500,8 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
       setRecording(null);
       if (!uri) throw new Error('No recording found.');
       const audio = await uploadCoachChatAudio(teamId, firebaseUser.uid, generateId(), uri);
-      await sendCoachChatMessage(teamId, '', { audio });
+      const { conversationId } = await sendCoachChatMessage(teamId, activeConversationId, '', { audio });
+      if (conversationId !== activeConversationId) openConversation(teamId, firebaseUser.uid, conversationId);
     } catch (err: any) {
       setError(err?.message ?? 'Could not send that voice memo.');
     } finally {
@@ -481,26 +509,12 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
     }
   }
 
-  async function confirmReset() {
-    if (!teamId || resetting) return;
-    setError(null);
-    setResetting(true);
-    try {
-      await resetCoachChatSession(teamId);
-      setConfirmingReset(false);
-    } catch (err: any) {
-      setError(err?.message ?? 'Could not start a new conversation.');
-    } finally {
-      setResetting(false);
-    }
-  }
-
   async function confirmDelete(messageId: string) {
-    if (!teamId || deletingId) return;
+    if (!teamId || deletingId || !activeConversationId) return;
     setError(null);
     setDeletingId(messageId);
     try {
-      await deleteCoachChatMessage(teamId, messageId);
+      await deleteCoachChatMessage(teamId, activeConversationId, messageId);
       setConfirmDeleteId(null);
     } catch (err: any) {
       setError(err?.message ?? 'Could not delete that message.');
@@ -518,21 +532,41 @@ function AccountabilityCoachSection({ scrollRef }: { scrollRef: React.RefObject<
         </Text>
       </View>
 
-      {!confirmingReset ? (
-        <Pressable onPress={() => setConfirmingReset(true)} style={styles.newConversationRow}>
-          <FontAwesome name="refresh" size={12} color={colors.textFaint} />
-          <Text style={styles.newConversationText}>Start a new conversation</Text>
+      {/* Opening the tab always starts a clean thread (activeConversationId defaults to
+          null in the store) — memory of the rep still carries over via the coach's
+          long-term memory store, only the visible thread is fresh. History pulls up past
+          threads from the last 30 days instead of one conversation growing forever. */}
+      <View style={styles.threadControls}>
+        <Pressable onPress={startNewConversation} style={styles.threadControlButton}>
+          <FontAwesome name="plus" size={12} color={colors.textFaint} />
+          <Text style={styles.threadControlText}>New</Text>
         </Pressable>
-      ) : (
-        <View style={styles.resetConfirmCard}>
-          <Text style={styles.resetConfirmText}>
-            Start fresh? This clears the current thread. Your coach keeps its long-term memory of you, so it
-            still knows your goals, your history, and what you've worked on together.
+        <Pressable onPress={() => setShowHistory((v) => !v)} style={styles.threadControlButton}>
+          <FontAwesome name="history" size={12} color={colors.textFaint} />
+          <Text style={styles.threadControlText}>
+            History{conversations.length > 0 ? ` (${conversations.length})` : ''}
           </Text>
-          <View style={styles.resetConfirmButtons}>
-            <Button label="Cancel" variant="ghost" size="sm" onPress={() => setConfirmingReset(false)} disabled={resetting} />
-            <Button label="Start fresh" variant="danger" size="sm" onPress={confirmReset} busy={resetting} />
-          </View>
+        </Pressable>
+      </View>
+
+      {showHistory && (
+        <View style={styles.historyCard}>
+          {conversations.length === 0 ? (
+            <Text style={styles.historyEmpty}>No conversations from the last 30 days.</Text>
+          ) : (
+            conversations.map((c) => (
+              <Pressable
+                key={c.id}
+                onPress={() => openHistoryConversation(c.id)}
+                style={[styles.historyRow, c.id === activeConversationId && styles.historyRowActive]}
+              >
+                <Text style={styles.historyPreview} numberOfLines={1}>
+                  {c.preview || (c.id === LEGACY_CONVERSATION_ID ? 'Earlier conversation' : '(no preview)')}
+                </Text>
+                <Text style={styles.historyMeta}>{relativeTime(c.updatedAt)}</Text>
+              </Pressable>
+            ))
+          )}
         </View>
       )}
 
@@ -660,6 +694,16 @@ export default function CoachScreen() {
   const [tab, setTab] = useState<CoachTab>('accountability');
   const scrollRef = useRef<ScrollView>(null);
   const isAccountability = tab === 'accountability';
+  const firebaseUser = useAuthStore((s) => s.firebaseUser);
+  const teamId = useTeamStore((s) => s.teamId);
+  const openConversation = useCoachChatStore((s) => s.openConversation);
+
+  // Opening the Coach screen always lands on a clean conversation rather than wherever the
+  // rep left off — History is the deliberate way back to an old thread, not the default.
+  useEffect(() => {
+    if (teamId && firebaseUser) openConversation(teamId, firebaseUser.uid, null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -1018,35 +1062,59 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontFamily: fonts.sansSemiBold,
   },
-  newConversationRow: {
+  threadControls: {
     flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    gap: spacing.xs,
+    justifyContent: 'center',
+    gap: spacing.lg,
     marginBottom: spacing.md,
   },
-  newConversationText: {
+  threadControlButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  threadControlText: {
     ...typography.caption,
     color: colors.textFaint,
     fontFamily: fonts.sansSemiBold,
   },
-  resetConfirmCard: {
+  historyCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
     marginBottom: spacing.md,
-    gap: spacing.sm,
+    overflow: 'hidden',
   },
-  resetConfirmText: {
+  historyEmpty: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: colors.textFaint,
+    padding: spacing.md,
   },
-  resetConfirmButtons: {
+  historyRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  historyRowActive: {
+    backgroundColor: colors.surfaceElevated,
+  },
+  historyPreview: {
+    ...typography.caption,
+    color: colors.text,
+    flex: 1,
+  },
+  historyMeta: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.textFaint,
   },
   deleteConfirmRow: {
     flexDirection: 'row',

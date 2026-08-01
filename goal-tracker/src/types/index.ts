@@ -443,3 +443,14 @@ export interface CoachChatMessage {
   attachmentUrl?: string;
   createdAt: string;
 }
+
+/**
+ * One thread in a rep's coach chat history. `id` is `'legacy'` for messages sent before
+ * conversations existed as their own unit (kept in place, never migrated — see
+ * coachChat.ts) — every conversation created after that has a real id.
+ */
+export interface CoachConversation {
+  id: string;
+  preview: string;
+  updatedAt: string;
+}

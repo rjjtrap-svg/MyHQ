@@ -156,9 +156,23 @@ service cloud.firestore {
         allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
         allow write: if false;
 
+        // The original flat thread, kept forever for reps who were chatting before
+        // conversations existed as their own unit — never migrated, see coachChat.ts.
         match /messages/{messageId} {
           allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
           allow write: if false;
+        }
+
+        // One conversation = one Managed Agent session + its own message thread. Same
+        // owner-only, admin-SDK-writes-only shape as the legacy /messages above.
+        match /conversations/{conversationId} {
+          allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
+          allow write: if false;
+
+          match /messages/{messageId} {
+            allow read: if isTeamMember(teamId) && request.auth.uid == repUid;
+            allow write: if false;
+          }
         }
       }
     }
